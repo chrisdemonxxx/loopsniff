@@ -1,0 +1,224 @@
+* Host vpn.dutchpoint.org:443 was resolved.
+* IPv6: (none)
+* IPv4: 160.72.101.178
+*   Trying 160.72.101.178:443...
+* Connected to vpn.dutchpoint.org (160.72.101.178) port 443
+* ALPN: curl offers h2,http/1.1
+} [5 bytes data]
+* TLSv1.3 (OUT), TLS handshake, Client hello (1):
+} [512 bytes data]
+*  CAfile: /etc/ssl/certs/ca-certificates.crt
+*  CApath: /etc/ssl/certs
+{ [5 bytes data]
+* TLSv1.3 (IN), TLS handshake, Server hello (2):
+{ [122 bytes data]
+* TLSv1.3 (IN), TLS handshake, Encrypted Extensions (8):
+{ [10 bytes data]
+* TLSv1.3 (IN), TLS handshake, Certificate (11):
+{ [2996 bytes data]
+* TLSv1.3 (IN), TLS handshake, CERT verify (15):
+{ [520 bytes data]
+* TLSv1.3 (IN), TLS handshake, Finished (20):
+{ [52 bytes data]
+* TLSv1.3 (OUT), TLS change cipher, Change cipher spec (1):
+} [1 bytes data]
+* TLSv1.3 (OUT), TLS handshake, Finished (20):
+} [52 bytes data]
+* SSL connection using TLSv1.3 / TLS_AES_256_GCM_SHA384 / X25519 / RSASSA-PSS
+* ALPN: server did not agree on a protocol. Uses default.
+* Server certificate:
+*  subject: CN=vpn.dutchpoint.org
+*  start date: Oct 17 00:00:00 2025 GMT
+*  expire date: Nov  7 23:59:59 2026 GMT
+*  subjectAltName: host "vpn.dutchpoint.org" matched cert's "vpn.dutchpoint.org"
+*  issuer: C=US; O=DigiCert Inc; OU=www.digicert.com; CN=Thawte TLS RSA CA G1
+*  SSL certificate verify ok.
+*   Certificate level 0: Public key type RSA (4096/152 Bits/secBits), signed using sha256WithRSAEncryption
+*   Certificate level 1: Public key type RSA (2048/112 Bits/secBits), signed using sha256WithRSAEncryption
+*   Certificate level 2: Public key type RSA (2048/112 Bits/secBits), signed using sha256WithRSAEncryption
+* using HTTP/1.x
+} [5 bytes data]
+> GET /+CSCOE+/logon.html HTTP/1.1
+> Host: vpn.dutchpoint.org
+> User-Agent: curl/8.5.0
+> Accept: */*
+> 
+{ [5 bytes data]
+< HTTP/1.1 200 OK
+< Content-Type: text/html; charset=utf-8
+< Cache-Control: no-store
+< Pragma: no-cache
+< Connection: Keep-Alive
+< Date: Thu, 05 Mar 2026 11:02:39 GMT
+< X-Frame-Options: SAMEORIGIN
+< Strict-Transport-Security: max-age=31536000; includeSubDomains
+< X-Content-Type-Options: nosniff
+< X-XSS-Protection: 1
+< Content-Security-Policy: default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; frame-ancestors 'self'; base-uri 'self'; block-all-mixed-content
+< Cross-Origin-Opener-Policy: same-origin-allow-popups
+< Set-Cookie: webvpn=; expires=Thu, 01 Jan 1970 22:00:00 GMT; path=/; secure
+< Set-Cookie: webvpnc=; expires=Thu, 01 Jan 1970 22:00:00 GMT; path=/; secure
+< Set-Cookie: webvpn_portal=; expires=Thu, 01 Jan 1970 22:00:00 GMT; path=/; secure
+< Set-Cookie: acSamlv2Token=; expires=Thu, 01 Jan 1970 22:00:00 GMT; path=/; secure
+< Set-Cookie: webvpnlogin=1; path=/; secure
+< Set-Cookie: webvpn_as=; expires=Thu, 01 Jan 1970 22:00:00 GMT; path=/; secure
+< Set-Cookie: webvpnSharePoint=; expires=Thu, 01 Jan 1970 22:00:00 GMT; path=/; secure
+< Set-Cookie: samlPreauthSessionHash=; expires=Thu, 01 Jan 1970 22:00:00 GMT; path=/; secure
+< Set-Cookie: acSamlv2Error=; expires=Thu, 01 Jan 1970 22:00:00 GMT; path=/; secure
+< Set-Cookie: webvpnLang=en; path=/; secure
+* no chunk, no close, no size. Assume close to signal end
+< 
+{ [80 bytes data]
+
+<!DOCTYPE html>
+<html style="height:100%;width:100%;">
+<head>
+
+<title></title>
+<meta name="HandheldFriendly" content="true" />
+<meta name="viewport" content="width=500,user-scalable=no" />
+<script>
+if(self != top) top.location.href="/+CSCOE+/logon.html";
+
+
+
+var blinkCounter=0;
+var dap;
+
+if (typeof navigator === 'object' && 'serviceWorker' in navigator && typeof navigator.serviceWorker === 'object' && 'register' in navigator.serviceWorker) {
+    navigator.serviceWorker.getRegistration('/').then(function(registration) {
+        if (registration) {
+            registration.unregister().then(function() {
+                location.reload();
+            });
+        }
+    });
+}
+ 
+function scrollToLogonForm() {
+    document.location.hash = "form_title_text";
+}
+
+function dap_message(){
+
+      if(!dap) return;
+      
+      if(dap.style.visibility == "visible"){
+         dap.style.visibility = "hidden"
+      }else{
+         dap.style.visibility = "visible"
+      }
+      blinkCounter++;
+      if(dap.style.visibility == "visible" && blinkCounter > 5)
+	      clearInterval(dap_interval)
+} 
+
+function blinkDapMessage(){
+        dap=document.getElementById("dap");
+        if(dap){
+           dap_interval = setInterval('dap_message()',1000)
+        }
+}
+
+function showDapMessage(){
+        obj=document.getElementById("dap_message");
+        if(obj){
+           obj.style.visibility = "visible"
+           obj.style.top = (document.body.clientHeight - obj.clientHeight)/2+"px"
+           obj.style.left = (document.body.clientWidth - obj.clientWidth)/2+"px"
+        }
+
+        obj1=document.getElementById("dap_message_shield");
+        if(obj1){
+           obj1.style.visibility = "visible"
+           obj1.style.top = (document.body.clientHeight - obj.clientHeight)/2+"px"
+           obj1.style.left = (document.body.clientWidth - obj.clientWidth)/2+"px"
+           obj1.style.height = obj.clientHeight+"px"
+           obj1.style.width = obj.clientWidth+"px"
+        }
+} 
+
+function hideDapMessage(){
+        obj=document.getElementById("dap_message");
+        if(obj){
+           obj.style.visibility = "hidden"
+        }
+
+        obj1=document.getElementById("dap_message_shield");
+        if(obj1){
+           obj1.style.visibility = "hidden"
+        }
+} 
+
+
+
+
+
+
+
+
+
+function base64_encode(data) {
+  var b64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+  var o1, o2, o3, h1, h2, h3, h4, bits, i = 0,
+    ac = 0,
+    enc = '', 
+    tmp_arr = []; 
+  if (!data) {
+    return data;
+  }
+  do {
+    // pack three octets into four hexets
+    o1 = data.charCodeAt(i++);
+    o2 = data.charCodeAt(i++);
+    o3 = data.charCodeAt(i++);
+    bits = o1 << 16 | o2 << 8 | o3; 
+    h1 = bits >> 18 & 0x3f;
+    h2 = bits >> 12 & 0x3f;
+    h3 = bits >> 6 & 0x3f;
+    h4 = bits & 0x3f;
+    // use hexets to index into b64, and append result to encoded string
+    tmp_arr[ac++] = b64.charAt(h1) + b64.charAt(h2) + b64.charAt(h3) + b64.charAt(h4);
+  } while (i < data.length);
+  enc = tmp_arr.join('');
+  var r = data.length % 3;
+  return (r ? enc.slice(0, r - 3) : enc) + '==='.slice(r || 3); 
+}
+function updateLogonForm(group,reload){
+
+    if(reload[group]){
+    	var obj=document.getElementById("login");
+    	if(obj) {
+           obj.disabled=true
+        }
+        document.cookie = "tg=1" + base64_encode(group) + "; path=/; secure";
+    	document.location = "/+CSCOE+/logon.html";
+        return
+    }
+}
+function PrefillError() {
+      var obj = document.getElementById("logon_message_text");
+      if (obj) {
+         obj.innerHTML="Your certificate is invalid for the selected group";
+         obj.style.fontWeight="bold";
+         obj.style.color="red";
+      }
+      obj = document.getElementById("Login");
+      if (obj) {
+         obj.disabled=true;
+      }
+}
+</script>
+
+
+<link href="/+CSCOU+/portal.css" rel="stylesheet" type="text/css">
+<link href="/+CSCOE+/logon_custom.css" rel="stylesheet" type="text/css">
+<style>
+     .auth-page-title {color:#ffffff;background-color:#2b76ad;}
+.auth-page-form-title {}
+
+</style>
+
+<script src="/+CSCOE+/win.js"></script>
+<script>
+function
