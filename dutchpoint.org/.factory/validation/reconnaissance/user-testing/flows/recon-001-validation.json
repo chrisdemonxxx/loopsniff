@@ -1,0 +1,50 @@
+{
+  "groupId": "recon-001-validation",
+  "testedAt": "2026-03-06T00:00:00Z",
+  "credentials": {
+    "account": "evidence-validator-1",
+    "namespace": "recon-evidence-1"
+  },
+  "toolsUsed": ["evidence-file-validation"],
+  "assertions": [
+    {
+      "id": "VAL-RECON-001",
+      "title": "Complete subdomain enumeration",
+      "status": "pass",
+      "steps": [
+        { 
+          "action": "Count subdomains in subdomains.txt", 
+          "expected": "30+ entries", 
+          "observed": "32 unique subdomains (excluding comments)" 
+        },
+        { 
+          "action": "Verify sources exist", 
+          "expected": "subfinder_raw.txt and crt_sh_raw.json exist", 
+          "observed": "Both source files exist with 31 and 33 lines respectively" 
+        },
+        { 
+          "action": "Check for high-value targets", 
+          "expected": "admin.*, api.*, secure.* patterns identified", 
+          "observed": "admin.dutchpoint.org, www.admin.dutchpoint.org, secure.dutchpoint.org found" 
+        }
+      ],
+      "evidence": {
+        "subdomainsCount": "32 unique subdomains",
+        "sourceFiles": ["subfinder_raw.txt (31 lines)", "crt_sh_raw.json (33 lines)"],
+        "highValueTargets": ["admin.dutchpoint.org", "secure.dutchpoint.org"],
+        "highValueReport": "high_value_targets.md exists with 21 prioritized targets"
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "File uses comment lines (starting with #) which required filtering to get actual count",
+      "resolved": true,
+      "resolution": "Used grep -v '^#' and grep -v '^$' to filter comments and empty lines",
+      "affectedAssertions": ["VAL-RECON-001"]
+    }
+  ],
+  "blockers": [],
+  "summary": "VAL-RECON-001 PASSED: Successfully validated evidence for subdomain enumeration. Found 32 unique subdomains (exceeding 30 requirement), confirmed multiple discovery sources (subfinder + crt.sh), and verified high-value targets are documented in high_value_targets.md with detailed priority assessment."
+}

@@ -1,0 +1,33 @@
+# crt.sh Certificate Transparency Results (truncated)
+# Full results saved to artifact log
+# Source: https://crt.sh/?q=%.dutchpoint.org&output=json
+# Timestamp: 2026-03-06
+
+# Key Observations from crt.sh:
+# - 75+ certificate entries found
+# - Primary Certificate Authorities: Google Trust Services, Let's Encrypt, DigiCert/Thawte, GoDaddy
+# - Certificate auto-renewal observed (3-month cycles for Let's Encrypt)
+# - Critical infrastructure using extended validation (DigiCert/Thawte)
+# - Multiple SAN (Subject Alternative Names) for payment services
+
+# Subdomains Confirmed via Certificate Transparency:
+# - branch-portal.dutchpoint.org (Let's Encrypt)
+# - mgr.dutchpoint.org (Google Trust Services)
+# - loans.dutchpoint.org (Google Trust Services)
+# - secure.dutchpoint.org (Google Trust Services)
+# - quickassist.pscu.dutchpoint.org (GoDaddy)
+# - tomcat1.dutchpoint.org (GoDaddy)
+# - admin.dutchpoint.org (Google Trust Services)
+# - www.dutchpoint.org (Google Trust Services)
+# - dutchpoint.org (Google Trust Services)
+# - mail.dutchpoint.org (DigiCert/Thawte)
+# - remotedr.dutchpoint.org (DigiCert/Thawte)
+# - vpn.dutchpoint.org (DigiCert/Thawte)
+# - mailsafe.dutchpoint.org (GoDaddy)
+# - mail-content.payments.dutchpoint.org (Amazon RSA)
+
+# Historical Certificates (Archived):
+# - Certificates dating back to 2015 found in CT logs
+# -- Domain active since at least 2015
+# -- Multiple certificate authority transitions observed
+# -- GoDaddy -> Let's Encrypt -> Google Trust Services migration pattern

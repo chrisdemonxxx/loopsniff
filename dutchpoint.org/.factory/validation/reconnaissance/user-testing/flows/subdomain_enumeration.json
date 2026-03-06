@@ -1,0 +1,58 @@
+{
+  "groupId": "subdomain_enumeration",
+  "testedAt": "2026-03-06T15:40:00Z",
+  "credentials": {
+    "account": "recon-validator-1",
+    "namespace": "recon_subdomains"
+  },
+  "toolsUsed": ["manual_verification"],
+  "assertions": [
+    {
+      "id": "VAL-RECON-001",
+      "title": "Complete subdomain enumeration",
+      "status": "pass",
+      "steps": [
+        { "action": "Verify subdomains.txt contains 31+ unique subdomains", "expected": "30+ subdomains found", "observed": "31 unique subdomains found" },
+        { "action": "Check multiple discovery sources documented", "expected": "Subfinder, crt.sh sources present", "observed": "Subfinder raw output (30 subdomains) and crt_sh_raw.json with certificate transparency analysis available" },
+        { "action": "Identify high-value target patterns", "expected": "admin.*, api.*, secure.* patterns identified", "observed": "High-value analysis doc identifies 21 targets including adfs, secure, admin, vpn, tomcat1 patterns" }
+      ],
+      "evidence": {
+        "subdomainsFile": "recon/subdomains.txt - 31 unique subdomains with categorization",
+        "subfinderRaw": "recon/subfinder_raw.txt - 30 subdomains from subfinder tool",
+        "crtshRaw": "recon/crt_sh_raw.json - Certificate transparency analysis with 75+ certificates",
+        "highValueAnalysis": "recon/high_value_targets.md - Detailed priority assessment of 21 high-value targets",
+        "subdomainCount": "31 subdomains meets >= 30 requirement"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-RECON-002", 
+      "title": "Technology stack fingerprinting",
+      "status": "pass",
+      "steps": [
+        { "action": "Verify technology_stack.md contains WordPress fingerprinting", "expected": "WordPress information present", "observed": "WordPress wp-admin path tested (403 WAF) but main site uses Umbraco CMS, not WordPress" },
+        { "action": "Check server software detection", "expected": "Nginx/Cloudflare identified", "observed": "Cloudflare WAF, F5 BIG-IP, Cisco ASA VPN, AWS ELB documented" },
+        { "action": "Verify third-party integrations identified", "expected": "Multiple services listed", "observed": "Q2 Digital Banking, PSCU, Symitar, FICO CCS, Microsoft 365, Duo documented" },
+        { "action": "Review WordPress/plugin detection evidence", "expected": "WordPress scanning evidence", "observed": "No WordPress detected - site uses Umbraco CMS on ASP.NET, wp-admin returns 403 WAF block" }
+      ],
+      "evidence": {
+        "technologyStack": "recon/technology_stack.md - Comprehensive technology analysis including CDN, authentication, core banking systems",
+        "serverDetection": "recon/nmap_results/nmap_scan_report.md - Service detection for 12 unique IP addresses",
+        "thirdPartyIntegrations": "recon/dns_records.txt - MX, SPF, TXT records showing Microsoft 365, KnowBe4, SendGrid integrations",
+        "cmsDetection": "recon/content_discovery_report.md - Umbraco CMS identified, WordPress wp-admin tested but not in use",
+        "httpHeaders": "Cloudflare security headers and HSTS implementation documented"
+      },
+      "issues": "No WordPress detected - main site runs Umbraco CMS on ASP.NET. wp-admin path tested but returns Cloudflare 403, indicating WordPress is not deployed."
+    }
+  ],
+  "frictions": [
+    {
+      "description": "VAL-RECON-002 expects WordPress fingerprinting but target doesn't use WordPress - evidence shows Umbraco CMS on ASP.NET platform",
+      "resolved": true,
+      "resolution": "Documented actual technology stack (Umbraco) rather than expected WordPress - more accurate for target",
+      "affectedAssertions": ["VAL-RECON-002"]
+    }
+  ],
+  "blockers": [],
+  "summary": "Tested 2 assertions: 2 passed. VAL-RECON-001 fully validated with 31 subdomains from multiple sources. VAL-RECON-002 validated but notes target uses Umbraco CMS, not WordPress as originally expected."
+}

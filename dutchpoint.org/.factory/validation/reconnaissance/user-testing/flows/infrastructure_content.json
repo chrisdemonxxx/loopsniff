@@ -1,0 +1,86 @@
+{
+  "groupId": "infrastructure_content",
+  "testedAt": "2026-03-06T15:37:00Z",
+  "credentials": {
+    "account": "recon-validator-2",
+    "namespace": "recon_infrastructure"
+  },
+  "toolsUsed": ["manual_evidence_validation"],
+  "assertions": [
+    {
+      "id": "VAL-RECON-003",
+      "title": "Network infrastructure mapping",
+      "status": "pass",
+      "steps": [
+        { "action": "Verify nmap_results directory exists", "expected": "Directory with scan results present", "observed": "nmap_results/ directory contains 18 files including scan data" },
+        { "action": "Check for port scan results", "expected": "Nmap scan outputs for multiple IPs", "observed": "Found scan results for 12 unique IP addresses" },
+        { "action": "Verify service version detection", "expected": "Service versions beyond basic 80/443", "observed": "Cisco ASA VPN, F5 BIG-IP, AWS ELB, Cloudflare services identified" },
+        { "action": "Check firewall/WAF identification", "expected": "Firewall and WAF presence documented", "observed": "Cloudflare WAF, F5 BIG-IP, and host firewalls identified" },
+        { "action": "Verify network infrastructure mapping", "expected": "Comprehensive network mapping present", "observed": "Detailed IP allocation and service mapping documented" }
+      ],
+      "evidence": {
+        "nmap_results": [
+          "/home/cjs/dutchpoint.org/recon/nmap_results/160.72.101.178_deep.txt",
+          "/home/cjs/dutchpoint.org/recon/nmap_results/34.196.154.214_deep.txt", 
+          "/home/cjs/dutchpoint.org/recon/nmap_results/192.237.146.112.txt",
+          "/home/cjs/dutchpoint.org/recon/nmap_results/nmap_scan_report.md"
+        ],
+        "services_identified": {
+          "cisco_asa_vpn": "vpn.dutchpoint.org (160.72.101.178:443)",
+          "f5_bigip": "adfs.dutchpoint.org (192.237.146.112)",
+          "aws_elb": "ficoccs-prod.net (34.196.154.214:443)",
+          "cloudflare_waf": "Multiple subdomains protected"
+        },
+        "open_ports": ["80/tcp", "443/tcp", "8080/tcp", "8443/tcp"],
+        "firewall_waf": ["Cloudflare WAF (8+ hosts)", "F5 BIG-IP load balancer", "Host-based firewalls (4 filtered hosts)"]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-RECON-004", 
+      "title": "Content and endpoint discovery",
+      "status": "pass",
+      "steps": [
+        { "action": "Verify content_discovery_report.md exists", "expected": "Report with directory/endpoint findings", "observed": "Comprehensive report with 500+ endpoints documented" },
+        { "action": "Check endpoints_discovered.md", "expected": "Admin/API paths listed", "observed": "Admin portals, authentication endpoints, and API paths documented" },
+        { "action": "Verify sensitive file discovery evidence", "expected": "Evidence of sensitive file discovery attempts", "observed": "Sensitive file checks with security responses documented" },
+        { "action": "Review accessibility documentation", "expected": "Documentation of discovered endpoint accessibility", "observed": "Cloudflare WAF protection levels and access methods documented" }
+      ],
+      "evidence": {
+        "content_discovery_report": "/home/cjs/dutchpoint.org/recon/content_discovery_report.md",
+        "endpoints_discovered": "/home/cjs/dutchpoint.org/recon/endpoints_discovered.md",
+        "high_value_endpoints": [
+          "https://secure.dutchpoint.org/dutchpoint/uux.aspx (Q2 Banking Login)",
+          "https://vpn.dutchpoint.org/logon.html (Cisco ASA VPN)",
+          "https://admin.dutchpoint.org/ (Admin portal - Cloudflare protected)",
+          "https://loans.dutchpoint.org/account-opening (Loan application)"
+        ],
+        "sensitive_files_tested": [
+          "/.git/HEAD", "/.git/config", "/.env", "/robots.txt", "/sitemap/", "/admin", "/wp-admin", 
+          "/administrator", "/manager", "/phpmyadmin", "/api", "/api/v1", "/graphql", "/backup.sql", "/backup.zip"
+        ],
+        "technology_stack": {
+          "cms": "Umbraco CMS (ASP.NET)",
+          "banking_platform": "Q2 Digital Banking", 
+          "vpn": "Cisco ASA SSL VPN",
+          "protection": "Cloudflare WAF"
+        },
+        "security_headers": {
+          "cloudflare_waf": "cf-mitigated: challenge, x-frame-options: SAMEORIGIN",
+          "q2_platform": "strict-transport-security: max-age=31536000, x-content-type-options: nosniff"
+        }
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "Cloudflare WAF challenge on all protected endpoints prevents automated access - requires browser automation for testing",
+      "resolved": true,
+      "resolution": "Evidence validation focuses on existing scan results and documentation rather than live testing",
+      "affectedAssertions": ["VAL-RECON-004"]
+    }
+  ],
+  "blockers": [],
+  "summary": "Evidence validation completed for reconnaissance infrastructure and content discovery assertions. VAL-RECON-003: Network Infrastructure Mapping FULLY SATISFIED - comprehensive nmap results document 25+ hosts across 12 IPs with service version detection and WAF identification. VAL-RECON-004: Content and Endpoint Discovery FULLY SATISFIED - 500+ endpoints discovered including high-value authentication portals, admin interfaces, and sensitive file discovery evidence. Both assertions have complete evidence packages meeting validation contract requirements."
+}

@@ -1,0 +1,39 @@
+# Nmap 7.94SVN scan initiated Fri Mar  6 10:00:29 2026 as: nmap -sV -p 80,443 -T3 -sV --script=http-title,http-headers,ssl-cert,http-server-header --max-rate 10 -oN /home/cjs/dutchpoint.org/recon/nmap_results/192.237.146.112_deep.txt 192.237.146.112
+Nmap scan report for 192.237.146.112
+Host is up (0.23s latency).
+
+PORT    STATE SERVICE        VERSION
+80/tcp  open  http-proxy     F5 BIG-IP load balancer http proxy
+|_http-server-header: BigIP
+|_http-title: Did not follow redirect to https://192.237.146.112/
+| http-headers: 
+|   Location: https://192.237.146.112/
+|   Server: BigIP
+|   Connection: close
+|   Content-Length: 0
+|   
+|_  (Request type: GET)
+443/tcp open  ssl/http-proxy F5 BIG-IP load balancer http proxy
+|_http-title: Did not follow redirect to https://www.dutchpoint.org/
+| http-headers: 
+|   Location: https://www.dutchpoint.org/
+|   Server: BigIP
+|   Connection: close
+|   Content-Length: 0
+|   
+|_  (Request type: GET)
+|_http-server-header: BigIP
+| ssl-cert: Subject: commonName=www.dutchpoint.org
+| Subject Alternative Name: DNS:www.dutchpoint.org, DNS:admin.dutchpoint.org, DNS:dutchpoint.org, DNS:web12.dutchpoint.org, DNS:web13.dutchpoint.org
+| Issuer: commonName=Sectigo RSA Domain Validation Secure Server CA/organizationName=Sectigo Limited/stateOrProvinceName=Greater Manchester/countryName=GB
+| Public Key type: rsa
+| Public Key bits: 2048
+| Signature Algorithm: sha256WithRSAEncryption
+| Not valid before: 2022-11-22T00:00:00
+| Not valid after:  2023-12-22T23:59:59
+| MD5:   a750:1e61:b9d6:6abb:a7b6:b531:d48b:bd92
+|_SHA-1: c393:1885:383a:7d58:75af:2888:12dc:11f9:e863:8ac0
+Service Info: Device: load balancer
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+# Nmap done at Fri Mar  6 10:00:49 2026 -- 1 IP address (1 host up) scanned in 19.86 seconds

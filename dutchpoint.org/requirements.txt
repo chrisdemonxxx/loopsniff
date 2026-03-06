@@ -1,0 +1,20 @@
+# Pentest Tool Requirements (Optional - Most tools are system-installed)
+
+# Python helpers (if needed for custom scripts)
+requests==2.31.0
+beautifulsoup4==4.12.3
+lxml==5.1.0
+
+# CVSS calculator
+cvss==3.0
+
+# PDF generation for reports
+markdown2==2.4.13
+reportlab==4.0.9
+
+# Network utilities
+scapy==2.5.0
+netaddr==1.2.1
+
+# Note: Primary pentest tools (nmap, wpscan, nuclei, sqlmap, etc.) must be installed system-wide
+# See .factory/library/environment.md for installation instructions

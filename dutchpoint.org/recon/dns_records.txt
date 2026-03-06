@@ -1,0 +1,98 @@
+# DNS Records for dutchpoint.org
+# Generated: 2026-03-06
+# Method: Passive DNS Enumeration (dig)
+
+=== A RECORDS ===
+# Main Domain - Cloudflare Protected
+dutchpoint.org -> 104.16.176.2, 104.16.175.2 (Cloudflare)
+
+# Key Infrastructure IPs:
+# 192.237.146.112 - ADFS, Tomcat (Azure/AWS hosted)
+# 160.72.101.178 - VPN endpoint
+# 160.72.101.187 - Remote access
+# 192.0.63.252, 192.0.54.4 - Q2 Digital Banking
+# 104.18.6.248, 104.18.7.248 - Clutch Partners (branch-portal, loans)
+# 160.153.108.198 - ECU Technology (join.dutchpoint.org)
+# 34.196.154.214, 34.237.152.170 - FICO CCS (mail-content.payments)
+
+=== MX RECORDS ===
+dutchpoint.org.	1715	IN	MX	0 dutchpoint-org.mail.protection.outlook.com.
+Provider: Microsoft 365 (Outlook.com Email Protection)
+
+=== NS RECORDS ===
+dutchpoint.org.	5095	IN	NS	ns87.worldnic.com.
+dutchpoint.org.	5095	IN	NS	ns88.worldnic.com.
+Provider: Network Solutions (WorldNIC)
+
+=== TXT RECORDS ===
+
+## SPF Record (Email Authentication)
+v=spf1 mx 
+ip4:66.29.200.20 
+ip4:63.117.120.96/27 
+ip4:69.38.149.224/27 
+ip4:208.252.57.192/27 
+ip4:104.130.82.204/31 
+ip4:192.254.121.248 
+include:_phishspf.knowbe4.com 
+include:spf.protection.outlook.com 
+include:spf.webaccess1.com 
+include:spf.usa.net 
+include:u3620291.wl042.sendgrid.net 
+a:_mailhosts.swbc.com 
+include:spf.us.exclaimer.net 
+include:mktomail.com 
+~all
+
+Analysis: Comprehensive SPF with multiple authorized senders:
+- Microsoft 365 (primary mail)
+- KnowBe4 (security awareness)
+- SendGrid (email delivery)
+- SWBC (banking services)
+- Exclaimer (email signatures)
+- Marketo (marketing automation)
+
+## Domain Verification Records
+_globalsign-domain-verification=wm0GAnz3TVucnMNAXyWSLpylY_9QRoMgQ7QFj6aYqQ
+_globalsign-domain-verification=hfm3wQumhli0RN_HCg0tg0d31iCMJ-glFdPI1DR5M2
+_globalsign-domain-verification=DeL17Hrdu-sMG5jY7P0eTh-_w1WiiwFTpXHjoYPxy-
+MS=ms46938941
+MS=0F956939E78009223D06126C6600F15CD8E8D9F1
+duo_sso_verification=MCyiZW4LhjSE421PKh62nuBv0kjvgerfDUuIXbOpY02iMopZl5gJt44mprQ03vWS
+
+### DMARC Record
+_dmarc.dutchpoint.org.	1498	IN	TXT "v=DMARC1; p=none; rua=mailto:65b17fd18d7da@ag.dmarcly.com; ruf=mailto:65b17fd18d7da@fo.dmarcly.com; sp=none"
+
+Policy: p=none (monitoring mode - NOT ENFORCING)
+Reporting: Using Dmarcly for DMARC analytics
+Risk: Medium - Domain not protected against email spoofing
+
+=== SUBDOMAIN DNS MAPPINGS ===
+
+## High-Value Targets
+adfs.dutchpoint.org -> 192.237.146.112 (ADFS Authentication)
+admin.dutchpoint.org -> 104.16.174.82, 104.16.173.82 (Cloudflare WAF)
+secure.dutchpoint.org -> 192.0.63.252, 192.0.54.4 (Q2 Digital Banking)
+remote.dutchpoint.org -> 160.72.101.187 (Remote Access Portal)
+vpn.dutchpoint.org -> 160.72.101.178 (VPN Endpoint)
+tomcat1.dutchpoint.org -> 192.237.146.112 (Tomcat Application Server)
+
+## Member-Facing Services
+branch-portal.dutchpoint.org -> 104.18.6.248, 104.18.7.248 (Clutch Partners)
+loans.dutchpoint.org -> 104.18.6.248, 104.18.7.248 (Clutch Partners)
+join.dutchpoint.org -> 160.153.0.198 (ECU Technology)
+p2p.dutchpoint.org -> prod.payzur.com (P2P Payments)
+
+## Third-Party Integrations
+quickassist.pscu.dutchpoint.org -> 192.237.146.112 (PSCU Integration)
+quickassist.symitar.dutchpoint.org -> 192.237.146.112 (Symitar Core Banking)
+mail-content.payments.dutchpoint.org -> 34.196.154.214, 34.237.152.170 (FICO CCS)
+
+## Infrastructure
+mail.dutchpoint.org -> 160.72.101.181
+mailsafe.dutchpoint.org -> (GoDaddy hosted)
+remotedr.dutchpoint.org -> 192.237.146.112
+drvpn.dutchpoint.org -> 192.64.66.226
+vpnberlin.dutchpoint.org -> 192.237.146.112
+mgr.dutchpoint.org -> 104.16.174.82, 104.16.173.82 (fallback.cfdefense.net)
+web12.dutchpoint.org, web13.dutchpoint.org -> (internal infrastructure)

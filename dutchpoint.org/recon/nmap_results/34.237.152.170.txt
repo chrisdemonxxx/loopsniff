@@ -1,0 +1,45 @@
+# Nmap 7.94SVN scan initiated Fri Mar  6 09:59:10 2026 as: nmap -sV -p 21,22,23,25,53,80,110,143,443,445,993,995,1433,3306,3389,4443,5432,5900,8000,8008,8080,8081,8443,8888,9000,9090,10000 --max-rate 10 -T3 -oN /home/cjs/dutchpoint.org/recon/nmap_results/34.237.152.170.txt 34.237.152.170
+Nmap scan report for ec2-34-237-152-170.compute-1.amazonaws.com (34.237.152.170)
+Host is up (0.21s latency).
+Not shown: 26 filtered tcp ports (no-response)
+PORT    STATE SERVICE   VERSION
+443/tcp open  ssl/https
+1 service unrecognized despite returning data. If you know the service/version, please submit the following fingerprint at https://nmap.org/cgi-bin/submit.cgi?new-service :
+SF-Port443-TCP:V=7.94SVN%T=SSL%I=7%D=3/6%Time=69AAEBD2%P=x86_64-pc-linux-g
+SF:nu%r(GetRequest,C4,"HTTP/1\.1\x20404\x20Not\x20Found\r\nDate:\x20Fri,\x
+SF:2006\x20Mar\x202026\x2014:59:30\x20GMT\r\nContent-Type:\x20application/
+SF:octet-stream\r\nContent-Length:\x200\r\nConnection:\x20close\r\nServer:
+SF:\x20\r\nStrict-Transport-Security:\x20max-age=31536000\r\n\r\n")%r(HTTP
+SF:Options,C4,"HTTP/1\.1\x20404\x20Not\x20Found\r\nDate:\x20Fri,\x2006\x20
+SF:Mar\x202026\x2014:59:31\x20GMT\r\nContent-Type:\x20application/octet-st
+SF:ream\r\nContent-Length:\x200\r\nConnection:\x20close\r\nServer:\x20\r\n
+SF:Strict-Transport-Security:\x20max-age=31536000\r\n\r\n")%r(FourOhFourRe
+SF:quest,D3,"HTTP/1\.1\x20404\x20Not\x20Found\r\nDate:\x20Fri,\x2006\x20Ma
+SF:r\x202026\x2014:59:31\x20GMT\r\nContent-Type:\x20text/plain;\x20charset
+SF:=utf-8\r\nContent-Length:\x2013\r\nConnection:\x20close\r\nServer:\x20\
+SF:r\nStrict-Transport-Security:\x20max-age=31536000\r\n\r\n404\x20Not\x20
+SF:Found")%r(RPCCheck,110,"HTTP/1\.1\x20400\x20Bad\x20Request\r\nServer:\x
+SF:20awselb/2\.0\r\nDate:\x20Fri,\x2006\x20Mar\x202026\x2014:59:40\x20GMT\
+SF:r\nContent-Type:\x20text/html\r\nContent-Length:\x20122\r\nConnection:\
+SF:x20close\r\n\r\n<html>\r\n<head><title>400\x20Bad\x20Request</title></h
+SF:ead>\r\n<body>\r\n<center><h1>400\x20Bad\x20Request</h1></center>\r\n</
+SF:body>\r\n</html>\r\n")%r(DNSVersionBindReqTCP,110,"HTTP/1\.1\x20400\x20
+SF:Bad\x20Request\r\nServer:\x20awselb/2\.0\r\nDate:\x20Fri,\x2006\x20Mar\
+SF:x202026\x2014:59:41\x20GMT\r\nContent-Type:\x20text/html\r\nContent-Len
+SF:gth:\x20122\r\nConnection:\x20close\r\n\r\n<html>\r\n<head><title>400\x
+SF:20Bad\x20Request</title></head>\r\n<body>\r\n<center><h1>400\x20Bad\x20
+SF:Request</h1></center>\r\n</body>\r\n</html>\r\n")%r(DNSStatusRequestTCP
+SF:,110,"HTTP/1\.1\x20400\x20Bad\x20Request\r\nServer:\x20awselb/2\.0\r\nD
+SF:ate:\x20Fri,\x2006\x20Mar\x202026\x2014:59:42\x20GMT\r\nContent-Type:\x
+SF:20text/html\r\nContent-Length:\x20122\r\nConnection:\x20close\r\n\r\n<h
+SF:tml>\r\n<head><title>400\x20Bad\x20Request</title></head>\r\n<body>\r\n
+SF:<center><h1>400\x20Bad\x20Request</h1></center>\r\n</body>\r\n</html>\r
+SF:\n")%r(Help,110,"HTTP/1\.1\x20400\x20Bad\x20Request\r\nServer:\x20awsel
+SF:b/2\.0\r\nDate:\x20Fri,\x2006\x20Mar\x202026\x2014:59:42\x20GMT\r\nCont
+SF:ent-Type:\x20text/html\r\nContent-Length:\x20122\r\nConnection:\x20clos
+SF:e\r\n\r\n<html>\r\n<head><title>400\x20Bad\x20Request</title></head>\r\
+SF:n<body>\r\n<center><h1>400\x20Bad\x20Request</h1></center>\r\n</body>\r
+SF:\n</html>\r\n");
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+# Nmap done at Fri Mar  6 10:00:02 2026 -- 1 IP address (1 host up) scanned in 52.65 seconds

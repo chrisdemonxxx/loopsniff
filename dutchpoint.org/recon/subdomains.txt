@@ -1,0 +1,50 @@
+# Subdomain Enumeration Results for dutchpoint.org
+# Generated: 2026-03-06
+# Method: Passive (Subfinder, crt.sh Certificate Transparency)
+# Total Unique Subdomains: 31
+
+# Authentication & Identity
+adfs.dutchpoint.org
+admin.dutchpoint.org
+www.admin.dutchpoint.org
+autodiscover.dutchpoint.org
+
+# Banking & Member Services
+secure.dutchpoint.org
+branch-portal.dutchpoint.org
+loans.dutchpoint.org
+join.dutchpoint.org
+p2p.dutchpoint.org
+www.p2p.dutchpoint.org
+payments.dutchpoint.org
+
+# Core Banking Integrations
+quickassist.pscu.dutchpoint.org
+www.quickassist.pscu.dutchpoint.org
+quickassist.symitar.dutchpoint.org
+www.quickassist.symitar.dutchpoint.org
+
+# Email & Communication
+mail.dutchpoint.org
+mailsafe.dutchpoint.org
+www.mailsafe.dutchpoint.org
+mail-content.payments.dutchpoint.org
+
+# Remote Access & VPN
+remote.dutchpoint.org
+remotedr.dutchpoint.org
+vpn.dutchpoint.org
+drvpn.dutchpoint.org
+vpnberlin.dutchpoint.org
+
+# Infrastructure & Management
+tomcat1.dutchpoint.org
+www.tomcat1.dutchpoint.org
+mgr.dutchpoint.org
+web12.dutchpoint.org
+web13.dutchpoint.org
+o12.89.dutchpoint.org
+
+# Primary Domain
+dutchpoint.org
+www.dutchpoint.org
