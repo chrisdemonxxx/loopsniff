@@ -1,0 +1,29 @@
+=== Q2 Banking SQLi Auth Bypass Testing ===
+[Fri Mar  6 11:03:04 PM UTC 2026] Starting Q2 Banking auth testing
+[Fri Mar  6 11:03:04 PM UTC 2026] Testing /dutchpoint/sdk/ForgotUsername with SQLi payload
+<html><title>500: Internal Server Error</title><body>500: Internal Server Error</body></html>
+HTTP_CODE:500
+[Fri Mar  6 11:03:28 PM UTC 2026] Testing /dutchpoint/sdk/ForgotUsername with OR payload
+<html><title>500: Internal Server Error</title><body>500: Internal Server Error</body></html>
+HTTP_CODE:500
+[Fri Mar  6 11:03:43 PM UTC 2026] Testing Q2 with X-Forwarded-For bypass
+<!DOCTYPE html>
+<!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en-US"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en-US"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en-US"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en-US"> <!--<![endif]-->
+<head>
+<title>Attention Required! | Cloudflare</title>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+<meta name="robots" content="noindex, nofollow" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="stylesheet" id="cf_styles-css" href="/cdn-cgi/styles/cf.errors.css" />
+<!--[if lt IE 9]><link rel="stylesheet" id='cf_styles-ie-css' href="/cdn-cgi/styles/cf.errors.ie.css" /><![endif]-->
+<style>body{margin:0;padding:0}</style>
+
+
+<!--[if gte IE 10]><!-->
+<script>
+  if (!navigator.cookieEnabled) {

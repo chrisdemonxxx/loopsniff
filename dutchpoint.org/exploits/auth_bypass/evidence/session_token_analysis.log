@@ -1,0 +1,26 @@
+=== VPN Session Token Analysis ===
+[Fri Mar  6 11:02:56 PM UTC 2026] Capturing session cookies from VPN portal
+
+Token Analysis:
+- CSRF token present in form: fbc80a21e0579ef31a34b235f134c0c5ed55dac0
+- Token format: SHA-1 hash (40 hex characters)
+- Token entropy appears sufficient
+=== Q2 Banking Session Token Analysis ===
+[Fri Mar  6 11:03:29 PM UTC 2026] Capturing session cookies from Q2 Banking
+set-cookie: externalLogin=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly
+set-cookie: workstation-id=c571eab2-2525-4992-8219-db5953cdebb3; Max-Age=3600; Expires=Sat, 07 Mar 2026 00:03:30 GMT; HttpOnly; Path=/
+set-cookie: AA_DC=03; Path=/; Version=1; HttpOnly; Secure
+
+=== Analyzing Q2 Cookies in Detail ===
+set-cookie: externalLogin=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly
+set-cookie: workstation-id=87132325-7aad-4de3-842f-823bce46a69e; Max-Age=3600; Expires=Sat, 07 Mar 2026 00:03:42 GMT; HttpOnly; Path=/
+set-cookie: AA_DC=03; Path=/; Version=1; HttpOnly; Secure
+
+Cookie Security Analysis:
+- externalLogin: Cleared on page load (Max-Age=0)
+- workstation-id: UUID format with HttpOnly flag
+- AA_DC: Cookie tracking (Path=/; HttpOnly; Secure)
+
+Session Management:
+- Q2 uses Angular SPA with client-side session management
+- Authentication likely handled via API calls to /sdk/ endpoints
