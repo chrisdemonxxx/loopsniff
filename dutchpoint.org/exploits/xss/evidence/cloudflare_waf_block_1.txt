@@ -1,0 +1,42 @@
+=== XSS Testing - Cloudflare WAF Block Evidence ===
+Timestamp: 2026-03-06 22:48:10 UTC
+Target: https://www.dutchpoint.org/Search?SearchTerm='<script>alert(1)</script>
+
+=== Request Details ===
+Method: GET
+URL: https://www.dutchpoint.org/Search?SearchTerm='<script>alert(1)</script>
+Headers:
+  User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
+  Accept: application/json
+  Content-Type: application/json
+
+=== Response Details ===
+Status Code: 403 Forbidden
+Server: cloudflare
+X-Frame-Options: SAMEORIGIN
+X-Content-Type-Options: nosniff
+Cf-Mitigated: challenge
+CF-RAY: 9d84e80c0a27ffd4-ORD
+
+=== WAF Detection Evidence ===
+Cloudflare JavaScript Challenge Response:
+- Response body contains: "Just a moment..."
+- Cf-Mitigated header shows: "challenge"
+- Challenge-Ray: 9d84e80c0a27ffd4
+- Challenge Platform: /cdn-cgi/challenge-platform/h/g/orchestrate/chl_page/v1
+
+=== Security Headers Present ===
+- Cross-Origin-Embedder-Policy: require-corp
+- Cross-Origin-Opener-Policy: same-origin
+- Cross-Origin-Resource-Policy: same-origin
+- Referrer-Policy: same-origin
+- Permissions-Policy: (comprehensive restrictions)
+
+=== XSS Payload Blocked ===
+Payload: '<script>alert(1)</script>
+WAF Action: Blocked with 403 Forbidden (Cloudflare Challenge)
+Result: XSS payload prevented from reaching application
+
+=== Conclusion ===
+Cloudflare WAF successfully detected and blocked XSS payload in URL parameter.
+The Cf-Mitigated: challenge header confirms active XSS protection.
