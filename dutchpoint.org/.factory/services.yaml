@@ -1,0 +1,14 @@
+commands:
+  install: pip3 install -r requirements.txt 2>/dev/null || echo "No Python requirements"
+  typecheck: echo "Static type checking not applicable for pentest - manual verification required"
+  build: echo "No build step - pentest tools pre-installed"
+  test: echo "Manual validation via test-driven exploitation - see features for verification steps"
+  lint: echo "Linting not configured - focus on functional pentest results"
+
+services:
+  exploitation-proxy:
+    start: echo "Proxy configured via environment (Burp/OWASP ZAP if needed)"
+    stop: echo "Proxy managed manually"
+    healthcheck: echo "Not applicable"
+    port: 0
+    depends_on: []

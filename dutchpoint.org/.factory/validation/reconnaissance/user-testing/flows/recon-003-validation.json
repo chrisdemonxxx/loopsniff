@@ -1,0 +1,62 @@
+{
+  "groupId": "recon-003-validation",
+  "testedAt": "2026-03-06T10:30:00Z",
+  "credentials": {
+    "account": "evidence-validator-3",
+    "namespace": "recon-evidence-3"
+  },
+  "toolsUsed": ["evidence-file-validation", "manual-file-verification"],
+  "assertions": [
+    {
+      "id": "VAL-RECON-003",
+      "title": "Network infrastructure mapping",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Check nmap_results/ directory for scan files",
+          "expected": "Directory contains 18 nmap scan result files",
+          "observed": "Found 18 nmap scan files covering 12 unique IP addresses plus comprehensive report"
+        },
+        {
+          "action": "Verify open ports beyond standard 80/443",
+          "expected": "Additional ports like 8080, 8443 identified",
+          "observed": "Ports 8080 and 8443 open on Cloudflare-protected hosts, plus port 443 dedicated for VPN"
+        },
+        {
+          "action": "Confirm Cloudflare WAF detection",
+          "expected": "Cloudflare headers and service fingerprints",
+          "observed": "Multiple hosts show 'Cloudflare http proxy' and 'cloudflare' service detection"
+        },
+        {
+          "action": "Check service versions",
+          "expected": "Detailed service version information available",
+          "observed": "Cisco ASA SSL VPN, F5 BIG-IP load balancer, Cloudflare versions detected"
+        }
+      ],
+      "evidence": {
+        "scanFiles": [
+          "nmap_results/160.72.101.178.txt - Cisco ASA SSL VPN detection",
+          "nmap_results/160.72.101.178_deep.txt - Detailed SSL certificate and headers",
+          "nmap_results/192.237.146.112.txt - F5 BIG-IP load balancer detection",
+          "nmap_results/192.0.63.252.txt - Cloudflare http proxy on multiple ports",
+          "nmap_results/104.16.175.2.txt - Primary domain Cloudflare protection"
+        ],
+        "openPortsBeyondStandard": "8080/tcp and 8443/tcp open on Cloudflare-protected hosts",
+        "wafDetection": "Cloudflare http proxy service detected on 6+ hosts with server: cloudflare headers",
+        "serviceVersions": "Cisco ASA SSL VPN (443/tcp), F5 BIG-IP load balancer, Cloudflare WAF",
+        "comprehensiveReport": "nmap_scan_report.md contains detailed analysis of all findings"
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "Some nmap scans show 'filtered' results for critical infrastructure (ADFS, remote access), which limits complete service enumeration",
+      "resolved": true,
+      "resolution": "Documented as expected firewall protection - no additional action needed",
+      "affectedAssertions": ["VAL-RECON-003"]
+    }
+  ],
+  "blockers": [],
+  "summary": "Successfully validated VAL-RECON-003: Network infrastructure mapping. Evidence shows comprehensive port scanning across 12 unique IP addresses with detailed service version detection, Cloudflare WAF identification, and proper documentation of open ports beyond standard HTTP/HTTPS. All validation requirements met with strong evidence quality."
+}

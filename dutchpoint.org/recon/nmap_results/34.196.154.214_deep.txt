@@ -1,0 +1,144 @@
+# Nmap 7.94SVN scan initiated Fri Mar  6 10:01:10 2026 as: nmap -sV -p 443 -T3 -sV --script=ssl-cert,http-title,http-headers --max-rate 10 -oN /home/cjs/dutchpoint.org/recon/nmap_results/34.196.154.214_deep.txt 34.196.154.214
+Nmap scan report for ec2-34-196-154-214.compute-1.amazonaws.com (34.196.154.214)
+Host is up (0.21s latency).
+
+PORT    STATE SERVICE   VERSION
+443/tcp open  ssl/https
+|_http-server-header: <empty>
+| ssl-cert: Subject: commonName=*.ficoccs-prod.net
+| Subject Alternative Name: DNS:*.ficoccs-prod.net, DNS:ficoccs-prod.net
+| Issuer: commonName=Amazon RSA 2048 M02/organizationName=Amazon/countryName=US
+| Public Key type: rsa
+| Public Key bits: 2048
+| Signature Algorithm: sha256WithRSAEncryption
+| Not valid before: 2025-05-13T00:00:00
+| Not valid after:  2026-06-10T23:59:59
+| MD5:   0605:6211:c7ab:a90b:83c0:7173:f1d7:ae6f
+|_SHA-1: 12ad:0509:3a64:6e97:f2ce:3651:cbdf:98fa:f9a2:1a10
+|_http-title: 400 The plain HTTP request was sent to HTTPS port
+| http-headers: 
+|   Date: Fri, 06 Mar 2026 15:01:57 GMT
+|   Content-Type: application/octet-stream
+|   Content-Length: 0
+|   Connection: close
+|   Server: 
+|   Strict-Transport-Security: max-age=31536000
+|   
+|_  (Request type: GET)
+| fingerprint-strings: 
+|   FourOhFourRequest: 
+|     HTTP/1.1 404 Not Found
+|     Date: Fri, 06 Mar 2026 15:01:25 GMT
+|     Content-Type: text/plain; charset=utf-8
+|     Content-Length: 13
+|     Connection: close
+|     Server: 
+|     Strict-Transport-Security: max-age=31536000
+|     Found
+|   GetRequest: 
+|     HTTP/1.1 404 Not Found
+|     Date: Fri, 06 Mar 2026 15:01:24 GMT
+|     Content-Type: application/octet-stream
+|     Content-Length: 0
+|     Connection: close
+|     Server: 
+|     Strict-Transport-Security: max-age=31536000
+|   HTTPOptions: 
+|     HTTP/1.1 404 Not Found
+|     Date: Fri, 06 Mar 2026 15:01:25 GMT
+|     Content-Type: application/octet-stream
+|     Content-Length: 0
+|     Connection: close
+|     Server: 
+|     Strict-Transport-Security: max-age=31536000
+|   RPCCheck: 
+|     HTTP/1.1 400 Bad Request
+|     Server: awselb/2.0
+|     Date: Fri, 06 Mar 2026 15:01:34 GMT
+|     Content-Type: text/html
+|     Content-Length: 122
+|     Connection: close
+|     <html>
+|     <head><title>400 Bad Request</title></head>
+|     <body>
+|     <center><h1>400 Bad Request</h1></center>
+|     </body>
+|     </html>
+|   SMBProgNeg: 
+|     HTTP/1.1 400 Bad Request
+|     Server: awselb/2.0
+|     Date: Fri, 06 Mar 2026 15:01:41 GMT
+|     Content-Type: text/html
+|     Content-Length: 122
+|     Connection: close
+|     <html>
+|     <head><title>400 Bad Request</title></head>
+|     <body>
+|     <center><h1>400 Bad Request</h1></center>
+|     </body>
+|     </html>
+|   TLSSessionReq: 
+|     HTTP/1.1 400 Bad Request
+|     Server: awselb/2.0
+|     Date: Fri, 06 Mar 2026 15:01:39 GMT
+|     Content-Type: text/html
+|     Content-Length: 122
+|     Connection: close
+|     <html>
+|     <head><title>400 Bad Request</title></head>
+|     <body>
+|     <center><h1>400 Bad Request</h1></center>
+|     </body>
+|     </html>
+|   TerminalServerCookie: 
+|     HTTP/1.1 400 Bad Request
+|     Server: awselb/2.0
+|     Date: Fri, 06 Mar 2026 15:01:38 GMT
+|     Content-Type: text/html
+|     Content-Length: 122
+|     Connection: close
+|     <html>
+|     <head><title>400 Bad Request</title></head>
+|     <body>
+|     <center><h1>400 Bad Request</h1></center>
+|     </body>
+|_    </html>
+1 service unrecognized despite returning data. If you know the service/version, please submit the following fingerprint at https://nmap.org/cgi-bin/submit.cgi?new-service :
+SF-Port443-TCP:V=7.94SVN%T=SSL%I=7%D=3/6%Time=69AAEC44%P=x86_64-pc-linux-g
+SF:nu%r(GetRequest,C4,"HTTP/1\.1\x20404\x20Not\x20Found\r\nDate:\x20Fri,\x
+SF:2006\x20Mar\x202026\x2015:01:24\x20GMT\r\nContent-Type:\x20application/
+SF:octet-stream\r\nContent-Length:\x200\r\nConnection:\x20close\r\nServer:
+SF:\x20\r\nStrict-Transport-Security:\x20max-age=31536000\r\n\r\n")%r(HTTP
+SF:Options,C4,"HTTP/1\.1\x20404\x20Not\x20Found\r\nDate:\x20Fri,\x2006\x20
+SF:Mar\x202026\x2015:01:25\x20GMT\r\nContent-Type:\x20application/octet-st
+SF:ream\r\nContent-Length:\x200\r\nConnection:\x20close\r\nServer:\x20\r\n
+SF:Strict-Transport-Security:\x20max-age=31536000\r\n\r\n")%r(FourOhFourRe
+SF:quest,D3,"HTTP/1\.1\x20404\x20Not\x20Found\r\nDate:\x20Fri,\x2006\x20Ma
+SF:r\x202026\x2015:01:25\x20GMT\r\nContent-Type:\x20text/plain;\x20charset
+SF:=utf-8\r\nContent-Length:\x2013\r\nConnection:\x20close\r\nServer:\x20\
+SF:r\nStrict-Transport-Security:\x20max-age=31536000\r\n\r\n404\x20Not\x20
+SF:Found")%r(RPCCheck,110,"HTTP/1\.1\x20400\x20Bad\x20Request\r\nServer:\x
+SF:20awselb/2\.0\r\nDate:\x20Fri,\x2006\x20Mar\x202026\x2015:01:34\x20GMT\
+SF:r\nContent-Type:\x20text/html\r\nContent-Length:\x20122\r\nConnection:\
+SF:x20close\r\n\r\n<html>\r\n<head><title>400\x20Bad\x20Request</title></h
+SF:ead>\r\n<body>\r\n<center><h1>400\x20Bad\x20Request</h1></center>\r\n</
+SF:body>\r\n</html>\r\n")%r(TerminalServerCookie,110,"HTTP/1\.1\x20400\x20
+SF:Bad\x20Request\r\nServer:\x20awselb/2\.0\r\nDate:\x20Fri,\x2006\x20Mar\
+SF:x202026\x2015:01:38\x20GMT\r\nContent-Type:\x20text/html\r\nContent-Len
+SF:gth:\x20122\r\nConnection:\x20close\r\n\r\n<html>\r\n<head><title>400\x
+SF:20Bad\x20Request</title></head>\r\n<body>\r\n<center><h1>400\x20Bad\x20
+SF:Request</h1></center>\r\n</body>\r\n</html>\r\n")%r(TLSSessionReq,110,"
+SF:HTTP/1\.1\x20400\x20Bad\x20Request\r\nServer:\x20awselb/2\.0\r\nDate:\x
+SF:20Fri,\x2006\x20Mar\x202026\x2015:01:39\x20GMT\r\nContent-Type:\x20text
+SF:/html\r\nContent-Length:\x20122\r\nConnection:\x20close\r\n\r\n<html>\r
+SF:\n<head><title>400\x20Bad\x20Request</title></head>\r\n<body>\r\n<cente
+SF:r><h1>400\x20Bad\x20Request</h1></center>\r\n</body>\r\n</html>\r\n")%r
+SF:(SMBProgNeg,110,"HTTP/1\.1\x20400\x20Bad\x20Request\r\nServer:\x20awsel
+SF:b/2\.0\r\nDate:\x20Fri,\x2006\x20Mar\x202026\x2015:01:41\x20GMT\r\nCont
+SF:ent-Type:\x20text/html\r\nContent-Length:\x20122\r\nConnection:\x20clos
+SF:e\r\n\r\n<html>\r\n<head><title>400\x20Bad\x20Request</title></head>\r\
+SF:n<body>\r\n<center><h1>400\x20Bad\x20Request</h1></center>\r\n</body>\r
+SF:\n</html>\r\n");
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+# Nmap done at Fri Mar  6 10:01:58 2026 -- 1 IP address (1 host up) scanned in 48.00 seconds

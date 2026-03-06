@@ -1,0 +1,42 @@
+# Nmap 7.94SVN scan initiated Fri Mar  6 10:00:49 2026 as: nmap -sV -p 443 -T3 -sV --script=ssl-cert,http-title,http-headers --max-rate 10 -oN /home/cjs/dutchpoint.org/recon/nmap_results/160.72.101.178_deep.txt 160.72.101.178
+Nmap scan report for 160.72.101.178.lightower.net (160.72.101.178)
+Host is up (0.23s latency).
+
+PORT    STATE SERVICE  VERSION
+443/tcp open  ssl/http Cisco ASA SSL VPN
+| ssl-cert: Subject: commonName=vpn.dutchpoint.org
+| Subject Alternative Name: DNS:vpn.dutchpoint.org
+| Issuer: commonName=Thawte TLS RSA CA G1/organizationName=DigiCert Inc/countryName=US
+| Public Key type: rsa
+| Public Key bits: 4096
+| Signature Algorithm: sha256WithRSAEncryption
+| Not valid before: 2025-10-17T00:00:00
+| Not valid after:  2026-11-07T23:59:59
+| MD5:   f3f1:623b:6493:2727:7fea:b036:2b6a:36f0
+|_SHA-1: db27:50b1:2d61:da89:e2db:46bc:9b31:c7af:0ee9:9626
+| http-headers: 
+|   Content-Type: text/html; charset=utf-8
+|   Transfer-Encoding: chunked
+|   Cache-Control: no-store
+|   Pragma: no-cache
+|   Connection: Keep-Alive
+|   Date: Fri, 06 Mar 2026 15:01:08 GMT
+|   X-Frame-Options: SAMEORIGIN
+|   Strict-Transport-Security: max-age=31536000; includeSubDomains
+|   X-Content-Type-Options: nosniff
+|   X-XSS-Protection: 1
+|   Content-Security-Policy: default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; frame-ancestors 'self'; base-uri 'self'; block-all-mixed-content
+|   Cross-Origin-Opener-Policy: same-origin-allow-popups
+|   Set-Cookie: webvpn=; expires=Thu, 01 Jan 1970 22:00:00 GMT; path=/; secure
+|   Set-Cookie: webvpnc=; expires=Thu, 01 Jan 1970 22:00:00 GMT; path=/; secure
+|   Set-Cookie: webvpn_portal=; expires=Thu, 01 Jan 1970 22:00:00 GMT; path=/; secure
+|   Set-Cookie: webvpnlogin=1; path=/; secure
+|   Set-Cookie: webvpn_as=; expires=Thu, 01 Jan 1970 22:00:00 GMT; path=/; secure
+|   Set-Cookie: webvpnSharePoint=; expires=Thu, 01 Jan 1970 22:00:00 GMT; path=/; secure
+|   Set-Cookie: samlPreauthSessionHash=; expires=Thu, 01 Jan 1970 22:00:00 GMT; path=/; secure
+|   Set-Cookie: acSamlv2Error=; expires=Thu, 01 Jan 1970 22:00:00 GMT; path=/; secure
+|   
+|_  (Request type: GET)
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+# Nmap done at Fri Mar  6 10:01:10 2026 -- 1 IP address (1 host up) scanned in 20.68 seconds
