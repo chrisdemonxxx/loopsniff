@@ -1,0 +1,103 @@
+# Cloudflare WAF Analysis - dutchpoint.org
+## Date: 2026-03-06 UTC
+
+================================================================================
+WAF PROTECTION ASSESSMENT
+================================================================================
+
+PROTECTION TYPE: Cloudflare Interactive JavaScript Challenge
+WAF RULES DETECTED: SQL Injection Protection, Rate Limiting, Bot Detection
+
+================================================================================
+BLOCKED REQUEST PATTERNS
+================================================================================
+
+1. SQL Keywords
+   - OR, AND, SELECT, UNION, INSERT, UPDATE, DELETE
+   - Response: 403 Forbidden
+
+2. SQL Operators
+   - Single quote (')
+   - Double dash (--)
+   - Comment sequences (/*, */)
+   - Response: 403 Forbidden
+
+3. Encoded Payloads
+   - URL-encoded: %27, %20, %2f%2a
+   - Double-encoded payloads
+   - Response: 403 Forbidden
+
+4. Automated Tools
+   - SQLMap: Blocked (user agent and pattern detection)
+   - High-frequency requests: Blocked (rate limiting)
+   - Response: 403 Forbidden with JavaScript challenge
+
+================================================================================
+WAF CHALLENGE RESPONSE
+================================================================================
+
+When triggered, Cloudflare returns:
+
+HTTP/1.1 403 Forbidden
+Content-Type: text/html
+
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+<title>Just a moment...</title>
+...
+<script>
+window._cf_chl_opt = {
+  cvId: '3',
+  cType: 'interactive',
+  ...
+};
+</script>
+</head>
+<body>
+<noscript>
+<span id="challenge-error-text">Enable JavaScript and cookies to continue</span>
+</noscript>
+</body>
+</html>
+
+Key Indicators:
+- cType: 'interactive' - JavaScript challenge required
+- cvId: '3' - SQL injection category
+- Title: "Just a moment..." - Standard Cloudflare challenge
+
+================================================================================
+BYPASS ATTEMPTS
+================================================================================
+
+1. Space2Comment Tamper (SQLMap)
+   Result: BLOCKED
+   Reason: WAF detects comment-based encoding
+
+2. Random User-Agent
+   Result: BLOCKED
+   Reason: Pattern-based detection, not UA-based
+
+3. Header Manipulation (X-Forwarded-For)
+   Result: BLOCKED
+   Reason: Cloudflare inspects all request components
+
+4. Time-Based Blind (SLEEP, BENCHMARK)
+   Result: BLOCKED
+   Reason: SQL keyword detection
+
+================================================================================
+SECURITY POSTURE: STRONG
+================================================================================
+
+The Cloudflare WAF implementation is EFFECTIVE against:
+- Automated SQL injection tools
+- Manual SQL injection attempts
+- Encoded/encoded payload variants
+- Time-based blind SQL injection
+- Error-based SQL injection
+
+Recommendations for Comprehensive Testing:
+- Would require WAF whitelist IP or authenticated testing
+- Alternative: Test non-Cloudflare-protected subdomains
+- Alternative: Focus on application logic flaws vs SQL injection

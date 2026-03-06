@@ -1,0 +1,82 @@
+=== VPN Portal Default Credential Testing ===
+[Fri Mar  6 11:01:00 PM UTC 2026] Starting default credential spray on VPN portal
+[Fri Mar  6 11:01:15 PM UTC 2026] Test 1: admin:admin
+<html>
+<head>
+<script>
+document.location.replace("/+CSCOE+/logon.html?"+
+"a0=8"+
+"&a1="+
+"&a2="+
+"&a3=1");
+</script>
+</head>
+</html>
+
+
+
+HTTP_CODE:200 COOKIES:135
+[Fri Mar  6 11:01:57 PM UTC 2026] Testing: admin:password
+<html>
+<head>
+<script>
+document.location.replace("/+CSCOE+/logon.html?"+
+"a0=8"+
+"&a1="+
+"&a2="+
+"&a3=1");
+</script>
+</head>
+</html>
+
+
+
+HTTP_CODE:200
+[Fri Mar  6 11:02:14 PM UTC 2026] Testing: tomcat:tomcat
+<html>
+<head>
+<script>
+document.location.replace("/+CSCOE+/logon.html?"+
+"a0=8"+
+"&a1="+
+"&a2="+
+"&a3=1");
+</script>
+</head>
+</html>
+
+
+
+HTTP_CODE:200
+[Fri Mar  6 11:02:30 PM UTC 2026] Testing: cisco:cisco
+<html>
+<head>
+<script>
+document.location.replace("/+CSCOE+/logon.html?"+
+"a0=8"+
+"&a1="+
+"&a2="+
+"&a3=1");
+</script>
+</head>
+</html>
+
+
+
+HTTP_CODE:200
+[Fri Mar  6 11:02:47 PM UTC 2026] Testing: guest:guest
+<html>
+<head>
+<script>
+document.location.replace("/+CSCOE+/logon.html?"+
+"a0=8"+
+"&a1="+
+"&a2="+
+"&a3=1");
+</script>
+</head>
+</html>
+
+
+
+HTTP_CODE:200

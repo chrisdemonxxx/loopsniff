@@ -1,0 +1,13 @@
+<html>
+<head>
+<script>
+document.location.replace("/+CSCOE+/logon.html?"+
+"a0=15"+
+"&a1="+
+"&a2="+
+"&a3=1");
+</script>
+</head>
+</html>
+
+
