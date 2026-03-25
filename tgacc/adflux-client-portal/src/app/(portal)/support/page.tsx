@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { Send, User, Bot, Headphones, MessageCircle, Loader2 } from "lucide-react";
+import { Send, User, Bot, Headphones, MessageCircle, Loader2, ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,6 +52,8 @@ export default function SupportPage() {
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
+
+  const [mobileShowList, setMobileShowList] = useState(false);
 
   const sessions = chatSessions || [];
 
@@ -158,9 +160,12 @@ export default function SupportPage() {
         <p className="text-gray-400">Get help from our AI assistant or human agents</p>
       </div>
 
-      <div className="grid h-[calc(100vh-220px)] gap-4 lg:grid-cols-[300px_1fr]">
-        {/* Chat List Sidebar */}
-        <Card className="flex flex-col overflow-hidden">
+      <div className="grid h-[calc(100vh-220px)] gap-4 grid-cols-1 lg:grid-cols-[300px_1fr]">
+        {/* Chat List Sidebar — visible on desktop, toggle on mobile */}
+        <Card className={cn(
+          "flex-col overflow-hidden",
+          mobileShowList ? "flex" : "hidden lg:flex"
+        )}>
           <CardHeader className="shrink-0 border-b border-gray-800 pb-3">
             <CardTitle className="text-sm">Conversations</CardTitle>
           </CardHeader>
@@ -170,7 +175,10 @@ export default function SupportPage() {
                 {sessions.map((s) => (
                   <button
                     key={s.id}
-                    onClick={() => setActiveSessionId(s.id)}
+                    onClick={() => {
+                      setActiveSessionId(s.id);
+                      setMobileShowList(false);
+                    }}
                     className={cn(
                       "w-full rounded-lg p-3 text-left transition-colors",
                       activeSessionId === s.id
@@ -211,29 +219,40 @@ export default function SupportPage() {
           </CardContent>
         </Card>
 
-        {/* Chat Thread */}
-        <Card className="flex flex-col overflow-hidden">
+        {/* Chat Thread — hidden on mobile when list is shown */}
+        <Card className={cn(
+          "flex-col overflow-hidden",
+          mobileShowList ? "hidden lg:flex" : "flex"
+        )}>
           {activeSession ? (
             <>
               {/* Chat Header */}
               <CardHeader className="shrink-0 border-b border-gray-800 pb-3">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-sm">
-                      {activeSession.subject || `Chat ${activeSession.id.slice(-6)}`}
-                    </CardTitle>
-                    <div className="mt-1 flex items-center gap-2 text-xs text-gray-400">
-                      {activeSession.agent_type === "human" ? (
-                        <>
-                          <Headphones className="h-3 w-3 text-green-400" />
-                          <span>Human Agent</span>
-                        </>
-                      ) : (
-                        <>
-                          <Bot className="h-3 w-3 text-blue-400" />
-                          <span>AI Assistant</span>
-                        </>
-                      )}
+                  <div className="flex items-center gap-2 min-w-0">
+                    <button
+                      onClick={() => setMobileShowList(true)}
+                      className="p-1 rounded-md hover:bg-gray-800 text-gray-400 lg:hidden shrink-0"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                    </button>
+                    <div className="min-w-0">
+                      <CardTitle className="text-sm truncate">
+                        {activeSession.subject || `Chat ${activeSession.id.slice(-6)}`}
+                      </CardTitle>
+                      <div className="mt-1 flex items-center gap-2 text-xs text-gray-400">
+                        {activeSession.agent_type === "human" ? (
+                          <>
+                            <Headphones className="h-3 w-3 text-green-400" />
+                            <span>Human Agent</span>
+                          </>
+                        ) : (
+                          <>
+                            <Bot className="h-3 w-3 text-blue-400" />
+                            <span>AI Assistant</span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                   {activeSession.agent_type !== "human" && (
