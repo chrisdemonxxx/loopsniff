@@ -149,7 +149,7 @@ export default function AccountDetailPage({ params }: { params: Promise<{ id: st
             <CardTitle className="text-base">Spending Summary</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="p-4 rounded-lg bg-secondary/50 text-center">
                 <div className="text-2xl font-bold text-emerald-400">{formatCurrency(account.balance)}</div>
                 <div className="text-xs text-muted-foreground mt-1">Current Balance</div>

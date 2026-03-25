@@ -327,7 +327,7 @@ export default function DashboardPage() {
                   </Link>
                 ))}
 
-                <div className="grid grid-cols-3 gap-2 rounded-lg bg-gray-800/50 p-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 rounded-lg bg-gray-800/50 p-3">
                   <div className="text-center">
                     <p className="text-lg font-bold text-green-400">
                       {accts.filter((a) => a.status === "active").length}
