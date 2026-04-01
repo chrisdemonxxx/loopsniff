@@ -25,6 +25,7 @@ loguru>=0.7.0
 
 # Telegram outreach engine
 telethon>=1.42.0
+opentele>=1.1.0
 python-socks[asyncio]
 aiosqlite
 
