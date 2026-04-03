@@ -14,6 +14,7 @@ from app.auth.dependencies import get_current_user, require_admin
 from app.subscriptions.schemas import (
     PlanOut, PlanCreate, PlanUpdate,
     SubscriptionOut, SubscribeRequest, CancelRequest,
+    RenewalResult, RenewalSummary,
 )
 
 log = logging.getLogger(__name__)
@@ -271,3 +272,114 @@ async def admin_update_subscription(
     await db.commit()
     await db.refresh(sub)
     return sub
+
+
+# ── Renewal check (cron-friendly) ──
+
+@router.post("/subscriptions/check-renewals", response_model=RenewalSummary)
+async def check_renewals(
+    user: dict = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Check all active subscriptions whose billing date has passed.
+
+    * **Stripe subscriptions** (notes contain ``stripe_sub:``): query Stripe
+      for current status and deactivate if the Stripe subscription is no
+      longer active.
+    * **Other subscriptions**: if ``next_bill`` has passed, mark as
+      ``past_due`` and advance the billing date by one interval so a future
+      run can retry.
+
+    Designed to be called by a cron job (e.g. daily).
+    """
+    import stripe as _stripe
+    from app.config import get_settings
+
+    settings = get_settings()
+    _stripe.api_key = settings.STRIPE_SECRET_KEY
+
+    now = datetime.now(timezone.utc)
+    stmt = (
+        select(Subscription)
+        .where(
+            Subscription.status == "active",
+            Subscription.next_bill <= now,
+        )
+    )
+    result = await db.execute(stmt)
+    subs = result.scalars().all()
+
+    summary = RenewalSummary(checked=len(subs))
+    results: list[RenewalResult] = []
+
+    for sub in subs:
+        stripe_sub_id = _extract_stripe_sub(sub.notes)
+
+        if stripe_sub_id and settings.STRIPE_SECRET_KEY:
+            try:
+                stripe_sub = _stripe.Subscription.retrieve(stripe_sub_id)
+                if stripe_sub.status in ("active", "trialing"):
+                    # Stripe considers it active — advance billing date
+                    delta = INTERVAL_DELTA.get(sub.interval_type, relativedelta(months=1))
+                    sub.next_bill = now + delta
+                    summary.renewed += 1
+                    results.append(RenewalResult(
+                        subscription_id=sub.id,
+                        client_id=sub.client_id,
+                        plan=sub.plan,
+                        action="renewed",
+                        detail=f"Stripe status: {stripe_sub.status}",
+                    ))
+                else:
+                    sub.status = "cancelled" if stripe_sub.status == "canceled" else "past_due"
+                    if sub.status == "cancelled":
+                        sub.cancelled_at = now
+                    summary.deactivated += 1
+                    results.append(RenewalResult(
+                        subscription_id=sub.id,
+                        client_id=sub.client_id,
+                        plan=sub.plan,
+                        action="deactivated",
+                        detail=f"Stripe status: {stripe_sub.status}",
+                    ))
+            except Exception as exc:
+                log.error("Stripe check failed for sub %s: %s", sub.id, exc)
+                summary.errors += 1
+                results.append(RenewalResult(
+                    subscription_id=sub.id,
+                    client_id=sub.client_id,
+                    plan=sub.plan,
+                    action="error",
+                    detail=str(exc)[:200],
+                ))
+        else:
+            # Non-Stripe subscription: mark past_due, advance billing date
+            sub.status = "past_due"
+            delta = INTERVAL_DELTA.get(sub.interval_type, relativedelta(months=1))
+            sub.next_bill = now + delta
+            summary.deactivated += 1
+            results.append(RenewalResult(
+                subscription_id=sub.id,
+                client_id=sub.client_id,
+                plan=sub.plan,
+                action="deactivated",
+                detail="No Stripe subscription linked; marked past_due",
+            ))
+
+    summary.results = results
+    await db.commit()
+    log.info(
+        "Renewal check: %d checked, %d renewed, %d deactivated, %d errors",
+        summary.checked, summary.renewed, summary.deactivated, summary.errors,
+    )
+    return summary
+
+
+def _extract_stripe_sub(notes: str | None) -> str | None:
+    """Pull ``sub_xxx`` from notes like ``stripe_sub:sub_1ABC``."""
+    if not notes:
+        return None
+    for part in notes.split():
+        if part.startswith("stripe_sub:"):
+            return part.split(":", 1)[1]
+    return None

@@ -53,3 +53,16 @@ class PlatformInfo(BaseModel):
     requirements: list[str]
     supported_currencies: list[str]
     min_spend: Optional[Decimal] = None
+
+
+class ProvisioningExecuteRequest(BaseModel):
+    access_token: str
+    business_manager_id: str
+
+
+class ProvisioningExecuteOut(BaseModel):
+    request_id: UUID
+    status: str
+    platform_account_id: Optional[str] = None
+    ad_account_id: Optional[UUID] = None
+    error: Optional[str] = None

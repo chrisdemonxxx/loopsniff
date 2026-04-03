@@ -58,3 +58,17 @@ class TopPerformingItem(BaseModel):
     impressions: int = 0
     clicks: int = 0
     conversions: int = 0
+
+
+class AccountSyncResult(BaseModel):
+    ad_account_id: UUID
+    meta_account_id: str
+    records_created: int = 0
+    error: Optional[str] = None
+
+
+class SyncSummary(BaseModel):
+    accounts_processed: int = 0
+    total_records_created: int = 0
+    errors: int = 0
+    results: list[AccountSyncResult] = []

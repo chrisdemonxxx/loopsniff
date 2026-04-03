@@ -73,3 +73,19 @@ class SubscribeRequest(BaseModel):
 
 class CancelRequest(BaseModel):
     reason: Optional[str] = None
+
+
+class RenewalResult(BaseModel):
+    subscription_id: UUID
+    client_id: UUID
+    plan: str
+    action: str
+    detail: Optional[str] = None
+
+
+class RenewalSummary(BaseModel):
+    checked: int = 0
+    renewed: int = 0
+    deactivated: int = 0
+    errors: int = 0
+    results: list[RenewalResult] = []

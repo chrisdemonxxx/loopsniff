@@ -1008,7 +1008,7 @@ class ProvisioningRequest(Base):
 
     @validates("status")
     def validate_status(self, _key, value):
-        allowed = {"pending", "approved", "rejected"}
+        allowed = {"pending", "approved", "rejected", "failed", "provisioned"}
         if value is not None and value not in allowed:
             raise ValueError(f"Invalid provisioning request status: {value}")
         return value
