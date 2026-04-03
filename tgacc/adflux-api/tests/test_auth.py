@@ -160,12 +160,13 @@ class TestMe:
 
 class TestPasswordReset:
     async def test_forgot_password_always_succeeds(self, client, seed_db):
-        # Existing email
+        # Existing email — should return generic message (not leak token)
         resp = await client.post("/auth/forgot-password", json={
             "email": "client@test.com",
         })
         assert resp.status_code == 200
-        assert "reset_token" in resp.json()
+        assert "message" in resp.json()
+        assert "reset_token" not in resp.json()  # Token is emailed, not returned
 
     async def test_forgot_password_unknown_email(self, client, seed_db):
         resp = await client.post("/auth/forgot-password", json={
@@ -176,11 +177,9 @@ class TestPasswordReset:
         assert "reset_token" not in resp.json()
 
     async def test_reset_password_with_valid_token(self, client, seed_db):
-        # Get reset token
-        forgot = await client.post("/auth/forgot-password", json={
-            "email": "client@test.com",
-        })
-        token = forgot.json()["reset_token"]
+        # Create token directly (forgot-password emails it, doesn't return it)
+        from app.auth.jwt import create_reset_token
+        token = create_reset_token("client@test.com")
 
         resp = await client.post("/auth/reset-password", json={
             "token": token,
