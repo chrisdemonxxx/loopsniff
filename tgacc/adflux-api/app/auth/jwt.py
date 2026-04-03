@@ -22,6 +22,16 @@ def create_refresh_token(data: dict) -> str:
     return jwt.encode(to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
 
 
+def create_verification_token(email: str) -> str:
+    """Create an email verification token with 24-hour expiry."""
+    expire = datetime.now(timezone.utc) + timedelta(hours=24)
+    return jwt.encode(
+        {"sub": email, "type": "verify", "exp": expire},
+        settings.JWT_SECRET,
+        algorithm=settings.JWT_ALGORITHM,
+    )
+
+
 def create_reset_token(email: str) -> str:
     """Create a password reset token with 15-minute expiry."""
     expire = datetime.now(timezone.utc) + timedelta(minutes=15)

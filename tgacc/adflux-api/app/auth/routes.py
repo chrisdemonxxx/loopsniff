@@ -8,7 +8,8 @@ from passlib.hash import bcrypt
 
 from app.database import get_db
 from app.models import AdminUser, ClientUser
-from app.auth.jwt import create_access_token, create_refresh_token, create_reset_token, decode_token
+from app.auth.jwt import create_access_token, create_refresh_token, create_reset_token, create_verification_token, decode_token
+from app.email.service import send_verification_email, send_password_reset_email
 from app.auth.schemas import (
     LoginRequest, RegisterRequest, TokenResponse, UserInfo,
     RefreshRequest, ForgotPasswordRequest, ResetPasswordRequest,
@@ -100,6 +101,10 @@ async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
     db.add(user)
     await db.flush()
     await db.commit()
+
+    verification_token = create_verification_token(req.email)
+    await send_verification_email(req.email, verification_token, req.name or "")
+
     token_data = {
         "sub": str(user.id), "user_type": "client", "role": "viewer",
         "client_id": str(user.client_id) if user.client_id else None,
@@ -181,19 +186,18 @@ async def refresh_token(req: RefreshRequest, db: AsyncSession = Depends(get_db))
 
 @router.post("/forgot-password")
 async def forgot_password(req: ForgotPasswordRequest, db: AsyncSession = Depends(get_db)):
-    """Generate a password reset token. In production this would be emailed."""
+    """Generate a password reset token and email it to the user."""
     result = await db.execute(select(AdminUser).where(AdminUser.email == req.email))
     user = result.scalar_one_or_none()
     if not user:
         result = await db.execute(select(ClientUser).where(ClientUser.email == req.email))
         user = result.scalar_one_or_none()
 
-    # Always return success to prevent email enumeration
-    if not user:
-        return {"message": "If that email exists, a reset link has been sent."}
+    if user:
+        token = create_reset_token(req.email)
+        await send_password_reset_email(req.email, token)
 
-    token = create_reset_token(req.email)
-    return {"message": "If that email exists, a reset link has been sent.", "reset_token": token}
+    return {"message": "If an account exists with that email, a reset link has been sent"}
 
 
 @router.post("/reset-password")
