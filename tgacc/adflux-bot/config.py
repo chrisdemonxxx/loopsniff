@@ -11,3 +11,8 @@ BOT_USERNAME = os.getenv("BOT_USERNAME", "@addfluxmedia_bot")
 # AdFlux API
 API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8099")
 API_TOKEN = os.getenv("API_TOKEN", "")
+
+# Ollama Cloud LLM
+OLLAMA_CLOUD_URL = os.getenv("OLLAMA_CLOUD_URL", "https://api.ollamacloud.com/v1")
+OLLAMA_CLOUD_API_KEY = os.getenv("OLLAMA_CLOUD_API_KEY", "")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
