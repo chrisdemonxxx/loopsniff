@@ -9,7 +9,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex h-screen bg-gray-950 text-white">
+    <div className="flex h-screen bg-zinc-950 text-white">
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Topbar onMenuClick={() => setSidebarOpen(true)} />
