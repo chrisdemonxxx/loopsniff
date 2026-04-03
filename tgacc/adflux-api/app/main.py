@@ -36,6 +36,9 @@ from app.alerts.routes import router as alerts_router
 from app.affiliate.routes import router as affiliate_router
 from app.onboarding.routes import router as onboarding_router
 from app.facebook.routes import router as facebook_router
+from app.meta.routes import router as meta_router
+from app.provisioning.routes import router as provisioning_router
+from app.analytics.routes import router as analytics_router
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 log = logging.getLogger(__name__)
@@ -65,12 +68,15 @@ app = FastAPI(
         {"name": "Affiliate", "description": "Affiliate and referral program"},
         {"name": "CRM", "description": "Customer relationship management"},
         {"name": "Facebook", "description": "Facebook/Instagram integration"},
+        {"name": "Meta", "description": "Meta Marketing API integration"},
+        {"name": "Provisioning", "description": "Ad account provisioning"},
+        {"name": "Analytics", "description": "Campaign analytics and reporting"},
         {"name": "Payments", "description": "Payment processing"},
         {"name": "Finance", "description": "Financial operations (admin)"},
         {"name": "Alerts", "description": "System alerts and notifications"},
         {"name": "Tickets", "description": "Support ticket system"},
         {"name": "Orders", "description": "Order management"},
-        {"name": "Chat", "description": "WebSocket chat"},
+        {"name": "Chat", "description": "Live chat and support conversations"},
     ],
 )
 
@@ -129,6 +135,9 @@ app.include_router(subscriptions_router)
 app.include_router(alerts_router)
 app.include_router(affiliate_router)
 app.include_router(facebook_router)
+app.include_router(meta_router)
+app.include_router(provisioning_router)
+app.include_router(analytics_router)
 app.include_router(onboarding_router)
 
 

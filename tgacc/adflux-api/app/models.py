@@ -808,3 +808,27 @@ class BankTransferRequest(Base):
     confirmed_at = Column(DateTime(timezone=True))
 
     client = relationship("Client")
+
+
+# ── Ad Account Provisioning ──
+
+class ProvisioningRequest(Base):
+    __tablename__ = "provisioning_requests"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    client_id = Column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=False)
+    platform = Column(Text, nullable=False)
+    business_name = Column(Text, nullable=False)
+    business_url = Column(Text)
+    business_type = Column(Text)
+    spend_limit = Column(Numeric)
+    currency = Column(Text, default="USD")
+    timezone = Column(Text, default="UTC")
+    status = Column(Text, default="pending")  # pending, approved, rejected
+    admin_notes = Column(Text)
+    reject_reason = Column(Text)
+    notes = Column(Text)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    client = relationship("Client", backref="provisioning_requests")
