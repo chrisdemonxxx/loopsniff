@@ -407,11 +407,11 @@ async def ws_chat(websocket: WebSocket, session_id: str):
         log.info("WebSocket timeout: session=%s", session_id)
         try:
             await websocket.close(code=1000, reason="Idle timeout")
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug("WebSocket cleanup error on timeout: %s", e)
     except Exception as e:
         log.exception("WebSocket error: %s", e)
         try:
             await websocket.close()
-        except Exception:
-            pass
+        except Exception as exc:
+            log.debug("WebSocket cleanup error: %s", exc)
