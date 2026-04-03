@@ -8,8 +8,9 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
 import { Select } from "@/components/ui/select"
 import { Modal } from "@/components/ui/modal"
-import { UserPlus, Key, Bell, Shield, Loader2, AlertCircle, Users } from "lucide-react"
+import { UserPlus, Key, Bell, Shield, Loader2, AlertCircle, Users, Eye, EyeOff } from "lucide-react"
 import { useApi, useApiToken, apiFetch } from "@/lib/api"
+import { useToast } from "@/components/ui/toast"
 import { formatDateTime } from "@/lib/utils"
 
 type AdminRole = "super_admin" | "admin" | "support" | "viewer"
@@ -47,6 +48,116 @@ export default function SettingsPage() {
   const [editActive, setEditActive] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+
+  // Invite Admin
+  const [inviteOpen, setInviteOpen] = useState(false)
+  const [inviteEmail, setInviteEmail] = useState("")
+  const [inviteRole, setInviteRole] = useState<AdminRole>("viewer")
+  const [inviting, setInviting] = useState(false)
+
+  // Notification preferences
+  const [notifications, setNotifications] = useState({
+    accountBanned: true,
+    newClient: true,
+    paymentReceived: true,
+    escalation: true,
+    leadStageChange: false,
+    dailySummary: false,
+  })
+
+  // API Keys reveal
+  const [revealedKeys, setRevealedKeys] = useState<Record<string, string | null>>({})
+  const [revealingKey, setRevealingKey] = useState<string | null>(null)
+
+  // System Config
+  const [commissionRate, setCommissionRate] = useState("8")
+  const [dailyLimit, setDailyLimit] = useState("5000")
+  const [autoReplace, setAutoReplace] = useState("enabled")
+  const [defaultCurrency, setDefaultCurrency] = useState("USD")
+  const [savingConfig, setSavingConfig] = useState(false)
+
+  const { toast } = useToast()
+
+  const notificationPrefs = [
+    { key: "accountBanned" as const, label: "Account banned alerts" },
+    { key: "newClient" as const, label: "New client onboarded" },
+    { key: "paymentReceived" as const, label: "Payment received" },
+    { key: "escalation" as const, label: "Escalation created" },
+    { key: "leadStageChange" as const, label: "Lead stage changes" },
+    { key: "dailySummary" as const, label: "Daily summary email" },
+  ]
+
+  const apiKeys = [
+    { id: "production", label: "Production API Key", masked: "sk-prod-••••••••••••••••••••3f8a" },
+    { id: "bot-token", label: "Bot Token", masked: "bot-••••••••••••••••••••9c2d" },
+    { id: "webhook-secret", label: "Webhook Secret", masked: "whsec-••••••••••••••••7b4e" },
+  ]
+
+  const handleInvite = async () => {
+    if (!inviteEmail.trim() || !token) return
+    setInviting(true)
+    try {
+      await apiFetch("/admin/invite", token, {
+        method: "POST",
+        body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
+      })
+      toast("Invitation sent successfully", "success")
+      setInviteOpen(false)
+      setInviteEmail("")
+      setInviteRole("viewer")
+      refetch()
+    } catch (e: any) {
+      toast(e.message || "Failed to send invitation", "error")
+    } finally {
+      setInviting(false)
+    }
+  }
+
+  const handleRevealKey = async (keyId: string) => {
+    if (revealedKeys[keyId]) {
+      setRevealedKeys(prev => {
+        const next = { ...prev }
+        delete next[keyId]
+        return next
+      })
+      return
+    }
+    setRevealingKey(keyId)
+    try {
+      const data = await apiFetch<{ value: string }>(`/admin/api-keys/${keyId}`, token)
+      setRevealedKeys(prev => ({ ...prev, [keyId]: data.value }))
+    } catch (e: any) {
+      toast(e.message || "Failed to reveal key", "error")
+    } finally {
+      setRevealingKey(null)
+    }
+  }
+
+  const handleSaveConfig = async () => {
+    if (!token) return
+    setSavingConfig(true)
+    try {
+      await apiFetch("/settings", token, {
+        method: "PUT",
+        body: JSON.stringify({
+          commission_rate: parseFloat(commissionRate),
+          daily_spend_limit: parseFloat(dailyLimit),
+          auto_replace_banned: autoReplace,
+          default_currency: defaultCurrency,
+          notifications,
+        }),
+      })
+      toast("Configuration saved", "success")
+    } catch (e: any) {
+      toast(e.message || "Failed to save configuration", "error")
+    } finally {
+      setSavingConfig(false)
+    }
+  }
+
+  const toggleNotification = (key: keyof typeof notifications) => {
+    setNotifications(prev => ({ ...prev, [key]: !prev[key] }))
+  }
 
   const openEdit = (user: AdminUser) => {
     setEditingUser(user)
@@ -182,6 +293,27 @@ export default function SettingsPage() {
         </div>
       </Modal>
 
+      {/* Invite Admin Modal */}
+      <Modal open={inviteOpen} onClose={() => setInviteOpen(false)} title="Invite Admin">
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Email</label>
+            <Input type="email" placeholder="admin@example.com" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Role</label>
+            <Select options={roleOptions} value={inviteRole} onChange={(e) => setInviteRole(e.target.value as AdminRole)} />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setInviteOpen(false)}>Cancel</Button>
+            <Button size="sm" onClick={handleInvite} disabled={inviting || !inviteEmail.trim()}>
+              {inviting && <Loader2 className="h-3 w-3 mr-2 animate-spin" />}
+              Send Invitation
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
       {/* Admin Users */}
       <Card>
         <CardHeader>
@@ -189,7 +321,7 @@ export default function SettingsPage() {
             <CardTitle className="text-base flex items-center gap-2">
               <Shield className="h-4 w-4" /> Admin Users
             </CardTitle>
-            <Button size="sm">
+            <Button size="sm" onClick={() => setInviteOpen(true)}>
               <UserPlus className="h-3 w-3 mr-2" /> Invite Admin
             </Button>
           </div>
@@ -233,18 +365,15 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {[
-              { label: "Account banned alerts", enabled: true },
-              { label: "New client onboarded", enabled: true },
-              { label: "Payment received", enabled: true },
-              { label: "Escalation created", enabled: true },
-              { label: "Lead stage changes", enabled: false },
-              { label: "Daily summary email", enabled: false },
-            ].map((pref, i) => (
-              <div key={i} className="flex items-center justify-between p-2 rounded-md hover:bg-secondary/50">
+            {notificationPrefs.map((pref) => (
+              <div key={pref.key} className="flex items-center justify-between p-2 rounded-md hover:bg-secondary/50">
                 <span className="text-sm">{pref.label}</span>
-                <button className={`w-10 h-5 rounded-full transition-colors ${pref.enabled ? 'bg-emerald-500' : 'bg-secondary'}`}>
-                  <div className={`h-4 w-4 rounded-full bg-white transition-transform ${pref.enabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                <button
+                  type="button"
+                  onClick={() => toggleNotification(pref.key)}
+                  className={`w-10 h-5 rounded-full transition-colors ${notifications[pref.key] ? 'bg-emerald-500' : 'bg-secondary'}`}
+                >
+                  <div className={`h-4 w-4 rounded-full bg-white transition-transform ${notifications[pref.key] ? 'translate-x-5' : 'translate-x-0.5'}`} />
                 </button>
               </div>
             ))}
@@ -261,27 +390,31 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 rounded-md border border-border">
-              <div>
-                <span className="text-sm font-medium block">Production API Key</span>
-                <span className="text-xs text-muted-foreground font-mono">sk-prod-••••••••••••••••••••3f8a</span>
+            {apiKeys.map((key) => (
+              <div key={key.id} className="flex items-center justify-between p-3 rounded-md border border-border">
+                <div>
+                  <span className="text-sm font-medium block">{key.label}</span>
+                  <span className="text-xs text-muted-foreground font-mono">
+                    {revealedKeys[key.id] ?? key.masked}
+                  </span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleRevealKey(key.id)}
+                  disabled={revealingKey === key.id}
+                >
+                  {revealingKey === key.id ? (
+                    <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                  ) : revealedKeys[key.id] ? (
+                    <EyeOff className="h-3 w-3 mr-2" />
+                  ) : (
+                    <Eye className="h-3 w-3 mr-2" />
+                  )}
+                  {revealedKeys[key.id] ? "Hide" : "Reveal"}
+                </Button>
               </div>
-              <Button variant="outline" size="sm">Reveal</Button>
-            </div>
-            <div className="flex items-center justify-between p-3 rounded-md border border-border">
-              <div>
-                <span className="text-sm font-medium block">Bot Token</span>
-                <span className="text-xs text-muted-foreground font-mono">bot-••••••••••••••••••••9c2d</span>
-              </div>
-              <Button variant="outline" size="sm">Reveal</Button>
-            </div>
-            <div className="flex items-center justify-between p-3 rounded-md border border-border">
-              <div>
-                <span className="text-sm font-medium block">Webhook Secret</span>
-                <span className="text-xs text-muted-foreground font-mono">whsec-••••••••••••••••7b4e</span>
-              </div>
-              <Button variant="outline" size="sm">Reveal</Button>
-            </div>
+            ))}
           </div>
         </CardContent>
       </Card>
@@ -295,18 +428,18 @@ export default function SettingsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Default Commission Rate (%)</label>
-              <Input type="number" defaultValue="8" />
+              <Input type="number" value={commissionRate} onChange={(e) => setCommissionRate(e.target.value)} />
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Max Daily Spend Limit</label>
-              <Input type="number" defaultValue="5000" />
+              <Input type="number" value={dailyLimit} onChange={(e) => setDailyLimit(e.target.value)} />
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Auto-replace Banned Accounts</label>
               <Select options={[
                 { value: "enabled", label: "Enabled" },
                 { value: "disabled", label: "Disabled" },
-              ]} defaultValue="enabled" />
+              ]} value={autoReplace} onChange={(e) => setAutoReplace(e.target.value)} />
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Default Currency</label>
@@ -315,10 +448,13 @@ export default function SettingsPage() {
                 { value: "BTC", label: "BTC" },
                 { value: "ETH", label: "ETH" },
                 { value: "USDT", label: "USDT" },
-              ]} defaultValue="USD" />
+              ]} value={defaultCurrency} onChange={(e) => setDefaultCurrency(e.target.value)} />
             </div>
           </div>
-          <Button className="mt-4" size="sm">Save Configuration</Button>
+          <Button className="mt-4" size="sm" onClick={handleSaveConfig} disabled={savingConfig}>
+            {savingConfig && <Loader2 className="h-3 w-3 mr-2 animate-spin" />}
+            Save Configuration
+          </Button>
         </CardContent>
       </Card>
     </div>

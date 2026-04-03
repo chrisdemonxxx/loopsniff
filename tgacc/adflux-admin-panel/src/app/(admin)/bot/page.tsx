@@ -4,8 +4,9 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Search, Send, Flag, Tag, Loader2, AlertCircle, MessageSquare, ArrowLeft } from "lucide-react"
+import { Search, Send, Flag, Tag, Loader2, AlertCircle, MessageSquare, ArrowLeft, X } from "lucide-react"
 import { useApi, useApiToken, apiFetch, API_URL } from "@/lib/api"
+import { useToast } from "@/components/ui/toast"
 import { formatDateTime } from "@/lib/utils"
 import { cn } from "@/lib/utils"
 
@@ -38,8 +39,13 @@ export default function BotPage() {
   const [searchConv, setSearchConv] = useState("")
   const [replyText, setReplyText] = useState("")
   const [mobileShowList, setMobileShowList] = useState(true)
+  const [tagInputOpen, setTagInputOpen] = useState(false)
+  const [tagText, setTagText] = useState("")
+  const [addingTag, setAddingTag] = useState(false)
   const wsRef = useRef<WebSocket | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  const { toast } = useToast()
 
   const selectedSession = sessions?.find(s => s.id === selectedSessionId) ?? null
 
@@ -141,8 +147,27 @@ export default function BotPage() {
         method: "POST",
         body: JSON.stringify({ session_id: selectedSessionId, reason: "Manual escalation by admin" }),
       })
-    } catch {
-      /* could show error toast */
+      toast("Session escalated", "success")
+    } catch (e: any) {
+      toast(e.message || "Escalation failed", "error")
+    }
+  }
+
+  const handleAddTag = async () => {
+    if (!selectedSessionId || !token || !tagText.trim()) return
+    setAddingTag(true)
+    try {
+      await apiFetch(`/chat/sessions/${selectedSessionId}/tags`, token, {
+        method: "POST",
+        body: JSON.stringify({ tag: tagText.trim() }),
+      })
+      toast(`Tag "${tagText.trim()}" added`, "success")
+      setTagText("")
+      setTagInputOpen(false)
+    } catch (e: any) {
+      toast(e.message || "Failed to add tag", "error")
+    } finally {
+      setAddingTag(false)
     }
   }
 
@@ -283,9 +308,34 @@ export default function BotPage() {
                   <Button variant="ghost" size="icon" title="Escalate to human" onClick={handleEscalate}>
                     <Flag className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" title="Add tag">
-                    <Tag className="h-4 w-4" />
-                  </Button>
+                  <div className="relative">
+                    <Button variant="ghost" size="icon" title="Add tag" onClick={() => setTagInputOpen(!tagInputOpen)}>
+                      <Tag className="h-4 w-4" />
+                    </Button>
+                    {tagInputOpen && (
+                      <div className="absolute right-0 top-full mt-1 z-50 w-64 rounded-lg border border-border bg-card p-3 shadow-xl">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium">Add Tag</span>
+                          <button onClick={() => setTagInputOpen(false)} className="text-muted-foreground hover:text-foreground">
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Tag name..."
+                            value={tagText}
+                            onChange={(e) => setTagText(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === "Enter") handleAddTag() }}
+                            className="text-xs h-8"
+                            autoFocus
+                          />
+                          <Button size="sm" onClick={handleAddTag} disabled={addingTag || !tagText.trim()} className="h-8">
+                            {addingTag ? <Loader2 className="h-3 w-3 animate-spin" /> : "Add"}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 

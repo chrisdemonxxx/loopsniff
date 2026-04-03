@@ -8,8 +8,10 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
 import { Select } from "@/components/ui/select"
+import { Modal } from "@/components/ui/modal"
 import { Search, ExternalLink, Ban, ArrowRightLeft, Loader2 } from "lucide-react"
 import { useApi, useApiToken, apiFetch } from "@/lib/api"
+import { useToast } from "@/components/ui/toast"
 import { formatCurrency } from "@/lib/utils"
 
 type Account = {
@@ -44,6 +46,39 @@ export default function AccountsPage() {
   const [platformFilter, setPlatformFilter] = useState("all")
   const [selected, setSelected] = useState<string[]>([])
   const [actionLoading, setActionLoading] = useState(false)
+
+  // Transfer Funds
+  const [transferOpen, setTransferOpen] = useState(false)
+  const [transferRecipient, setTransferRecipient] = useState("")
+  const [transferAmount, setTransferAmount] = useState("")
+  const [transferring, setTransferring] = useState(false)
+
+  const { toast } = useToast()
+
+  const handleTransfer = async () => {
+    if (!token || selected.length === 0 || !transferRecipient.trim() || !transferAmount) return
+    setTransferring(true)
+    try {
+      await apiFetch("/wallet/transfer", token, {
+        method: "POST",
+        body: JSON.stringify({
+          from_account_ids: selected,
+          to_account_id: transferRecipient,
+          amount: parseFloat(transferAmount),
+        }),
+      })
+      toast("Funds transferred successfully", "success")
+      setTransferOpen(false)
+      setTransferRecipient("")
+      setTransferAmount("")
+      setSelected([])
+      refetch()
+    } catch (e: any) {
+      toast(e.message || "Transfer failed", "error")
+    } finally {
+      setTransferring(false)
+    }
+  }
 
   const list = accounts ?? []
 
@@ -96,6 +131,42 @@ export default function AccountsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Transfer Funds Modal */}
+      <Modal open={transferOpen} onClose={() => setTransferOpen(false)} title="Transfer Funds">
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium text-muted-foreground mb-1.5 block">
+              From Accounts ({selected.length} selected)
+            </label>
+            <div className="flex flex-wrap gap-1">
+              {selected.map(id => {
+                const acct = list.find(a => a.id === id)
+                return (
+                  <Badge key={id} variant="secondary" className="text-xs">
+                    {acct?.name || id}
+                  </Badge>
+                )
+              })}
+            </div>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Recipient Account ID</label>
+            <Input placeholder="Enter recipient account ID" value={transferRecipient} onChange={(e) => setTransferRecipient(e.target.value)} />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Amount</label>
+            <Input type="number" placeholder="0.00" min="0" step="0.01" value={transferAmount} onChange={(e) => setTransferAmount(e.target.value)} />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setTransferOpen(false)}>Cancel</Button>
+            <Button size="sm" onClick={handleTransfer} disabled={transferring || !transferRecipient.trim() || !transferAmount}>
+              {transferring && <Loader2 className="h-3 w-3 mr-2 animate-spin" />}
+              Transfer
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Ad Accounts</h1>
         {selected.length > 0 && (
@@ -103,7 +174,9 @@ export default function AccountsPage() {
             <Button variant="destructive" size="sm" disabled={actionLoading} onClick={handleBanSelected}>
               <Ban className="h-3 w-3 mr-2" /> Mark Banned ({selected.length})
             </Button>
-            <Button variant="outline" size="sm"><ArrowRightLeft className="h-3 w-3 mr-2" /> Transfer Funds</Button>
+            <Button variant="outline" size="sm" onClick={() => setTransferOpen(true)}>
+              <ArrowRightLeft className="h-3 w-3 mr-2" /> Transfer Funds
+            </Button>
           </div>
         )}
       </div>
