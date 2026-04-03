@@ -1,11 +1,39 @@
+import re
 import uuid
-from datetime import datetime, date
+from datetime import datetime, date, timezone
+
+# Module-level alias so that class attributes named ``timezone`` (e.g. on
+# MetaAdAccount) don't shadow the stdlib constant inside the class body.
+_UTC = timezone.utc
 from sqlalchemy import (
     Column, String, Text, Boolean, BigInteger, Integer, Numeric, Date,
-    DateTime, ForeignKey, JSON
+    DateTime, ForeignKey, JSON, CheckConstraint
 )
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import DeclarativeBase, relationship
+from sqlalchemy.orm import DeclarativeBase, relationship, validates
+
+
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+_COMMON_CURRENCIES = frozenset({
+    "USD", "EUR", "GBP", "JPY", "CNY", "AUD", "CAD", "CHF", "HKD", "SGD",
+    "SEK", "KRW", "NOK", "NZD", "INR", "MXN", "TWD", "ZAR", "BRL", "DKK",
+    "PLN", "THB", "ILS", "IDR", "CZK", "AED", "TRY", "HUF", "CLP", "SAR",
+    "PHP", "MYR", "COP", "RUB", "RON", "PEN", "BHD", "BGN", "ARS", "NGN",
+    "USDT", "USDC", "BTC", "ETH",
+})
+
+
+def _validate_email_format(value):
+    if value is not None and not _EMAIL_RE.match(value):
+        raise ValueError(f"Invalid email format: {value}")
+    return value
+
+
+def _validate_currency(value):
+    if value is not None and value not in _COMMON_CURRENCIES:
+        raise ValueError(f"Invalid currency code: {value}")
+    return value
 
 
 class Base(DeclarativeBase):
@@ -23,8 +51,19 @@ class AdminUser(Base):
     tg_user_id = Column(BigInteger)
     permissions = Column(JSON, default={})
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
+
+    # Relationships
+    audit_logs = relationship("AuditLog", back_populates="admin")
+    crm_leads_assigned = relationship("CRMLead", back_populates="assigned_bdm", foreign_keys="[CRMLead.assigned_bdm_id]")
+    tickets_assigned = relationship("Ticket", back_populates="assigned_admin_user", foreign_keys="[Ticket.assigned_admin]")
+    chat_sessions_assigned = relationship("ChatSession", back_populates="assigned_admin_user", foreign_keys="[ChatSession.assigned_admin]")
+    team_targets = relationship("TeamTarget", back_populates="admin")
+
+    @validates("email")
+    def validate_email(self, _key, value):
+        return _validate_email_format(value)
 
 
 class Client(Base):
@@ -40,15 +79,33 @@ class Client(Base):
     status = Column(Text, default="active")
     niche = Column(Text)
     monthly_spend_est = Column(Numeric)
-    onboarded_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    onboarded_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
     notes = Column(Text)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
     users = relationship("ClientUser", back_populates="client")
     accounts = relationship("AdAccount", back_populates="client")
     subscriptions = relationship("Subscription", back_populates="client")
     transactions = relationship("Transaction", back_populates="client")
+    tickets = relationship("Ticket", back_populates="client")
+    orders = relationship("Order", back_populates="client")
+    wallets = relationship("Wallet", back_populates="client")
+    adjustments = relationship("BalanceAdjustment", back_populates="client")
+    affiliate_codes = relationship("AffiliateCode", back_populates="client")
+    facebook_integration = relationship("FacebookIntegration", back_populates="client")
+    provisioning_requests = relationship("ProvisioningRequest", back_populates="client")
+
+    @validates("email")
+    def validate_email(self, _key, value):
+        return _validate_email_format(value)
+
+    @validates("status")
+    def validate_status(self, _key, value):
+        allowed = {"active", "inactive", "suspended", "churned"}
+        if value is not None and value not in allowed:
+            raise ValueError(f"Invalid client status: {value}")
+        return value
 
 
 class ClientUser(Base):
@@ -62,9 +119,13 @@ class ClientUser(Base):
     role = Column(Text, default="viewer")
     tg_user_id = Column(BigInteger)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
 
     client = relationship("Client", back_populates="users")
+
+    @validates("email")
+    def validate_email(self, _key, value):
+        return _validate_email_format(value)
 
 
 class AdAccount(Base):
@@ -79,14 +140,21 @@ class AdAccount(Base):
     balance = Column(Numeric, default=0)
     total_spend = Column(Numeric, default=0)
     daily_limit = Column(Numeric)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
     banned_at = Column(DateTime(timezone=True))
     ban_reason = Column(Text)
     replaced_by = Column(UUID(as_uuid=True))
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
     client = relationship("Client", back_populates="accounts")
     spending_records = relationship("SpendingRecord", back_populates="account")
+
+    @validates("status")
+    def validate_status(self, _key, value):
+        allowed = {"active", "banned", "disabled", "pending", "under_review"}
+        if value is not None and value not in allowed:
+            raise ValueError(f"Invalid ad account status: {value}")
+        return value
 
 
 class SpendingRecord(Base):
@@ -99,7 +167,7 @@ class SpendingRecord(Base):
     impressions = Column(BigInteger, default=0)
     clicks = Column(BigInteger, default=0)
     conversions = Column(Integer, default=0)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
 
     account = relationship("AdAccount", back_populates="spending_records")
 
@@ -118,11 +186,22 @@ class Transaction(Base):
     status = Column(Text, default="pending")
     account_id = Column(UUID(as_uuid=True))
     notes = Column(Text)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
     confirmed_at = Column(DateTime(timezone=True))
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
     client = relationship("Client", back_populates="transactions")
+
+    @validates("status")
+    def validate_status(self, _key, value):
+        allowed = {"pending", "processing", "completed", "failed", "cancelled", "refunded"}
+        if value is not None and value not in allowed:
+            raise ValueError(f"Invalid transaction status: {value}")
+        return value
+
+    @validates("crypto_currency")
+    def validate_crypto_currency(self, _key, value):
+        return _validate_currency(value)
 
 
 class RevenueLedger(Base):
@@ -133,7 +212,11 @@ class RevenueLedger(Base):
     type = Column(Text)
     amount = Column(Numeric, nullable=False)
     currency = Column(Text, default="USD")
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+
+    @validates("currency")
+    def validate_currency(self, _key, value):
+        return _validate_currency(value)
 
 
 class Subscription(Base):
@@ -145,12 +228,19 @@ class Subscription(Base):
     price = Column(Numeric)
     interval_type = Column(Text, default="monthly")
     status = Column(Text, default="active")
-    started_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    started_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
     next_bill = Column(DateTime(timezone=True))
     cancelled_at = Column(DateTime(timezone=True))
     notes = Column(Text)
 
     client = relationship("Client", back_populates="subscriptions")
+
+    @validates("status")
+    def validate_status(self, _key, value):
+        allowed = {"active", "cancelled", "past_due", "trialing", "paused"}
+        if value is not None and value not in allowed:
+            raise ValueError(f"Invalid subscription status: {value}")
+        return value
 
     @property
     def interval(self):
@@ -169,7 +259,7 @@ class BanTransfer(Base):
     new_account = Column(UUID(as_uuid=True), ForeignKey("ad_accounts.id"))
     amount = Column(Numeric)
     status = Column(Text, default="pending")
-    requested_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    requested_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
     completed_at = Column(DateTime(timezone=True))
 
 
@@ -180,11 +270,12 @@ class ChatSession(Base):
     client_id = Column(UUID(as_uuid=True), ForeignKey("clients.id"))
     channel = Column(Text)
     status = Column(Text, default="ai")
-    assigned_admin = Column(UUID(as_uuid=True))
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    assigned_admin = Column(UUID(as_uuid=True), ForeignKey("admin_users.id"))
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
     closed_at = Column(DateTime(timezone=True))
 
     messages = relationship("ChatMessage", back_populates="session")
+    assigned_admin_user = relationship("AdminUser", back_populates="chat_sessions_assigned", foreign_keys=[assigned_admin])
 
 
 class ChatMessage(Base):
@@ -195,7 +286,7 @@ class ChatMessage(Base):
     sender = Column(Text)
     text = Column(Text, nullable=False)
     metadata_ = Column("metadata", JSON, default={})
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
 
     session = relationship("ChatSession", back_populates="messages")
 
@@ -212,8 +303,8 @@ class OutreachLead(Base):
     assigned_account = Column(Text)
     last_message_at = Column(DateTime(timezone=True))
     notes = Column(Text)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
 
 class AuditLog(Base):
@@ -226,7 +317,9 @@ class AuditLog(Base):
     entity_id = Column(UUID(as_uuid=True))
     details = Column(JSON, default={})
     ip_address = Column(Text)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+
+    admin = relationship("AdminUser", back_populates="audit_logs")
 
 
 class NotificationPref(Base):
@@ -238,7 +331,7 @@ class NotificationPref(Base):
     channel = Column(Text)
     enabled = Column(Boolean, default=True)
     config = Column(JSON, default={})
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
 
 
 # ── Ticket System ──
@@ -254,12 +347,14 @@ class Ticket(Base):
     status = Column(Text, default="open")  # open, in_progress, awaiting_client, resolved, closed
     assigned_admin = Column(UUID(as_uuid=True), ForeignKey("admin_users.id"), nullable=True)
     created_by_type = Column(Text, default="client")  # client, ai, admin
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
     resolved_at = Column(DateTime(timezone=True))
 
-    client = relationship("Client", backref="tickets")
+    client = relationship("Client", back_populates="tickets")
     messages = relationship("TicketMessage", back_populates="ticket", order_by="TicketMessage.created_at")
+    attachments = relationship("TicketAttachment", back_populates="ticket")
+    assigned_admin_user = relationship("AdminUser", back_populates="tickets_assigned", foreign_keys=[assigned_admin])
 
 
 class TicketMessage(Base):
@@ -272,9 +367,10 @@ class TicketMessage(Base):
     text = Column(Text, nullable=False)
     is_internal = Column(Boolean, default=False)  # admin-only internal notes
     attachments = Column(JSON, default=[])
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
 
     ticket = relationship("Ticket", back_populates="messages")
+    attachments = relationship("TicketAttachment", back_populates="message")
 
 
 class TicketAttachment(Base):
@@ -287,7 +383,10 @@ class TicketAttachment(Base):
     file_url = Column(Text, nullable=False)
     file_type = Column(Text)
     file_size = Column(Integer)
-    uploaded_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    uploaded_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+
+    ticket = relationship("Ticket", back_populates="attachments")
+    message = relationship("TicketMessage", back_populates="attachments")
 
 
 # ── Campaign & Sequence Engine ──
@@ -309,10 +408,10 @@ class Campaign(Base):
     total_sent = Column(Integer, default=0)
     total_replied = Column(Integer, default=0)
     total_converted = Column(Integer, default=0)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
-    sequence = relationship("Sequence", backref="campaigns")
+    sequence = relationship("Sequence", back_populates="campaigns")
     leads = relationship("CampaignLead", back_populates="campaign")
 
 
@@ -323,10 +422,11 @@ class Sequence(Base):
     name = Column(Text, nullable=False)
     description = Column(Text)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
     steps = relationship("SequenceStep", back_populates="sequence", order_by="SequenceStep.step_order")
+    campaigns = relationship("Campaign", back_populates="sequence")
 
 
 class SequenceStep(Base):
@@ -339,7 +439,7 @@ class SequenceStep(Base):
     template_a = Column(Text, nullable=False)
     template_b = Column(Text, nullable=True)  # for A/B testing
     step_type = Column(Text, default="message")  # message, wait, condition
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
 
     sequence = relationship("Sequence", back_populates="steps")
 
@@ -356,7 +456,7 @@ class CampaignLead(Base):
     ab_variant = Column(Text)  # A or B
     next_touch_at = Column(DateTime(timezone=True))
     assigned_account = Column(Text)
-    enrolled_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    enrolled_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
     last_sent_at = Column(DateTime(timezone=True))
     replied_at = Column(DateTime(timezone=True))
     converted_at = Column(DateTime(timezone=True))
@@ -376,7 +476,7 @@ class ABTest(Base):
     variant_b_replied = Column(Integer, default=0)
     winner = Column(Text)  # A, B, or null (not yet determined)
     significance = Column(Numeric)  # p-value
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
     completed_at = Column(DateTime(timezone=True))
 
 
@@ -398,8 +498,8 @@ class LeadMemory(Base):
     session_summaries = Column(JSON, default=[])
     bant_score = Column(Integer, default=0)
     last_interaction = Column(DateTime(timezone=True))
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
 
 # ── Order Tracking ──
@@ -417,28 +517,47 @@ class Order(Base):
     transaction_id = Column(UUID(as_uuid=True), ForeignKey("transactions.id"), nullable=True)
     details = Column(JSON, default={})
     notes = Column(Text)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
     delivered_at = Column(DateTime(timezone=True))
 
-    client = relationship("Client", backref="orders")
+    client = relationship("Client", back_populates="orders")
+
+    @validates("status")
+    def validate_status(self, _key, value):
+        allowed = {"pending", "payment_received", "processing", "delivered", "cancelled"}
+        if value is not None and value not in allowed:
+            raise ValueError(f"Invalid order status: {value}")
+        return value
+
+    @validates("currency")
+    def validate_currency(self, _key, value):
+        return _validate_currency(value)
 
 
 # ── Wallet System ──
 
 class Wallet(Base):
     __tablename__ = "wallets"
+    __table_args__ = (
+        CheckConstraint("balance >= 0", name="ck_wallets_balance_non_negative"),
+        CheckConstraint("frozen_balance >= 0", name="ck_wallets_frozen_balance_non_negative"),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     client_id = Column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=False)
     currency = Column(Text, default="USD")
     balance = Column(Numeric, default=0)
     frozen_balance = Column(Numeric, default=0)  # held for pending operations
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
-    client = relationship("Client", backref="wallets")
+    client = relationship("Client", back_populates="wallets")
     transactions = relationship("WalletTransaction", back_populates="wallet")
+
+    @validates("currency")
+    def validate_currency(self, _key, value):
+        return _validate_currency(value)
 
 
 class WalletTransaction(Base):
@@ -456,10 +575,21 @@ class WalletTransaction(Base):
     status = Column(Text, default="pending")  # pending, processing, completed, failed, cancelled
     notes = Column(Text)
     metadata_ = Column("metadata", JSON, default={})
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
     completed_at = Column(DateTime(timezone=True))
 
     wallet = relationship("Wallet", back_populates="transactions")
+
+    @validates("status")
+    def validate_status(self, _key, value):
+        allowed = {"pending", "processing", "completed", "failed", "cancelled"}
+        if value is not None and value not in allowed:
+            raise ValueError(f"Invalid wallet transaction status: {value}")
+        return value
+
+    @validates("currency")
+    def validate_currency(self, _key, value):
+        return _validate_currency(value)
 
 
 class DepositConfig(Base):
@@ -474,8 +604,8 @@ class DepositConfig(Base):
     max_amount = Column(Numeric)
     is_active = Column(Boolean, default=True)
     client_id = Column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=True)  # null = global default
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
 
 # ── Balance Adjustments ──
@@ -489,9 +619,9 @@ class BalanceAdjustment(Base):
     amount = Column(Numeric, nullable=False)
     reason = Column(Text, nullable=False)
     created_by = Column(UUID(as_uuid=True), ForeignKey("admin_users.id"), nullable=False)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
 
-    client = relationship("Client", backref="adjustments")
+    client = relationship("Client", back_populates="adjustments")
 
 
 # ── Affiliate System ──
@@ -506,10 +636,11 @@ class AffiliateCode(Base):
     is_active = Column(Boolean, default=True)
     total_referrals = Column(Integer, default=0)
     total_earnings = Column(Numeric, default=0)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
 
-    client = relationship("Client", backref="affiliate_codes")
+    client = relationship("Client", back_populates="affiliate_codes")
     referrals = relationship("AffiliateReferral", back_populates="affiliate_code")
+    commissions = relationship("AffiliateCommission", back_populates="affiliate_code")
 
 
 class AffiliateReferral(Base):
@@ -520,10 +651,11 @@ class AffiliateReferral(Base):
     referred_client_id = Column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=False)
     status = Column(Text, default="active")  # active, churned
     total_commission = Column(Numeric, default=0)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
 
     affiliate_code = relationship("AffiliateCode", back_populates="referrals")
     referred_client = relationship("Client", foreign_keys=[referred_client_id])
+    commissions = relationship("AffiliateCommission", back_populates="referral")
 
 
 class AffiliateCommission(Base):
@@ -535,8 +667,18 @@ class AffiliateCommission(Base):
     amount = Column(Numeric, nullable=False)
     source_transaction_id = Column(UUID(as_uuid=True))
     status = Column(Text, default="pending")  # pending, approved, paid
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
     paid_at = Column(DateTime(timezone=True))
+
+    affiliate_code = relationship("AffiliateCode", back_populates="commissions")
+    referral = relationship("AffiliateReferral", back_populates="commissions")
+
+    @validates("status")
+    def validate_status(self, _key, value):
+        allowed = {"pending", "approved", "paid"}
+        if value is not None and value not in allowed:
+            raise ValueError(f"Invalid commission status: {value}")
+        return value
 
 
 # ── Subscription Plans ──
@@ -557,7 +699,7 @@ class SubscriptionPlan(Base):
     features = Column(JSON, default=[])
     is_active = Column(Boolean, default=True)
     sort_order = Column(Integer, default=0)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
 
 
 # ── CRM Leads ──
@@ -604,12 +746,23 @@ class CRMLead(Base):
     tags = Column(JSON, default=[])
     custom_fields = Column(JSON, default={})
 
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
     last_contacted_at = Column(DateTime(timezone=True))
 
-    assigned_bdm = relationship("AdminUser", foreign_keys=[assigned_bdm_id])
+    assigned_bdm = relationship("AdminUser", back_populates="crm_leads_assigned", foreign_keys=[assigned_bdm_id])
     converted_client = relationship("Client", foreign_keys=[converted_client_id])
+
+    @validates("email")
+    def validate_email(self, _key, value):
+        return _validate_email_format(value)
+
+    @validates("status")
+    def validate_status(self, _key, value):
+        allowed = {"new", "contacted", "qualified", "proposal", "negotiation", "won", "lost"}
+        if value is not None and value not in allowed:
+            raise ValueError(f"Invalid CRM lead status: {value}")
+        return value
 
 
 # ── Team Management ──
@@ -623,10 +776,10 @@ class TeamTarget(Base):
     target_type = Column(Text, nullable=False)  # leads, revenue, conversions, accounts
     target_value = Column(Numeric, nullable=False)
     achieved_value = Column(Numeric, default=0)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
-    admin = relationship("AdminUser", foreign_keys=[admin_id])
+    admin = relationship("AdminUser", back_populates="team_targets", foreign_keys=[admin_id])
 
 
 class Alert(Base):
@@ -643,7 +796,7 @@ class Alert(Base):
     is_active = Column(Boolean, default=True)
     starts_at = Column(DateTime(timezone=True))
     expires_at = Column(DateTime(timezone=True))
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
     created_by = Column(UUID(as_uuid=True), ForeignKey("admin_users.id"), nullable=True)
 
 
@@ -663,10 +816,15 @@ class MetaAdAccount(Base):
     timezone = Column(Text, default="UTC")
     currency = Column(Text, default="USD")
     status = Column(Text, default="active")
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(_UTC))
+    updated_at = Column(DateTime(timezone=True), default=datetime.now(_UTC), onupdate=datetime.now(_UTC))
 
     ad_account = relationship("AdAccount", backref="meta_config")
+    campaigns = relationship("MetaCampaign", back_populates="meta_ad_account")
+
+    @validates("currency")
+    def validate_currency(self, _key, value):
+        return _validate_currency(value)
 
 
 class MetaCampaign(Base):
@@ -697,10 +855,10 @@ class MetaCampaign(Base):
     cpc = Column(Numeric, default=0)
     cpm = Column(Numeric, default=0)
 
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
-    meta_ad_account = relationship("MetaAdAccount", backref="campaigns")
+    meta_ad_account = relationship("MetaAdAccount", back_populates="campaigns")
     ad_sets = relationship("MetaAdSet", back_populates="campaign")
 
 
@@ -731,8 +889,8 @@ class MetaAdSet(Base):
     clicks = Column(BigInteger, default=0)
     conversions = Column(Integer, default=0)
 
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
     campaign = relationship("MetaCampaign", back_populates="ad_sets")
     ads = relationship("MetaAd", back_populates="ad_set")
@@ -759,8 +917,8 @@ class MetaAd(Base):
     clicks = Column(BigInteger, default=0)
     conversions = Column(Integer, default=0)
 
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
     ad_set = relationship("MetaAdSet", back_populates="ads")
 
@@ -783,10 +941,10 @@ class FacebookIntegration(Base):
     connected_ad_accounts = Column(JSON, default=[])   # [{id, account_id, name, currency, timezone}]
 
     status = Column(Text, default="active")
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
-    client = relationship("Client", backref="facebook_integration")
+    client = relationship("Client", back_populates="facebook_integration")
 
 
 # ── Stripe & Bank Transfer ──
@@ -804,10 +962,21 @@ class BankTransferRequest(Base):
     swift_bic = Column(Text)
     status = Column(Text, default="pending")  # pending, confirmed, rejected
     admin_note = Column(Text)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(timezone.utc))
     confirmed_at = Column(DateTime(timezone=True))
 
     client = relationship("Client")
+
+    @validates("currency")
+    def validate_currency(self, _key, value):
+        return _validate_currency(value)
+
+    @validates("status")
+    def validate_status(self, _key, value):
+        allowed = {"pending", "confirmed", "rejected"}
+        if value is not None and value not in allowed:
+            raise ValueError(f"Invalid bank transfer status: {value}")
+        return value
 
 
 # ── Ad Account Provisioning ──
@@ -828,7 +997,18 @@ class ProvisioningRequest(Base):
     admin_notes = Column(Text)
     reject_reason = Column(Text)
     notes = Column(Text)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.now(_UTC))
+    updated_at = Column(DateTime(timezone=True), default=datetime.now(_UTC), onupdate=datetime.now(_UTC))
 
-    client = relationship("Client", backref="provisioning_requests")
+    client = relationship("Client", back_populates="provisioning_requests")
+
+    @validates("currency")
+    def validate_currency(self, _key, value):
+        return _validate_currency(value)
+
+    @validates("status")
+    def validate_status(self, _key, value):
+        allowed = {"pending", "approved", "rejected"}
+        if value is not None and value not in allowed:
+            raise ValueError(f"Invalid provisioning request status: {value}")
+        return value
