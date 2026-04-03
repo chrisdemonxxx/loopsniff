@@ -1,5 +1,7 @@
-"""AI Creative Generator — template-based ad copy generation and improvement."""
+"""AI Creative Generator — LLM-powered ad copy generation with template fallback."""
 
+import json
+import logging
 import random
 import re
 from fastapi import APIRouter, Depends
@@ -8,6 +10,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.auth.dependencies import get_current_user
+from app.ai.llm_client import call_llm
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -172,7 +177,8 @@ def _fill(template: str, variables: dict[str, str]) -> str:
         return template
 
 
-def generate_creatives(req: GenerateRequest) -> GenerateResponse:
+def _generate_from_templates(req: GenerateRequest) -> GenerateResponse:
+    """Fallback: generate ad copy from pre-built templates."""
     tone = req.tone if req.tone in HEADLINE_TEMPLATES else "professional"
     kw = _extract_keywords(req.product)
     kw["audience"] = req.audience.title() if req.audience != "general" else "Businesses"
@@ -195,6 +201,52 @@ def generate_creatives(req: GenerateRequest) -> GenerateResponse:
         platform=req.platform,
         tone=tone,
     )
+
+
+_CREATIVE_SYSTEM_PROMPT = (
+    "You are an expert ad copywriter. Generate compelling ad copy based on the provided parameters. "
+    "Return ONLY valid JSON with this schema: "
+    '{"headlines": [str] (5 options), "primary_texts": [str] (3 options), '
+    '"descriptions": [str] (3 short descriptions), "cta_suggestions": [str] (5 CTA options)}'
+)
+
+
+async def generate_creatives(req: GenerateRequest) -> GenerateResponse:
+    prompt = (
+        f"Product/Service: {req.product}\n"
+        f"Target Audience: {req.audience}\n"
+        f"Tone: {req.tone}\n"
+        f"Platform: {req.platform}\n"
+        f"Industry: {req.industry}\n\n"
+        "Generate ad copy variations optimized for this platform and audience."
+    )
+
+    llm_response = await call_llm(prompt, system_prompt=_CREATIVE_SYSTEM_PROMPT, temperature=0.8)
+    if llm_response is None:
+        return _generate_from_templates(req)
+
+    try:
+        cleaned = llm_response.strip()
+        if cleaned.startswith("```"):
+            cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
+            cleaned = re.sub(r"\s*```$", "", cleaned)
+        data = json.loads(cleaned)
+    except (json.JSONDecodeError, ValueError) as exc:
+        logger.warning(f"LLM creative response not valid JSON: {exc}")
+        return _generate_from_templates(req)
+
+    try:
+        return GenerateResponse(
+            headlines=data.get("headlines", [])[:5] or ["Your Ad Headline"],
+            primary_texts=data.get("primary_texts", [])[:3] or ["Your ad primary text."],
+            descriptions=data.get("descriptions", [])[:3] or ["Your ad description."],
+            cta_suggestions=data.get("cta_suggestions", [])[:5] or ["Learn More"],
+            platform=req.platform,
+            tone=req.tone,
+        )
+    except Exception as exc:
+        logger.warning(f"Failed to build creative response from LLM data: {exc}")
+        return _generate_from_templates(req)
 
 
 # ---------------------------------------------------------------------------
@@ -310,7 +362,7 @@ async def generate_ad_creative(
     db: AsyncSession = Depends(get_db),
 ):
     """Generate ad copy variations from a product description."""
-    return generate_creatives(req)
+    return await generate_creatives(req)
 
 
 @router.post("/creative/improve", response_model=ImproveResponse)

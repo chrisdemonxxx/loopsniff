@@ -1,5 +1,6 @@
-"""AI Landing Page Analyzer — fetch and audit a landing page URL."""
+"""AI Landing Page Analyzer — HTML structure audit + LLM conversion optimization."""
 
+import json
 import time
 import re
 import logging
@@ -13,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.auth.dependencies import get_current_user
+from app.ai.llm_client import call_llm
 
 router = APIRouter()
 log = logging.getLogger(__name__)
@@ -151,6 +153,13 @@ def _check_load_time(load_time_ms: int) -> Issue:
 # Main analyzer
 # ---------------------------------------------------------------------------
 
+_LP_SYSTEM_PROMPT = (
+    "You are a conversion rate optimization expert. Analyze this landing page content "
+    "and provide ONLY valid JSON with this schema: "
+    '{"score": int (0-100), "strengths": [str], "weaknesses": [str], "recommendations": [str]}'
+)
+
+
 async def analyze_page(url: str) -> LandingPageResponse:
     parsed = urlparse(url)
     try:
@@ -181,7 +190,7 @@ async def analyze_page(url: str) -> LandingPageResponse:
     ]
 
     penalty = sum(SEVERITY_WEIGHTS.get(i.severity, 3) for i in issues if not i.passed)
-    score = max(0, 100 - penalty)
+    html_score = max(0, 100 - penalty)
 
     recommendations: list[str] = []
     for issue in issues:
@@ -190,16 +199,62 @@ async def analyze_page(url: str) -> LandingPageResponse:
     if not recommendations:
         recommendations.append("Page looks great! Consider running A/B tests on your headline and CTA.")
 
-    if score >= 80:
+    if html_score >= 80:
         summary = "Landing page is well-optimized with minor improvements possible."
-    elif score >= 50:
+    elif html_score >= 50:
         summary = "Landing page has several issues that could hurt conversion rates."
     else:
         summary = "Landing page has critical issues that need immediate attention."
 
+    # --- LLM content analysis for conversion optimization ---
+    page_text = soup.get_text(separator="\n", strip=True)[:3000]
+    title_text = soup.title.string.strip() if soup.title and soup.title.string else "N/A"
+
+    prompt = (
+        f"Landing page URL: {url}\n"
+        f"Title: {title_text}\n"
+        f"Load time: {load_time_ms}ms\n\n"
+        f"Page content (truncated):\n\"\"\"\n{page_text}\n\"\"\"\n\n"
+        "Analyze this landing page for conversion rate optimization."
+    )
+
+    llm_response = await call_llm(prompt, system_prompt=_LP_SYSTEM_PROMPT, temperature=0.4)
+    final_score = html_score
+
+    if llm_response is not None:
+        try:
+            cleaned = llm_response.strip()
+            if cleaned.startswith("```"):
+                cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
+                cleaned = re.sub(r"\s*```$", "", cleaned)
+            llm_data = json.loads(cleaned)
+
+            llm_score = int(llm_data.get("score", html_score))
+            llm_score = max(0, min(100, llm_score))
+            # Blend: 40% HTML structure + 60% LLM content analysis
+            final_score = int(html_score * 0.4 + llm_score * 0.6)
+
+            existing_recs = set(recommendations)
+            for rec in llm_data.get("recommendations", []):
+                if rec and rec not in existing_recs:
+                    recommendations.append(rec)
+                    existing_recs.add(rec)
+
+            for weakness in llm_data.get("weaknesses", []):
+                if weakness and weakness not in existing_recs:
+                    recommendations.append(weakness)
+                    existing_recs.add(weakness)
+
+            strengths = llm_data.get("strengths", [])
+            if strengths:
+                summary += " Strengths: " + "; ".join(strengths[:3]) + "."
+
+        except (json.JSONDecodeError, ValueError, TypeError) as exc:
+            log.warning(f"LLM landing page response not valid JSON: {exc}")
+
     return LandingPageResponse(
         url=url,
-        score=score,
+        score=final_score,
         load_time_ms=load_time_ms,
         issues=issues,
         recommendations=recommendations,

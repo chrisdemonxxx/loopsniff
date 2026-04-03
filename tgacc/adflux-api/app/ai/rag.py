@@ -1,6 +1,8 @@
-"""RAG Integration — query the knowledge base and trigger document ingestion."""
+"""RAG Integration — query the knowledge base with LLM-powered answer synthesis."""
 
+import json
 import logging
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -11,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.auth.dependencies import get_current_user, require_admin
+from app.ai.llm_client import call_llm
 
 router = APIRouter()
 log = logging.getLogger(__name__)
@@ -77,7 +80,7 @@ class RAGIngestResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 def _build_answer(results: list[dict], query: str) -> str:
-    """Synthesise a brief answer from the retrieved chunks."""
+    """Fallback: return the top chunk as the answer (no LLM)."""
     if not results:
         return "No relevant information found in the knowledge base for your query."
     top = results[0]
@@ -85,6 +88,41 @@ def _build_answer(results: list[dict], query: str) -> str:
     if len(text) > 600:
         text = text[:600] + "…"
     return text
+
+
+_RAG_SYSTEM_PROMPT = (
+    "You are a knowledgeable ad optimization assistant. Answer the user's question based "
+    "ONLY on the provided knowledge base excerpts. Cite which source(s) you used by number. "
+    "If the excerpts don't contain enough information, say so clearly."
+)
+
+
+async def _synthesize_answer(results: list[dict], query: str) -> str:
+    """Use LLM to synthesize a coherent answer from retrieved chunks."""
+    if not results:
+        return "No relevant information found in the knowledge base for your query."
+
+    # Format chunks with source numbers for citation
+    chunk_parts: list[str] = []
+    for i, r in enumerate(results, 1):
+        text = r.get("text", "").strip()
+        meta = r.get("metadata", {})
+        source_label = meta.get("source", "unknown") if meta else "unknown"
+        chunk_parts.append(f"[Source {i} — {source_label}]\n{text}")
+
+    chunks_text = "\n\n".join(chunk_parts)
+
+    prompt = (
+        f"Knowledge base excerpts:\n\n{chunks_text}\n\n"
+        f"Question: {query}\n\n"
+        "Provide a comprehensive answer citing source numbers."
+    )
+
+    llm_response = await call_llm(prompt, system_prompt=_RAG_SYSTEM_PROMPT, temperature=0.3, max_tokens=1024)
+    if llm_response is None:
+        return _build_answer(results, query)
+
+    return llm_response.strip()
 
 
 def _compute_confidence(results: list[dict]) -> float:
@@ -133,7 +171,7 @@ async def rag_query(
     ]
 
     return RAGQueryResponse(
-        answer=_build_answer(results, req.query),
+        answer=await _synthesize_answer(results, req.query),
         sources=sources,
         confidence=_compute_confidence(results),
         stats=retriever.stats(),
