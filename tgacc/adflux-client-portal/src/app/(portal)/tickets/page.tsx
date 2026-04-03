@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useApi, useApiToken, apiFetch } from "@/lib/api";
+import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 
 interface TicketItem {
@@ -95,6 +96,7 @@ export default function TicketsPage() {
       : `/tickets?status=${statusFilter}&skip=0&limit=50`;
 
   const { data: tickets, loading, refetch } = useApi<TicketItem[]>(apiPath);
+  const { toast } = useToast();
 
   // Create form state
   const [subject, setSubject] = useState("");
@@ -119,7 +121,7 @@ export default function TicketsPage() {
       setMessage("");
       refetch();
     } catch (err: any) {
-      alert(err.message || "Failed to create ticket. Please try again.");
+      toast(err.message || "Failed to create ticket. Please try again.", "error");
     } finally {
       setCreating(false);
     }
