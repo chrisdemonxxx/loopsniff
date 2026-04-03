@@ -16,3 +16,4 @@ dist/
 build/
 .DS_Store
 adflux-website/
+__pycache__

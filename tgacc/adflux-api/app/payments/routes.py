@@ -95,6 +95,7 @@ async def topup(data: TopupRequest, user: dict = Depends(get_current_user), db: 
     )
     db.add(txn)
     await db.flush()
+    await db.commit()
 
     invoice = None
     try:
@@ -107,6 +108,7 @@ async def topup(data: TopupRequest, user: dict = Depends(get_current_user), db: 
         if invoice.get("id"):
             txn.nowpay_id = str(invoice["id"])
             await db.flush()
+            await db.commit()
     except Exception:
         pass
 
@@ -210,6 +212,7 @@ async def nowpayments_webhook(
         txn.status = payment_status
 
     await db.flush()
+    await db.commit()
     log.info("IPN processed: order=%s status=%s", order_id, payment_status)
     return {"status": "ok"}
 

@@ -99,6 +99,7 @@ async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
     )
     db.add(user)
     await db.flush()
+    await db.commit()
     token_data = {
         "sub": str(user.id), "user_type": "client", "role": "viewer",
         "client_id": str(user.client_id) if user.client_id else None,
@@ -122,6 +123,7 @@ async def register_admin(req: RegisterRequest, admin: dict = Depends(require_adm
     user = AdminUser(email=req.email, name=req.name, password_hash=hashed, role="admin")
     db.add(user)
     await db.flush()
+    await db.commit()
     token_data = {"sub": str(user.id), "user_type": "admin", "role": "admin"}
     access = create_access_token(token_data)
     refresh = create_refresh_token(token_data)
@@ -211,6 +213,7 @@ async def reset_password(req: ResetPasswordRequest, db: AsyncSession = Depends(g
     if user:
         user.password_hash = bcrypt.hash(req.new_password)
         await db.flush()
+        await db.commit()
         return {"message": "Password has been reset successfully."}
 
     result = await db.execute(select(ClientUser).where(ClientUser.email == email))
@@ -218,6 +221,7 @@ async def reset_password(req: ResetPasswordRequest, db: AsyncSession = Depends(g
     if user:
         user.password_hash = bcrypt.hash(req.new_password)
         await db.flush()
+        await db.commit()
         return {"message": "Password has been reset successfully."}
 
     raise HTTPException(status_code=404, detail="User not found")
@@ -247,6 +251,7 @@ async def change_password(
 
     db_user.password_hash = bcrypt.hash(req.new_password)
     await db.flush()
+    await db.commit()
     return {"message": "Password changed successfully."}
 
 

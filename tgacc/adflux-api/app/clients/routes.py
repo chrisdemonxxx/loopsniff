@@ -60,6 +60,7 @@ async def create_client(data: ClientCreate, user: dict = Depends(require_admin),
     client = Client(**data.model_dump())
     db.add(client)
     await db.flush()
+    await db.commit()
     await db.refresh(client)
     return client
 
@@ -76,6 +77,7 @@ async def update_client(
     for k, v in data.model_dump(exclude_unset=True).items():
         setattr(client, k, v)
     await db.flush()
+    await db.commit()
     await db.refresh(client)
     return client
 

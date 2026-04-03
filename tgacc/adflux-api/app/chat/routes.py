@@ -285,6 +285,7 @@ async def escalate(data: EscalateRequest, user: dict = Depends(get_current_user)
         raise HTTPException(status_code=404, detail="Session not found")
     session.status = "escalated"
     await db.flush()
+    await db.commit()
     await escalate_all(
         f"Chat session {session.id} escalated.\nReason: {data.reason}\nClient ID: {session.client_id}",
         title="Chat Escalation",

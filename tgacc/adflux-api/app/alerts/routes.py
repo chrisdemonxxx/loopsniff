@@ -68,6 +68,7 @@ async def admin_create_alert(data: AlertCreate, user: dict = Depends(require_adm
     alert = Alert(**data.model_dump(), created_by=UUID(user["id"]))
     db.add(alert)
     await db.flush()
+    await db.commit()
     await db.refresh(alert)
     return alert
 
@@ -84,6 +85,7 @@ async def admin_update_alert(
     for k, v in data.model_dump(exclude_unset=True).items():
         setattr(alert, k, v)
     await db.flush()
+    await db.commit()
     await db.refresh(alert)
     return alert
 

@@ -77,6 +77,7 @@ async def create_provisioning_request(
     )
     db.add(req)
     await db.flush()
+    await db.commit()
     await db.refresh(req)
     return req
 
@@ -134,6 +135,7 @@ async def approve_provisioning_request(
     req.admin_notes = data.admin_notes
     req.updated_at = datetime.now(timezone.utc)
     await db.flush()
+    await db.commit()
     await db.refresh(req)
     return req
 
@@ -159,6 +161,7 @@ async def reject_provisioning_request(
     req.reject_reason = data.reason
     req.updated_at = datetime.now(timezone.utc)
     await db.flush()
+    await db.commit()
     await db.refresh(req)
     return req
 
