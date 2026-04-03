@@ -28,6 +28,13 @@ import {
 import { useApi } from "@/lib/api";
 import { useSession } from "next-auth/react";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
+import {
+  FadeIn,
+  StaggerChildren,
+  StaggerItem,
+  AnimatedCounter,
+  SpotlightCard,
+} from "@/components/motion";
 
 interface Account {
   id: string;
@@ -76,11 +83,26 @@ function getTransactionBadge(type: string) {
 function getStatusBadge(status: string) {
   switch (status) {
     case "completed":
-      return <Badge variant="success">Completed</Badge>;
+      return (
+        <span className="flex items-center gap-1.5 text-xs">
+          <span className="h-2 w-2 rounded-full bg-emerald-400" />
+          <span className="text-emerald-400">Completed</span>
+        </span>
+      );
     case "pending":
-      return <Badge variant="warning">Pending</Badge>;
+      return (
+        <span className="flex items-center gap-1.5 text-xs">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-amber-400" />
+          <span className="text-amber-400">Pending</span>
+        </span>
+      );
     case "failed":
-      return <Badge variant="destructive">Failed</Badge>;
+      return (
+        <span className="flex items-center gap-1.5 text-xs">
+          <span className="h-2 w-2 rounded-full bg-red-400" />
+          <span className="text-red-400">Failed</span>
+        </span>
+      );
     default:
       return <Badge variant="outline">{status}</Badge>;
   }
@@ -89,13 +111,28 @@ function getStatusBadge(status: string) {
 function getAccountStatusIcon(status: string) {
   switch (status) {
     case "active":
-      return <span className="text-green-400">✅ Active</span>;
+      return (
+        <span className="flex items-center gap-1.5 text-xs">
+          <span className="h-2 w-2 rounded-full bg-emerald-400" />
+          <span className="text-emerald-400">Active</span>
+        </span>
+      );
     case "banned":
-      return <span className="text-red-400">❌ Banned</span>;
+      return (
+        <span className="flex items-center gap-1.5 text-xs">
+          <span className="h-2 w-2 rounded-full bg-red-400" />
+          <span className="text-red-400">Banned</span>
+        </span>
+      );
     case "paused":
-      return <span className="text-yellow-400">⏸️ Paused</span>;
+      return (
+        <span className="flex items-center gap-1.5 text-xs">
+          <span className="h-2 w-2 rounded-full bg-yellow-400" />
+          <span className="text-yellow-400">Paused</span>
+        </span>
+      );
     default:
-      return <span className="text-gray-400">{status}</span>;
+      return <span className="text-zinc-400">{status}</span>;
   }
 }
 
@@ -103,6 +140,10 @@ export default function DashboardPage() {
   const { data: session } = useSession();
   const clientId = (session?.user as any)?.clientId;
   const userName = session?.user?.name || "User";
+
+  const hour = new Date().getHours();
+  const greeting =
+    hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   const { data: accounts, loading: accountsLoading } = useApi<Account[]>(
     clientId ? `/accounts?client_id=${clientId}` : null
@@ -119,48 +160,76 @@ export default function DashboardPage() {
   const totalSpend = accts.reduce((sum, a) => sum + a.total_spend, 0);
   const activeCount = accts.filter((a) => a.status === "active").length;
   const pendingTxns = txns.filter((t) => t.status === "pending");
-  const pendingAmount = pendingTxns.reduce((sum, t) => sum + Math.abs(t.ad_amount), 0);
+  const pendingAmount = pendingTxns.reduce(
+    (sum, t) => sum + Math.abs(t.ad_amount),
+    0
+  );
   const recentTransactions = txns.slice(0, 10);
 
   const statCards: {
     title: string;
-    value: string;
+    numericValue: number;
     icon: typeof DollarSign;
     change: string;
     trend: "up" | "down" | "neutral";
     color: string;
+    iconBg: string;
+    prefix: string;
+    suffix: string;
+    decimals: number;
+    borderColor: string;
   }[] = [
     {
       title: "Total Balance",
-      value: formatCurrency(totalBalance),
+      numericValue: totalBalance,
       icon: DollarSign,
       change: `across ${accts.length} accounts`,
-      trend: "neutral" as const,
+      trend: "neutral",
       color: "from-blue-500 to-blue-600",
+      iconBg: "bg-blue-500/10",
+      prefix: "$",
+      suffix: "",
+      decimals: 2,
+      borderColor: "from-blue-500 via-blue-400 to-transparent",
     },
     {
       title: "Total Spend",
-      value: formatCurrency(totalSpend),
+      numericValue: totalSpend,
       icon: TrendingUp,
       change: "all time",
-      trend: "up" as const,
+      trend: "up",
       color: "from-violet-500 to-violet-600",
+      iconBg: "bg-violet-500/10",
+      prefix: "$",
+      suffix: "",
+      decimals: 2,
+      borderColor: "from-violet-500 via-violet-400 to-transparent",
     },
     {
       title: "Active Accounts",
-      value: activeCount.toString(),
+      numericValue: activeCount,
       icon: Layers,
       change: "of " + accts.length + " total",
-      trend: "neutral" as const,
+      trend: "neutral",
       color: "from-emerald-500 to-emerald-600",
+      iconBg: "bg-emerald-500/10",
+      prefix: "",
+      suffix: "",
+      decimals: 0,
+      borderColor: "from-emerald-500 via-emerald-400 to-transparent",
     },
     {
       title: "Pending Top-ups",
-      value: pendingTxns.length.toString(),
+      numericValue: pendingTxns.length,
       icon: Clock,
       change: formatCurrency(pendingAmount),
-      trend: "neutral" as const,
+      trend: "neutral",
       color: "from-amber-500 to-amber-600",
+      iconBg: "bg-amber-500/10",
+      prefix: "",
+      suffix: "",
+      decimals: 0,
+      borderColor: "from-amber-500 via-amber-400 to-transparent",
     },
   ];
 
@@ -173,186 +242,241 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Welcome */}
-      <div>
-        <h1 className="text-2xl font-bold text-white">
-          Welcome back, {userName.split(" ")[0]} 👋
-        </h1>
-        <p className="text-gray-400">
-          Here&apos;s an overview of your ad accounts and activity.
-        </p>
-      </div>
+    <div className="space-y-8">
+      {/* Personalized Greeting */}
+      <FadeIn>
+        <div>
+          <h1 className="text-3xl font-bold text-white">
+            {greeting},{" "}
+            <span className="text-gradient">{userName.split(" ")[0]}</span> 👋
+          </h1>
+          <p className="mt-1 text-zinc-400">
+            Here&apos;s an overview of your ad accounts and activity.
+          </p>
+        </div>
+      </FadeIn>
 
       {/* Stat Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <StaggerChildren className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {statCards.map((stat) => (
-          <Card key={stat.title}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-400">{stat.title}</p>
-                  <p className="mt-1 text-2xl font-bold text-white">{stat.value}</p>
-                  <div className="mt-1 flex items-center gap-1 text-xs">
-                    {stat.trend === "up" && (
-                      <ArrowUpRight className="h-3 w-3 text-green-400" />
-                    )}
-                    {stat.trend === "down" && (
-                      <ArrowDownRight className="h-3 w-3 text-red-400" />
-                    )}
-                    <span
-                      className={
-                        stat.trend === "up"
-                          ? "text-green-400"
-                          : stat.trend === "down"
-                          ? "text-red-400"
-                          : "text-gray-400"
-                      }
-                    >
-                      {stat.change}
-                    </span>
-                  </div>
-                </div>
+          <StaggerItem key={stat.title}>
+            <SpotlightCard className="h-full rounded-2xl">
+              <Card className="glass-card h-full overflow-hidden border-0">
+                {/* Gradient top border line */}
                 <div
-                  className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${stat.color} shadow-lg`}
-                >
-                  <stat.icon className="h-6 w-6 text-white" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                  className={`h-[2px] bg-gradient-to-r ${stat.borderColor}`}
+                />
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-zinc-400">
+                        {stat.title}
+                      </p>
+                      <AnimatedCounter
+                        value={stat.numericValue}
+                        prefix={stat.prefix}
+                        suffix={stat.suffix}
+                        decimals={stat.decimals}
+                        className="text-2xl font-bold text-white"
+                      />
+                      <div className="flex items-center gap-1 pt-0.5 text-xs">
+                        {stat.trend === "up" && (
+                          <ArrowUpRight className="h-3 w-3 text-green-400" />
+                        )}
+                        {stat.trend === "down" && (
+                          <ArrowDownRight className="h-3 w-3 text-red-400" />
+                        )}
+                        <span
+                          className={
+                            stat.trend === "up"
+                              ? "text-green-400"
+                              : stat.trend === "down"
+                              ? "text-red-400"
+                              : "text-zinc-500"
+                          }
+                        >
+                          {stat.change}
+                        </span>
+                      </div>
+                    </div>
+                    <div
+                      className={`flex h-12 w-12 items-center justify-center rounded-2xl ${stat.iconBg}`}
+                    >
+                      <stat.icon
+                        className={`h-6 w-6 bg-gradient-to-br ${stat.color} bg-clip-text text-transparent`}
+                        style={{ stroke: "url(#icon-gradient)" }}
+                      />
+                      <svg width="0" height="0" className="absolute">
+                        <defs>
+                          <linearGradient
+                            id="icon-gradient"
+                            x1="0%"
+                            y1="0%"
+                            x2="100%"
+                            y2="100%"
+                          >
+                            <stop offset="0%" stopColor="currentColor" />
+                            <stop offset="100%" stopColor="currentColor" />
+                          </linearGradient>
+                        </defs>
+                      </svg>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </SpotlightCard>
+          </StaggerItem>
         ))}
-      </div>
+      </StaggerChildren>
 
       {/* Quick Actions */}
-      <div className="flex flex-wrap gap-3">
-        <Link href="/topup">
-          <Button>
-            <CreditCard className="mr-2 h-4 w-4" />
-            Top Up
-          </Button>
-        </Link>
-        <Link href="/accounts">
-          <Button variant="secondary">
-            <Eye className="mr-2 h-4 w-4" />
-            View Accounts
-          </Button>
-        </Link>
-        <Link href="/support">
-          <Button variant="outline">
-            <MessageCircle className="mr-2 h-4 w-4" />
-            Support
-          </Button>
-        </Link>
-      </div>
+      <FadeIn delay={0.2}>
+        <div className="flex flex-wrap gap-3">
+          <Link href="/topup">
+            <div className="glass-card group flex cursor-pointer items-center gap-2 rounded-xl px-5 py-3 transition-all hover:glow-blue">
+              <CreditCard className="h-4 w-4 text-blue-400 transition-transform group-hover:scale-110" />
+              <span className="text-sm font-medium text-white">Top Up</span>
+            </div>
+          </Link>
+          <Link href="/accounts">
+            <div className="glass-card group flex cursor-pointer items-center gap-2 rounded-xl px-5 py-3 transition-all hover:glow-emerald">
+              <Eye className="h-4 w-4 text-emerald-400 transition-transform group-hover:scale-110" />
+              <span className="text-sm font-medium text-white">
+                View Accounts
+              </span>
+            </div>
+          </Link>
+          <Link href="/support">
+            <div className="glass-card group flex cursor-pointer items-center gap-2 rounded-xl px-5 py-3 transition-all">
+              <MessageCircle className="h-4 w-4 text-violet-400 transition-transform group-hover:scale-110" />
+              <span className="text-sm font-medium text-white">Support</span>
+            </div>
+          </Link>
+        </div>
+      </FadeIn>
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Recent Transactions */}
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Recent Transactions</CardTitle>
-            <Link href="/billing">
-              <Button variant="ghost" size="sm">
-                View All
-              </Button>
-            </Link>
-          </CardHeader>
-          <CardContent>
-            {recentTransactions.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentTransactions.map((txn) => (
-                    <TableRow key={txn.id}>
-                      <TableCell className="text-gray-300">
-                        {formatDateTime(txn.created_at)}
-                      </TableCell>
-                      <TableCell>{getTransactionBadge(txn.type)}</TableCell>
-                      <TableCell
-                        className={
-                          txn.ad_amount >= 0 ? "text-green-400" : "text-red-400"
-                        }
-                      >
-                        {txn.ad_amount >= 0 ? "+" : ""}
-                        {formatCurrency(Math.abs(txn.ad_amount))}
-                      </TableCell>
-                      <TableCell>{getStatusBadge(txn.status)}</TableCell>
+        <FadeIn className="lg:col-span-2" delay={0.1}>
+          <Card className="glass-card border-0">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Recent Transactions</CardTitle>
+              <Link href="/billing">
+                <Button variant="ghost" size="sm">
+                  View All
+                </Button>
+              </Link>
+            </CardHeader>
+            <CardContent>
+              {recentTransactions.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-zinc-800/50">
+                      <TableHead className="text-zinc-500">Date</TableHead>
+                      <TableHead className="text-zinc-500">Type</TableHead>
+                      <TableHead className="text-zinc-500">Amount</TableHead>
+                      <TableHead className="text-zinc-500">Status</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            ) : (
-              <p className="py-8 text-center text-gray-400">No transactions yet.</p>
-            )}
-          </CardContent>
-        </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {recentTransactions.map((txn) => (
+                      <TableRow
+                        key={txn.id}
+                        className="border-zinc-800/50 transition-colors hover:bg-white/[0.02]"
+                      >
+                        <TableCell className="text-zinc-300">
+                          {formatDateTime(txn.created_at)}
+                        </TableCell>
+                        <TableCell>
+                          {getTransactionBadge(txn.type)}
+                        </TableCell>
+                        <TableCell
+                          className={
+                            txn.ad_amount >= 0
+                              ? "font-medium text-green-400"
+                              : "font-medium text-red-400"
+                          }
+                        >
+                          {txn.ad_amount >= 0 ? "+" : ""}
+                          {formatCurrency(Math.abs(txn.ad_amount))}
+                        </TableCell>
+                        <TableCell>{getStatusBadge(txn.status)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <p className="py-8 text-center text-zinc-400">
+                  No transactions yet.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </FadeIn>
 
         {/* Account Status */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Account Status</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {accts.length > 0 ? (
-              <>
-                {accts.map((account) => (
-                  <Link
-                    key={account.id}
-                    href={`/accounts/${account.id}`}
-                    className="block rounded-lg border border-gray-800 p-3 transition-colors hover:border-gray-700 hover:bg-gray-800/50"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-white">
-                          {account.name}
-                        </p>
-                        <p className="text-xs text-gray-400">{account.platform}</p>
+        <FadeIn delay={0.2}>
+          <Card className="glass-card border-0">
+            <CardHeader>
+              <CardTitle>Account Status</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {accts.length > 0 ? (
+                <>
+                  {accts.map((account) => (
+                    <Link
+                      key={account.id}
+                      href={`/accounts/${account.id}`}
+                      className="block rounded-xl border border-zinc-800/50 p-3 transition-all hover:border-zinc-700 hover:bg-white/[0.02]"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-white">
+                            {account.name}
+                          </p>
+                          <p className="text-xs text-zinc-500">
+                            {account.platform}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <div>{getAccountStatusIcon(account.status)}</div>
+                          <p className="mt-0.5 text-xs text-zinc-400">
+                            {formatCurrency(account.balance)}
+                          </p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-xs">
-                          {getAccountStatusIcon(account.status)}
-                        </p>
-                        <p className="text-xs text-gray-400">
-                          {formatCurrency(account.balance)}
-                        </p>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
+                    </Link>
+                  ))}
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 rounded-lg bg-gray-800/50 p-3">
-                  <div className="text-center">
-                    <p className="text-lg font-bold text-green-400">
-                      {accts.filter((a) => a.status === "active").length}
-                    </p>
-                    <p className="text-xs text-gray-400">Active</p>
+                  <div className="grid grid-cols-3 gap-2 rounded-xl bg-zinc-800/30 p-3">
+                    <div className="text-center">
+                      <p className="text-lg font-bold text-green-400">
+                        {accts.filter((a) => a.status === "active").length}
+                      </p>
+                      <p className="text-xs text-zinc-500">Active</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-lg font-bold text-yellow-400">
+                        {accts.filter((a) => a.status === "paused").length}
+                      </p>
+                      <p className="text-xs text-zinc-500">Paused</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-lg font-bold text-red-400">
+                        {accts.filter((a) => a.status === "banned").length}
+                      </p>
+                      <p className="text-xs text-zinc-500">Banned</p>
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <p className="text-lg font-bold text-yellow-400">
-                      {accts.filter((a) => a.status === "paused").length}
-                    </p>
-                    <p className="text-xs text-gray-400">Paused</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-lg font-bold text-red-400">
-                      {accts.filter((a) => a.status === "banned").length}
-                    </p>
-                    <p className="text-xs text-gray-400">Banned</p>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <p className="py-4 text-center text-gray-400">No accounts yet.</p>
-            )}
-          </CardContent>
-        </Card>
+                </>
+              ) : (
+                <p className="py-4 text-center text-zinc-400">
+                  No accounts yet.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </FadeIn>
       </div>
     </div>
   );
