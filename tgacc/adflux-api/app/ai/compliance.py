@@ -1,5 +1,7 @@
-"""AI Compliance Checker — rule-based ad creative policy scanner."""
+"""AI Compliance Checker — regex-based first pass + LLM-powered deep review."""
 
+import json
+import logging
 import re
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
@@ -7,6 +9,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.auth.dependencies import get_current_user
+from app.ai.llm_client import call_llm
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -221,7 +226,8 @@ def _check_formatting(text: str) -> list[Violation]:
     return violations
 
 
-def run_compliance_check(text: str, platform: str) -> ComplianceCheckResponse:
+def _regex_compliance_check(text: str, platform: str) -> ComplianceCheckResponse:
+    """First-pass regex-only compliance scan (original logic)."""
     violations: list[Violation] = []
 
     for rule in PROHIBITED_CONTENT:
@@ -273,6 +279,86 @@ def run_compliance_check(text: str, platform: str) -> ComplianceCheckResponse:
     )
 
 
+_COMPLIANCE_SYSTEM_PROMPT = (
+    "You are an ad compliance reviewer. Analyze this ad copy for policy violations "
+    "(Meta, Google, TikTok ad policies). Return ONLY valid JSON with this schema: "
+    '{"compliant": bool, "issues": [{"rule": str, "severity": "critical"|"high"|"medium"|"low", '
+    '"description": str}], "suggestions": [str]}'
+)
+
+
+async def run_compliance_check(text: str, platform: str) -> ComplianceCheckResponse:
+    """Run regex first-pass then enhance with LLM deep review."""
+    regex_result = _regex_compliance_check(text, platform)
+
+    # Build LLM prompt with ad text + regex findings
+    regex_summary = ""
+    if regex_result.violations:
+        findings = [f"- [{v.severity}] {v.rule}: {v.message}" for v in regex_result.violations]
+        regex_summary = "\n\nRegex pre-scan findings:\n" + "\n".join(findings)
+
+    prompt = (
+        f"Platform: {platform}\n\n"
+        f"Ad copy to review:\n\"\"\"\n{text}\n\"\"\""
+        f"{regex_summary}\n\n"
+        "Identify any additional policy violations the regex scan may have missed. "
+        "Return JSON only."
+    )
+
+    llm_response = await call_llm(prompt, system_prompt=_COMPLIANCE_SYSTEM_PROMPT, temperature=0.3)
+    if llm_response is None:
+        return regex_result
+
+    try:
+        # Strip markdown code fences if present
+        cleaned = llm_response.strip()
+        if cleaned.startswith("```"):
+            cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
+            cleaned = re.sub(r"\s*```$", "", cleaned)
+        llm_data = json.loads(cleaned)
+    except (json.JSONDecodeError, ValueError) as exc:
+        logger.warning(f"LLM compliance response not valid JSON: {exc}")
+        return regex_result
+
+    # Merge LLM issues with regex violations (deduplicate by rule name)
+    existing_rules = {v.rule for v in regex_result.violations}
+    llm_issues = llm_data.get("issues", [])
+    for issue in llm_issues:
+        rule_name = issue.get("rule", "llm_finding")
+        if rule_name not in existing_rules:
+            regex_result.violations.append(Violation(
+                rule=rule_name,
+                severity=issue.get("severity", "medium"),
+                category="llm_review",
+                message=issue.get("description", "LLM-identified policy issue."),
+            ))
+            existing_rules.add(rule_name)
+
+    # Merge LLM suggestions
+    existing_suggestions = set(regex_result.suggestions)
+    for suggestion in llm_data.get("suggestions", []):
+        if suggestion and suggestion not in existing_suggestions:
+            regex_result.suggestions.append(suggestion)
+            existing_suggestions.add(suggestion)
+
+    # Recalculate score with merged violations
+    total_penalty = sum(SEVERITY_WEIGHTS.get(v.severity, 5) for v in regex_result.violations)
+    regex_result.score = max(0, 100 - total_penalty)
+
+    # Re-sort and update summary
+    severity_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+    regex_result.violations.sort(key=lambda v: severity_order.get(v.severity, 4))
+
+    if regex_result.score >= 80:
+        regex_result.summary = "Ad copy is largely compliant with minor issues."
+    elif regex_result.score >= 50:
+        regex_result.summary = "Ad copy has several policy concerns that should be addressed."
+    else:
+        regex_result.summary = "Ad copy has critical policy violations and is likely to be rejected."
+
+    return regex_result
+
+
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
@@ -284,4 +370,4 @@ async def check_compliance(
     db: AsyncSession = Depends(get_db),
 ):
     """Analyze ad creative text for policy violations across Meta, Google, and TikTok."""
-    return run_compliance_check(req.text, req.platform)
+    return await run_compliance_check(req.text, req.platform)
