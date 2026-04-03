@@ -19,6 +19,7 @@ import {
   Wallet2,
   Users,
   Link2,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -35,6 +36,7 @@ const navItems = [
   { href: "/support", label: "Support", icon: MessageCircle },
   { href: "/tickets", label: "Tickets", icon: TicketCheck },
   { href: "/affiliate", label: "Affiliate", icon: Users },
+  { href: "/ai-tools", label: "AI Tools", icon: Sparkles },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
