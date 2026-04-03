@@ -5,6 +5,8 @@ __pycache__/
 *.pyc
 .env
 .env.local
+.env.*.local
+*.env
 *.tsbuildinfo
 next-env.d.ts
 chroma_db/
