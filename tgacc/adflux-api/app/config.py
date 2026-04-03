@@ -6,7 +6,26 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+asyncpg://postgres@localhost:5432/adflux"
     JWT_SECRET: str = "dev-secret-change-me"
     JWT_ALGORITHM: str = "HS256"
-    JWT_EXPIRE_MINUTES: int = 1440
+    JWT_EXPIRE_MINUTES: int = 30
+    JWT_REFRESH_DAYS: int = 30
+
+    ALLOWED_ORIGINS: list[str] = [
+        "https://admin.adflux.store",
+        "https://portal.adflux.store",
+        "https://adflux.store",
+        "https://www.adflux.store",
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3002",
+    ]
+    ALLOWED_HOSTS: list[str] = [
+        "api.adflux.store",
+        "adflux.store",
+        "*.adflux.store",
+        "localhost",
+        "127.0.0.1",
+    ]
+    MAX_REQUEST_SIZE_MB: int = 10
 
     NOWPAY_API_KEY: str = ""
     NOWPAY_IPN_SECRET: str = ""
