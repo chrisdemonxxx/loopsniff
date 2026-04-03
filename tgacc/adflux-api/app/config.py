@@ -34,8 +34,8 @@ class Settings(BaseSettings):
     OLLAMA_CLOUD_URL: str = "https://api.ollamacloud.com/v1"
     OLLAMA_MODEL: str = "llama3.1:8b"
 
-    TG_BOT_TOKEN: str = "8707230750:AAHkEFpQIxk1H9JsHu8IQ6jagWp8Qlh8-G4"
-    TG_ALERT_CHAT_ID: str = "8365840792"
+    TG_BOT_TOKEN: str = ""
+    TG_ALERT_CHAT_ID: str = ""
 
     NTFY_TOPIC: str = "adflux-alerts"
     NTFY_URL: str = "https://ntfy.sh"

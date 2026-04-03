@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 BOT_TOKEN: str = os.getenv(
     "ADFLUX_BOT_TOKEN",
-    "8707230750:AAHkEFpQIxk1H9JsHu8IQ6jagWp8Qlh8-G4",
+    "",
 )
 
 _API_BASE = "https://api.telegram.org/bot{token}"
