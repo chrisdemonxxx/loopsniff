@@ -1,6 +1,7 @@
 "use client"
 
 import { use, useState } from "react"
+import { useToast } from "@/components/ui/toast"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -34,6 +35,7 @@ export default function AccountDetailPage({ params }: { params: Promise<{ id: st
   const [transferTarget, setTransferTarget] = useState("")
   const [transferAmount, setTransferAmount] = useState("")
   const [actionLoading, setActionLoading] = useState(false)
+  const { toast } = useToast()
 
   const handleBalanceChange = async (direction: "add" | "subtract") => {
     if (!token || !account || !balanceAmount) return
@@ -49,7 +51,7 @@ export default function AccountDetailPage({ params }: { params: Promise<{ id: st
       setBalanceAmount("")
       refetch()
     } catch (e: any) {
-      alert(e.message)
+      toast(e.message, "error")
     } finally {
       setActionLoading(false)
     }
@@ -65,7 +67,7 @@ export default function AccountDetailPage({ params }: { params: Promise<{ id: st
       })
       refetch()
     } catch (e: any) {
-      alert(e.message)
+      toast(e.message, "error")
     } finally {
       setActionLoading(false)
     }
@@ -85,7 +87,7 @@ export default function AccountDetailPage({ params }: { params: Promise<{ id: st
       setTransferAmount("")
       refetch()
     } catch (e: any) {
-      alert(e.message)
+      toast(e.message, "error")
     } finally {
       setActionLoading(false)
     }
