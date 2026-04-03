@@ -1,5 +1,5 @@
 import asyncio
-from datetime import date, datetime
+from datetime import datetime
 
 from aiogram import Router, F
 from aiogram.filters import Command
@@ -8,8 +8,7 @@ from aiogram.enums import ParseMode
 
 from config import ADMIN_CHAT_ID
 from middlewares.i18n import t
-from handlers.start import stats as user_stats
-from handlers.order_flow import leads, leads_today
+from db.persistence import get_leads, get_leads_count, get_leads_today_count, get_total_users, get_today_users
 from db.conversations import (
     get_recent_conversations,
     get_user_history,
@@ -40,19 +39,19 @@ async def cmd_admin(message: Message) -> None:
         await message.answer(t(uid, "admin_not_authorized"), parse_mode=ParseMode.HTML)
         return
 
-    today = str(date.today())
-    total_users = len(user_stats["users"])
-    total_leads = len(leads)
-    today_users = len(user_stats["today_users"].get(today, set()))
-    today_leads_count = leads_today.get(today, 0)
+    total_users = get_total_users()
+    total_leads = get_leads_count()
+    today_users = get_today_users()
+    today_leads_count = get_leads_today_count()
     db_users = await get_user_count()
 
-    if leads:
-        recent = leads[-5:]
+    recent_leads = get_leads(limit=5)
+    if recent_leads:
         recent_lines = []
-        for i, lead in enumerate(reversed(recent), 1):
+        for i, entry in enumerate(recent_leads, 1):
+            lead = entry["data"]
             recent_lines.append(
-                f"{i}. {lead['user_name']} — {lead['platform']} / {lead['niche']} / {lead['budget']}"
+                f"{i}. {lead.get('user_name', 'N/A')} — {lead.get('platform', '')} / {lead.get('niche', '')} / {lead.get('budget', '')}"
             )
         recent_text = "\n".join(recent_lines)
     else:
