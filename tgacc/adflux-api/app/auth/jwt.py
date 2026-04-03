@@ -15,9 +15,9 @@ def create_access_token(data: dict, expires_minutes: int | None = None) -> str:
 
 
 def create_refresh_token(data: dict) -> str:
-    """Create a refresh token with 30-day expiry."""
+    """Create a refresh token with configurable expiry (default 30 days)."""
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(days=30)
+    expire = datetime.now(timezone.utc) + timedelta(days=settings.JWT_REFRESH_DAYS)
     to_encode.update({"exp": expire, "type": "refresh"})
     return jwt.encode(to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
 

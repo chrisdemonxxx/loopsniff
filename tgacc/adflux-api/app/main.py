@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -92,27 +93,43 @@ app.add_middleware(SecurityHeadersMiddleware)
 # --- CSRF protection ---
 app.add_middleware(CSRFMiddleware)
 
+# --- CORS ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://admin.adflux.store",
-        "https://portal.adflux.store",
-        "https://adflux.store",
-        "https://www.adflux.store",
-        "http://localhost:3000",
-        "http://localhost:3001",
-    ],
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization", "ngrok-skip-browser-warning", "X-CSRF-Token"],
 )
+
+# --- Trusted hosts ---
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.ALLOWED_HOSTS)
+
+MAX_BODY_BYTES = settings.MAX_REQUEST_SIZE_MB * 1024 * 1024
+
+
+@app.middleware("http")
+async def limit_request_size(request: Request, call_next):
+    """Reject requests whose Content-Length exceeds the configured max."""
+    content_length = request.headers.get("content-length")
+    if content_length and int(content_length) > MAX_BODY_BYTES:
+        return JSONResponse(
+            status_code=413,
+            content={"detail": f"Request body too large. Max {settings.MAX_REQUEST_SIZE_MB}MB allowed."},
+        )
+    return await call_next(request)
+
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     start = time.time()
     response = await call_next(request)
     duration = time.time() - start
-    log.info(f"{request.method} {request.url.path} → {response.status_code} ({duration:.3f}s)")
+    client_ip = request.client.host if request.client else "unknown"
+    log.info(
+        "%s %s → %s (%.3fs) client=%s",
+        request.method, request.url.path, response.status_code, duration, client_ip,
+    )
     return response
 
 
