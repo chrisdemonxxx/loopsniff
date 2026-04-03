@@ -4,17 +4,17 @@ import os
 
 GOOGLE_CREDS_PATH = os.environ.get(
     "GOOGLE_CREDS_PATH",
-    "/home/cjs/Pictures/robotic-casing-478106-p7-1dcc5c3b8d41.json",
+    "",
 )
 
 NOTION_TOKEN = os.environ.get(
     "NOTION_TOKEN",
-    "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",
+    "",
 )
 
 NOTION_DB_ID = os.environ.get(
     "NOTION_DB_ID",
-    "32d33474ae458054add6d3d011fdc1ca",
+    "",
 )
 
 SPREADSHEET_NAME = "AdFlux CRM - Leads"

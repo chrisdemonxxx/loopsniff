@@ -305,7 +305,7 @@ def build_socks5_proxy(session_tag: str) -> tuple:
     host = os.getenv("PROXY_SELLER_HOST", os.getenv("PROXY_HOST", "res.proxy-seller.com"))
     port = int(os.getenv("PROXY_SELLER_PORT", os.getenv("PROXY_PORT", "10000")))
     user_base = os.getenv("PROXY_SELLER_USER", "api004e59f1d44c9a00")
-    password = os.getenv("PROXY_SELLER_PASS", os.getenv("PROXY_PASSWORD", "avTItX8z32si7P6p"))
+    password = os.getenv("PROXY_SELLER_PASS", os.getenv("PROXY_PASSWORD", ""))
     # Short sticky tag — proxy-seller rejects long session IDs
     username = f"{user_base}_c_US_s_{session_tag}_ttl_1440m"
     return (python_socks.ProxyType.SOCKS5, host, port, True, username, password)

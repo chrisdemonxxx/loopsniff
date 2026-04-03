@@ -126,7 +126,7 @@ def build_socks5_proxy(session_id: str) -> tuple:
     host = os.getenv("PROXY_SELLER_HOST", "res.proxy-seller.com")
     port = int(os.getenv("PROXY_SELLER_PORT", "10000"))
     user_base = os.getenv("PROXY_SELLER_USER", "api004e59f1d44c9a00")
-    password = os.getenv("PROXY_SELLER_PASS", "avTItX8z32si7P6p")
+    password = os.getenv("PROXY_SELLER_PASS", os.getenv("PROXY_PASSWORD", ""))
     country = "US"
 
     # Sticky session: each session gets its own residential IP

@@ -43,7 +43,7 @@ if DEVICE_PROFILES_PATH.exists():
 # ── Proxy (residential — Proxy-Seller) ──────────────────────────────────────
 PROXY_HOST = "res.proxy-seller.com"
 PROXY_PORT = 10000
-PROXY_PASSWORD = os.getenv("PROXY_PASSWORD", "avTItX8z32si7P6p")
+PROXY_PASSWORD = os.getenv("PROXY_PASSWORD", "")
 
 USE_PROXY: bool = True  # Always use per-account proxies
 
@@ -115,9 +115,9 @@ MAX_ACCOUNTS_ACTIVE = 120
 
 # ── Admin notifications ────────────────────────────────────────────────────
 ADMIN_BOT_TOKEN = os.getenv(
-    "ADMIN_BOT_TOKEN", "8707230750:AAHkEFpQIxk1H9JsHu8IQ6jagWp8Qlh8-G4"
+    "ADMIN_BOT_TOKEN", ""
 )
-ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID", "8365840792")
+ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID", "")
 
 # ── Misc ────────────────────────────────────────────────────────────────────
 SMS_MAN_API_KEY = os.getenv("SMS_MAN_API_KEY", "")
