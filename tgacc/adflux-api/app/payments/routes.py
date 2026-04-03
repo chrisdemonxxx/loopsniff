@@ -109,8 +109,8 @@ async def topup(data: TopupRequest, user: dict = Depends(get_current_user), db: 
             txn.nowpay_id = str(invoice["id"])
             await db.flush()
             await db.commit()
-    except Exception:
-        pass
+    except Exception as e:
+        log.error("Failed to create NOWPayments invoice: %s", e)
 
     return TopupResponse(
         transaction_id=txn.id, ad_amount=data.ad_amount,

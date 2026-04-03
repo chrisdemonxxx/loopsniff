@@ -2,6 +2,11 @@ import os
 import uuid
 import logging
 import aiosqlite
+
+# NOTE: Outreach data lives in a separate SQLite DB (OUTREACH_DB_PATH), not
+# the main PostgreSQL database. Raw SQL via aiosqlite is intentional here.
+# Consider migrating to PostgreSQL if the outreach module grows significantly.
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
