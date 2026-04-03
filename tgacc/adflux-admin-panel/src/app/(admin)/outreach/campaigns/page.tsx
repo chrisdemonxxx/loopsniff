@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
 import { Megaphone, Plus, Search, ExternalLink, Play, Pause, Trash2, Loader2, Users, Send, MessageSquare, BarChart3 } from "lucide-react"
 import { useApi, useApiToken, apiFetch } from "@/lib/api"
+import { useToast } from "@/components/ui/toast"
 import { formatPercent } from "@/lib/utils"
 
 interface Campaign {
@@ -44,6 +45,7 @@ export default function CampaignsPage() {
   const [deleting, setDeleting] = useState<string | null>(null)
 
   const token = useApiToken()
+  const { toast } = useToast()
   const { data: campaigns, loading, error, refetch } = useApi<Campaign[]>("/outreach/campaigns?limit=100")
   const { data: metrics } = useApi<CampaignMetrics>("/outreach/metrics/campaigns")
 
@@ -65,7 +67,7 @@ export default function CampaignsPage() {
         body: JSON.stringify({ status: newStatus }),
       })
       refetch()
-    } catch (err: any) { alert(err.message || "Failed to update campaign") }
+    } catch (err: any) { toast(err.message || "Failed to update campaign", "error") }
   }
 
   const handleDelete = async (id: string) => {
@@ -74,7 +76,7 @@ export default function CampaignsPage() {
     try {
       await apiFetch(`/outreach/campaigns/${id}`, token, { method: "DELETE" })
       refetch()
-    } catch (err: any) { alert(err.message || "Failed to delete campaign") }
+    } catch (err: any) { toast(err.message || "Failed to delete campaign", "error") }
     setDeleting(null)
   }
 
