@@ -1,5 +1,4 @@
 import logging
-from datetime import date
 
 import aiohttp
 
@@ -20,20 +19,15 @@ from keyboards.inline import (
 from states.order import OrderStates
 from utils.notifications import notify_admin
 from utils.api_client import api_client, APIError
+from db.persistence import save_lead
 
 logger = logging.getLogger(__name__)
 
 router = Router()
 
-# In-memory leads storage
-leads: list = []
-leads_today: dict = {}  # date_str -> count
-
 
 def _record_lead(data: dict) -> None:
-    leads.append(data)
-    today = str(date.today())
-    leads_today[today] = leads_today.get(today, 0) + 1
+    save_lead(data.get("user_id", 0), data)
 
 
 @router.callback_query(F.data == "menu:order")

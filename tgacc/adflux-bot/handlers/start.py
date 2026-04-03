@@ -1,5 +1,3 @@
-from datetime import date
-
 from aiogram import Router, F
 from aiogram.filters import CommandStart
 from aiogram.types import Message, CallbackQuery
@@ -7,20 +5,13 @@ from aiogram.enums import ParseMode
 
 from middlewares.i18n import t
 from keyboards.inline import main_menu_kb
+from db.persistence import record_user_visit
 
 router = Router()
 
-# In-memory stats
-stats: dict = {
-    "users": set(),
-    "today_users": {},  # date_str -> set of user ids
-}
-
 
 def _track_user(user_id: int) -> None:
-    stats["users"].add(user_id)
-    today = str(date.today())
-    stats["today_users"].setdefault(today, set()).add(user_id)
+    record_user_visit(user_id)
 
 
 @router.message(CommandStart())
