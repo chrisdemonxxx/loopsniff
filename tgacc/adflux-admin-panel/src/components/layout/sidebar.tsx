@@ -14,15 +14,32 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  MessageCircle,
+  MessagesSquare,
+  TicketCheck,
+  UserSearch,
+  UsersRound,
+  Link2,
+  Bell,
+  Settings2,
 } from "lucide-react"
 import { useState } from "react"
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Clients", href: "/clients", icon: Users },
+  { label: "CRM", href: "/crm", icon: UserSearch },
+  { label: "Conversations", href: "/conversations", icon: MessageCircle },
+  { label: "Chat", href: "/chat", icon: MessagesSquare },
+  { label: "Tickets", href: "/tickets", icon: TicketCheck },
   { label: "Accounts", href: "/accounts", icon: CreditCard },
   { label: "Finance", href: "/finance", icon: DollarSign },
   { label: "Outreach", href: "/outreach", icon: Megaphone },
+  { label: "Team", href: "/team", icon: UsersRound },
+  { label: "Affiliates", href: "/affiliates", icon: Link2 },
+  { label: "Subscriptions", href: "/subscriptions", icon: CreditCard },
+  { label: "Alerts", href: "/alerts", icon: Bell },
+  { label: "Deposit Config", href: "/deposit-config", icon: Settings2 },
   { label: "Bot", href: "/bot", icon: Bot },
   { label: "Settings", href: "/settings", icon: Settings },
 ]

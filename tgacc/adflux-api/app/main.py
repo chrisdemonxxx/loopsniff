@@ -39,6 +39,7 @@ from app.facebook.routes import router as facebook_router
 from app.meta.routes import router as meta_router
 from app.provisioning.routes import router as provisioning_router
 from app.analytics.routes import router as analytics_router
+from app.ai.routes import router as ai_router
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 log = logging.getLogger(__name__)
@@ -77,6 +78,7 @@ app = FastAPI(
         {"name": "Tickets", "description": "Support ticket system"},
         {"name": "Orders", "description": "Order management"},
         {"name": "Chat", "description": "Live chat and support conversations"},
+        {"name": "AI Tools", "description": "AI-powered compliance, creative, landing page, and RAG tools"},
     ],
 )
 
@@ -139,6 +141,7 @@ app.include_router(meta_router)
 app.include_router(provisioning_router)
 app.include_router(analytics_router)
 app.include_router(onboarding_router)
+app.include_router(ai_router)
 
 
 @app.get("/")
