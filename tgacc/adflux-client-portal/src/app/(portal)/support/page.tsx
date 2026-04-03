@@ -100,6 +100,17 @@ export default function SupportPage() {
         };
         setMessages((prev) => [...prev, aiMsg]);
         setSending(false);
+        // Show ticket creation notification
+        if (data.ticket_created) {
+          const t = data.ticket_created;
+          const ticketMsg: ChatMessage = {
+            id: `msg_ticket_${Date.now()}`,
+            sender: "system",
+            text: `📋 A support ticket has been created: "${t.subject}" (${t.category}, ${t.priority} priority). You can track it in the Tickets section.`,
+            timestamp: new Date().toISOString(),
+          };
+          setMessages((prev) => [...prev, ticketMsg]);
+        }
       } catch {}
     };
 
@@ -136,9 +147,9 @@ export default function SupportPage() {
     setNewMessage("");
     setSending(true);
 
-    // Send via WebSocket
+    // Send via WebSocket with account manager mode
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ text }));
+      wsRef.current.send(JSON.stringify({ text, mode: "account_manager" }));
     } else {
       // Fallback: just show the message, WS will reconnect
       setSending(false);
@@ -157,7 +168,7 @@ export default function SupportPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white">Support</h1>
-        <p className="text-gray-400">Get help from our AI assistant or human agents</p>
+        <p className="text-gray-400">Chat with your AI Account Manager or request human assistance</p>
       </div>
 
       <div className="grid h-[calc(100vh-220px)] gap-4 grid-cols-1 lg:grid-cols-[300px_1fr]">
@@ -256,7 +267,15 @@ export default function SupportPage() {
                     </div>
                   </div>
                   {activeSession.agent_type !== "human" && (
-                    <Button variant="outline" size="sm">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (wsRef.current?.readyState === WebSocket.OPEN) {
+                          wsRef.current.send(JSON.stringify({ type: "escalate", reason: "Client requested human agent" }));
+                        }
+                      }}
+                    >
                       <Headphones className="mr-2 h-3 w-3" />
                       Request Human
                     </Button>
@@ -282,6 +301,8 @@ export default function SupportPage() {
                             "flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
                             msg.sender === "client"
                               ? "bg-blue-600"
+                              : msg.sender === "system"
+                              ? "bg-emerald-700"
                               : msg.sender === "ai"
                               ? "bg-gray-700"
                               : "bg-green-700"
@@ -289,6 +310,8 @@ export default function SupportPage() {
                         >
                           {msg.sender === "client" ? (
                             <User className="h-4 w-4 text-white" />
+                          ) : msg.sender === "system" ? (
+                            <MessageCircle className="h-4 w-4 text-white" />
                           ) : msg.sender === "ai" ? (
                             <Bot className="h-4 w-4 text-white" />
                           ) : (

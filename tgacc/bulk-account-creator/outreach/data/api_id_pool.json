@@ -1,0 +1,34 @@
+[
+  {
+    "api_id": 2040,
+    "api_hash": "b18441a1ff607e10a989891a5462e627",
+    "sessions_bound": 0,
+    "max_sessions": 12,
+    "is_quarantined": false,
+    "quarantined_reason": ""
+  },
+  {
+    "api_id": 6,
+    "api_hash": "eb06d4abfb49dc3eeb1aeb98ae0f581e",
+    "sessions_bound": 0,
+    "max_sessions": 12,
+    "is_quarantined": false,
+    "quarantined_reason": ""
+  },
+  {
+    "api_id": 10840,
+    "api_hash": "33c45224029d59cb3ad0c16134215aeb",
+    "sessions_bound": 0,
+    "max_sessions": 12,
+    "is_quarantined": false,
+    "quarantined_reason": ""
+  },
+  {
+    "api_id": 21724,
+    "api_hash": "3e0cb5efcd52300aec5994fdfc5bdc16",
+    "sessions_bound": 0,
+    "max_sessions": 12,
+    "is_quarantined": false,
+    "quarantined_reason": ""
+  }
+]

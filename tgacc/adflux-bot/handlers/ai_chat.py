@@ -8,7 +8,9 @@ natural AI-generated answer.
 
 from __future__ import annotations
 
+import asyncio
 import logging
+import os
 import sys
 from collections import defaultdict
 from typing import Dict, List
@@ -16,7 +18,7 @@ from typing import Dict, List
 import aiohttp
 from aiogram import Router
 from aiogram.types import Message
-from aiogram.enums import ParseMode
+from aiogram.enums import ChatAction, ParseMode
 
 from middlewares.i18n import t
 from keyboards.inline import main_menu_kb
@@ -51,7 +53,16 @@ def _import_retriever_class():
         bot_cfg = import_module("config")
         sys.modules["config"] = bot_cfg
 
-_RetrieverCls = _import_retriever_class()
+_RetrieverCls = None
+
+def _get_retriever_class():
+    global _RetrieverCls
+    if _RetrieverCls is None:
+        try:
+            _RetrieverCls = _import_retriever_class()
+        except Exception:
+            pass
+    return _RetrieverCls
 
 log = logging.getLogger(__name__)
 
@@ -59,9 +70,9 @@ router = Router()
 
 # ── Ollama Cloud settings ────────────────────────────────────────────────
 
-OLLAMA_URL = "https://api.ollamacloud.com/v1/chat/completions"
-OLLAMA_API_KEY = "5d92bf191608457d951f3eea8459b66e"
-OLLAMA_MODEL = "llama3.1:8b"
+OLLAMA_URL = os.getenv("OLLAMA_URL", "https://ollama.com/v1/chat/completions")
+OLLAMA_API_KEY = os.getenv("OLLAMA_API_KEY", "5d92bf191608457d951f3eea8459b66e")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
 
 SYSTEM_PROMPT = (
     "You are the AI assistant for AdFlux Media, a premium agency ad account "
@@ -85,7 +96,9 @@ _retriever: object | None = None
 def _get_retriever():
     global _retriever
     if _retriever is None:
-        _retriever = _RetrieverCls()
+        cls = _get_retriever_class()
+        if cls is not None:
+            _retriever = cls()
     return _retriever
 
 
@@ -111,16 +124,16 @@ async def _ollama_chat(messages: list[dict]) -> str:
                 OLLAMA_URL,
                 headers=headers,
                 json=payload,
-                timeout=aiohttp.ClientTimeout(total=30),
+                timeout=aiohttp.ClientTimeout(total=60),
             ) as resp:
                 if resp.status != 200:
                     body = await resp.text()
-                    log.error("Ollama Cloud error (%d): %s", resp.status, body)
+                    log.error("Ollama Cloud error (%d): %s  [URL: %s]", resp.status, body, OLLAMA_URL)
                     return ""
                 data = await resp.json()
                 return data["choices"][0]["message"]["content"]
     except Exception as exc:
-        log.error("Ollama Cloud request failed: %s", exc)
+        log.error("Ollama Cloud request failed: %s  [URL: %s]", exc, OLLAMA_URL)
         return ""
 
 
@@ -128,15 +141,27 @@ async def _ollama_chat(messages: list[dict]) -> str:
 
 
 def _build_rag_context(query: str) -> str:
-    """Retrieve knowledge-base context from ChromaDB."""
-    retriever = _get_retriever()
-    results = retriever.get_knowledge(query, n_results=3)
-    if not results:
+    """Retrieve knowledge-base context from ChromaDB (sync — run in executor)."""
+    try:
+        retriever = _get_retriever()
+        if retriever is None:
+            return ""
+        results = retriever.get_knowledge(query, n_results=3)
+        if not results:
+            return ""
+        parts = ["=== AdFlux Knowledge Base ==="]
+        for r in results:
+            parts.append(r["text"])
+        return "\n\n".join(parts)
+    except Exception as exc:
+        log.error("RAG context retrieval failed: %s", exc)
         return ""
-    parts = ["=== AdFlux Knowledge Base ==="]
-    for r in results:
-        parts.append(r["text"])
-    return "\n\n".join(parts)
+
+
+async def _build_rag_context_async(query: str) -> str:
+    """Run the sync RAG retrieval in a thread to avoid blocking the event loop."""
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(None, _build_rag_context, query)
 
 
 # ── Handler ──────────────────────────────────────────────────────────────
@@ -156,37 +181,44 @@ async def free_text_handler(message: Message) -> None:
         )
         return
 
-    # 1. Retrieve RAG context
-    rag_context = _build_rag_context(text)
+    try:
+        # Show typing indicator while processing
+        await message.bot.send_chat_action(message.chat.id, ChatAction.TYPING)
 
-    # 2. Build LLM messages with history
-    llm_messages: list[dict] = []
+        # 1. Retrieve RAG context (non-blocking)
+        rag_context = await _build_rag_context_async(text)
 
-    if rag_context:
-        llm_messages.append(
-            {
-                "role": "user",
-                "content": (
-                    "[CONTEXT — use to inform your answer, do not repeat "
-                    "verbatim]\n\n" + rag_context
-                ),
-            }
-        )
-        llm_messages.append(
-            {
-                "role": "assistant",
-                "content": "Got it, I'll use this context.",
-            }
-        )
+        # 2. Build LLM messages with history
+        llm_messages: list[dict] = []
 
-    # Append conversation history (last MAX_HISTORY messages)
-    llm_messages.extend(_conversations[uid][-MAX_HISTORY:])
+        if rag_context:
+            llm_messages.append(
+                {
+                    "role": "user",
+                    "content": (
+                        "[CONTEXT — use to inform your answer, do not repeat "
+                        "verbatim]\n\n" + rag_context
+                    ),
+                }
+            )
+            llm_messages.append(
+                {
+                    "role": "assistant",
+                    "content": "Got it, I'll use this context.",
+                }
+            )
 
-    # Append current user message
-    llm_messages.append({"role": "user", "content": text})
+        # Append conversation history (last MAX_HISTORY messages)
+        llm_messages.extend(_conversations[uid][-MAX_HISTORY:])
 
-    # 3. Generate AI response
-    ai_reply = await _ollama_chat(llm_messages)
+        # Append current user message
+        llm_messages.append({"role": "user", "content": text})
+
+        # 3. Generate AI response
+        ai_reply = await _ollama_chat(llm_messages)
+    except Exception as exc:
+        log.error("AI pipeline failed for user %d: %s", uid, exc)
+        ai_reply = ""
 
     if not ai_reply:
         # Fallback when Ollama Cloud is unavailable

@@ -1,0 +1,527 @@
+2026-04-01 13:00:01.705 | INFO     | __main__:run_session:732 - ⏰ Circadian jitter: 1692s (28 min) before starting
+2026-04-01 13:28:13.805 | INFO     | __main__:execute_session:625 - === AFTERNOON session for 573123245812 (day 1) — {'join': 1, 'read': 6, 'react': 1} ===
+Attempt 1 at connecting failed: ConnectionError: Proxy connection timed out: 10
+Attempt 2 at connecting failed: ConnectionError: Proxy connection timed out: 10
+Attempt 3 at connecting failed: ConnectionErrorExtra: Username and password authentication failure
+Attempt 4 at connecting failed: ConnectionErrorExtra: Username and password authentication failure
+Attempt 5 at connecting failed: ConnectionErrorExtra: Username and password authentication failure
+Attempt 6 at connecting failed: ConnectionErrorExtra: Username and password authentication failure
+2026-04-01 13:28:52.506 | ERROR    | __main__:execute_session:706 - ❌ 573123245812 — Error: Connection to Telegram failed 5 time(s)
+2026-04-01 13:28:52.520 | INFO     | __main__:run_session:760 - Inter-session gap: 31s
+2026-04-01 13:29:23.336 | INFO     | __main__:execute_session:625 - === AFTERNOON session for 573123248690 (day 1) — {'join': 1, 'read': 5, 'react': 2} ===
+Attempt 1 at connecting failed: ConnectionErrorExtra: Username and password authentication failure
+Attempt 2 at connecting failed: ConnectionErrorExtra: Username and password authentication failure
+Attempt 3 at connecting failed: ConnectionErrorExtra: Username and password authentication failure
+Attempt 4 at connecting failed: ConnectionErrorExtra: Username and password authentication failure
+Attempt 5 at connecting failed: ConnectionError: Proxy connection timed out: 10
+Attempt 6 at connecting failed: ConnectionErrorExtra: Username and password authentication failure
+2026-04-01 13:30:01.536 | ERROR    | __main__:execute_session:706 - ❌ 573123248690 — Error: Connection to Telegram failed 5 time(s)
+2026-04-01 13:30:01.550 | INFO     | __main__:run_session:760 - Inter-session gap: 52s
+2026-04-01 13:30:53.324 | INFO     | __main__:run_session:750 - ⏭️ Skipping 573123252175 afternoon session (random skip)
+2026-04-01 13:30:53.337 | INFO     | __main__:execute_session:625 - === AFTERNOON session for 573123255047 (day 1) — {'join': 1, 'read': 4, 'react': 2} ===
+Attempt 1 at connecting failed: ConnectionErrorExtra: Username and password authentication failure
+Attempt 2 at connecting failed: ConnectionErrorExtra: Username and password authentication failure
+Attempt 3 at connecting failed: ConnectionErrorExtra: Username and password authentication failure
+Attempt 4 at connecting failed: ConnectionErrorExtra: Username and password authentication failure
+Attempt 5 at connecting failed: ConnectionErrorExtra: Username and password authentication failure
+Attempt 6 at connecting failed: ConnectionErrorExtra: Username and password authentication failure
+2026-04-01 13:31:14.062 | ERROR    | __main__:execute_session:706 - ❌ 573123255047 — Error: Connection to Telegram failed 5 time(s)
+2026-04-01 13:31:14.076 | INFO     | __main__:run_session:760 - Inter-session gap: 31s
+2026-04-01 13:31:44.951 | INFO     | __main__:execute_session:625 - === AFTERNOON session for 573123258271 (day 1) — {'join': 1, 'read': 5, 'react': 2} ===
+Attempt 1 at connecting failed: ConnectionErrorExtra: Username and password authentication failure
+Attempt 2 at connecting failed: ConnectionErrorExtra: Username and password authentication failure
+Attempt 3 at connecting failed: ConnectionErrorExtra: Username and password authentication failure
+Attempt 4 at connecting failed: ConnectionErrorExtra: Username and password authentication failure
+Attempt 5 at connecting failed: ConnectionErrorExtra: Username and password authentication failure
+Attempt 6 at connecting failed: ConnectionErrorExtra: Username and password authentication failure
+2026-04-01 13:32:15.685 | ERROR    | __main__:execute_session:706 - ❌ 573123258271 — Error: Connection to Telegram failed 5 time(s)
+
+=============================================
+🌡️ AFTERNOON Session Summary
+=============================================
+✅ Successful: 0/4
+  ⏭️ 573123245812 (day 1): {} [error]
+  ⏭️ 573123248690 (day 1): {} [error]
+  ⏭️ 573123255047 (day 1): {} [error]
+  ⏭️ 573123258271 (day 1): {} [error]
+
+2026-04-01 19:00:01.418 | INFO     | __main__:run_session:734 - ⏰ Circadian jitter: 1265s (21 min) before starting
+2026-04-01 19:21:06.518 | INFO     | __main__:run_session:752 - ⏭️ Skipping 573123245812 evening session (random skip)
+2026-04-01 19:21:06.531 | INFO     | __main__:execute_session:625 - === EVENING session for 573123248690 (day 1) — {'read': 3, 'react': 2} ===
+2026-04-01 19:21:12.475 | INFO     | __main__:execute_session:665 - Connected as: Ispxeimz (@None)
+2026-04-01 19:22:23.565 | INFO     | __main__:execute_session:694 - Session complete for 573123248690: {'react': 2, 'read': 2}
+2026-04-01 19:22:23.580 | INFO     | __main__:run_session:762 - Inter-session gap: 79s
+2026-04-01 19:23:42.267 | INFO     | __main__:execute_session:625 - === EVENING session for 573123252175 (day 1) — {'read': 2, 'react': 1} ===
+2026-04-01 19:23:47.377 | INFO     | __main__:execute_session:665 - Connected as: Djyenozk (@None)
+2026-04-01 19:24:37.709 | INFO     | __main__:execute_session:694 - Session complete for 573123252175: {'react': 1, 'read': 2}
+2026-04-01 19:24:37.723 | INFO     | __main__:run_session:762 - Inter-session gap: 34s
+2026-04-01 19:25:11.516 | INFO     | __main__:execute_session:625 - === EVENING session for 573123255047 (day 1) — {'read': 3, 'react': 1} ===
+2026-04-01 19:25:17.984 | INFO     | __main__:execute_session:665 - Connected as: Mhclhrjjon (@None)
+Server closed the connection: 0 bytes read on a total of 8 expected bytes
+2026-04-01 19:26:27.284 | INFO     | __main__:execute_session:694 - Session complete for 573123255047: {'read': 3, 'react': 1}
+2026-04-01 19:26:27.288 | INFO     | __main__:run_session:762 - Inter-session gap: 112s
+2026-04-01 19:28:19.275 | INFO     | __main__:execute_session:625 - === EVENING session for 573123258271 (day 1) — {'read': 2, 'react': 2} ===
+2026-04-01 19:28:24.529 | INFO     | __main__:execute_session:665 - Connected as: Brhoozglv (@None)
+2026-04-01 19:29:26.445 | INFO     | __main__:execute_session:694 - Session complete for 573123258271: {'read': 2, 'react': 2}
+2026-04-01 19:29:26.449 | INFO     | __main__:run_session:762 - Inter-session gap: 71s
+2026-04-01 19:30:37.568 | INFO     | __main__:execute_session:625 - === EVENING session for 12202424035 (day 1) — {'read': 2, 'react': 2} ===
+2026-04-01 19:30:43.296 | INFO     | __main__:execute_session:665 - Connected as: Raymond (@None)
+2026-04-01 19:31:06.642 | INFO     | __main__:execute_session:694 - Session complete for 12202424035: {'read': 0, 'react': 0}
+2026-04-01 19:31:06.657 | INFO     | __main__:run_session:762 - Inter-session gap: 52s
+2026-04-01 19:31:58.793 | INFO     | __main__:execute_session:625 - === EVENING session for 12515711662 (day 1) — {'read': 3, 'react': 2} ===
+2026-04-01 19:32:04.375 | INFO     | __main__:execute_session:665 - Connected as: Taylor (@taylor_brooks_73)
+2026-04-01 19:33:05.920 | INFO     | __main__:execute_session:694 - Session complete for 12515711662: {'read': 3, 'react': 2}
+2026-04-01 19:33:05.936 | INFO     | __main__:run_session:762 - Inter-session gap: 93s
+2026-04-01 19:34:38.778 | INFO     | __main__:execute_session:625 - === EVENING session for 12524189707 (day 1) — {'read': 3, 'react': 1} ===
+Attempt 1 at connecting failed: ConnectionError: Proxy connection timed out: 10
+2026-04-01 19:35:00.441 | INFO     | __main__:execute_session:665 - Connected as: Morgan (@morgan_lee_27)
+2026-04-01 19:36:08.711 | INFO     | __main__:execute_session:694 - Session complete for 12524189707: {'read': 3, 'react': 1}
+2026-04-01 19:36:08.715 | INFO     | __main__:run_session:762 - Inter-session gap: 78s
+2026-04-01 19:37:26.713 | INFO     | __main__:execute_session:625 - === EVENING session for 12526555456 (day 1) — {'read': 3, 'react': 2} ===
+2026-04-01 19:37:32.090 | INFO     | __main__:execute_session:665 - Connected as: Casey (@casey_kim_76)
+2026-04-01 19:38:39.206 | INFO     | __main__:execute_session:694 - Session complete for 12526555456: {'react': 2, 'read': 3}
+2026-04-01 19:38:39.210 | INFO     | __main__:run_session:762 - Inter-session gap: 71s
+2026-04-01 19:39:50.670 | INFO     | __main__:execute_session:625 - === EVENING session for 17066408376 (day 1) — {'read': 2, 'react': 1} ===
+2026-04-01 19:39:57.096 | INFO     | __main__:execute_session:665 - Connected as: Вильям (@None)
+2026-04-01 19:40:25.004 | INFO     | __main__:execute_session:694 - Session complete for 17066408376: {'react': 0, 'read': 0}
+2026-04-01 19:40:25.020 | INFO     | __main__:run_session:762 - Inter-session gap: 100s
+2026-04-01 19:42:05.145 | INFO     | __main__:execute_session:625 - === EVENING session for 17747715196 (day 1) — {'read': 3, 'react': 2} ===
+2026-04-01 19:42:11.286 | INFO     | __main__:execute_session:665 - Connected as: Kenneth (@None)
+2026-04-01 19:42:38.685 | INFO     | __main__:execute_session:694 - Session complete for 17747715196: {'react': 0, 'read': 0}
+2026-04-01 19:42:38.699 | INFO     | __main__:run_session:762 - Inter-session gap: 70s
+2026-04-01 19:43:48.676 | INFO     | __main__:execute_session:625 - === EVENING session for 18508525083 (day 1) — {'read': 3, 'react': 2} ===
+2026-04-01 19:43:54.588 | INFO     | __main__:execute_session:665 - Connected as: Chris (@chris_nguyen_13)
+2026-04-01 19:45:14.902 | INFO     | __main__:execute_session:694 - Session complete for 18508525083: {'react': 2, 'read': 3}
+2026-04-01 19:45:14.907 | INFO     | __main__:run_session:762 - Inter-session gap: 99s
+2026-04-01 19:46:53.522 | INFO     | __main__:execute_session:625 - === EVENING session for 19713912593 (day 1) — {'read': 2, 'react': 1} ===
+Attempt 1 at connecting failed: ConnectionError: Proxy connection timed out: 10
+2026-04-01 19:47:13.739 | INFO     | __main__:execute_session:665 - Connected as: Cynthia (@wHnPa3UXoW)
+2026-04-01 19:47:39.623 | INFO     | __main__:execute_session:694 - Session complete for 19713912593: {'react': 0, 'read': 0}
+2026-04-01 19:47:39.640 | INFO     | __main__:run_session:762 - Inter-session gap: 89s
+2026-04-01 19:49:08.431 | INFO     | __main__:run_session:752 - ⏭️ Skipping 573122141010 evening session (random skip)
+2026-04-01 19:49:08.444 | INFO     | __main__:execute_session:625 - === EVENING session for 573123208021 (day 1) — {'read': 2, 'react': 1} ===
+2026-04-01 19:49:14.596 | INFO     | __main__:execute_session:665 - Connected as: Luna (@None)
+2026-04-01 19:49:38.648 | INFO     | __main__:execute_session:694 - Session complete for 573123208021: {'read': 0, 'react': 0}
+2026-04-01 19:49:38.662 | INFO     | __main__:run_session:762 - Inter-session gap: 83s
+2026-04-01 19:51:01.930 | INFO     | __main__:execute_session:625 - === EVENING session for 573125636751 (day 1) — {'read': 3, 'react': 1} ===
+2026-04-01 19:51:08.522 | INFO     | __main__:execute_session:665 - Connected as: Lynn (@None)
+2026-04-01 19:51:43.559 | INFO     | __main__:execute_session:694 - Session complete for 573125636751: {'read': 0, 'react': 0}
+2026-04-01 19:51:43.563 | INFO     | __main__:run_session:762 - Inter-session gap: 56s
+2026-04-01 19:52:39.170 | INFO     | __main__:execute_session:625 - === EVENING session for 573135285668 (day 1) — {'read': 3, 'react': 1} ===
+2026-04-01 19:52:44.263 | INFO     | __main__:execute_session:665 - Connected as: Victor (@None)
+2026-04-01 19:52:59.418 | INFO     | __main__:execute_session:694 - Session complete for 573135285668: {'react': 0, 'read': 0}
+2026-04-01 19:52:59.423 | INFO     | __main__:run_session:762 - Inter-session gap: 73s
+2026-04-01 19:54:12.730 | INFO     | __main__:execute_session:625 - === EVENING session for 573142343411 (day 1) — {'read': 3, 'react': 2} ===
+Server closed the connection: 0 bytes read on a total of 8 expected bytes
+2026-04-01 19:54:30.583 | INFO     | __main__:execute_session:665 - Connected as: Hayden (@hayden_garcia_56)
+2026-04-01 19:56:45.697 | INFO     | __main__:execute_session:694 - Session complete for 573142343411: {'read': 0, 'react': 0}
+2026-04-01 19:56:45.712 | INFO     | __main__:run_session:762 - Inter-session gap: 72s
+2026-04-01 19:57:57.781 | INFO     | __main__:execute_session:625 - === EVENING session for 573143114581 (day 1) — {'read': 2, 'react': 1} ===
+2026-04-01 19:58:05.318 | INFO     | __main__:execute_session:665 - Connected as: Rowan (@rowan_martinez_81)
+2026-04-01 19:58:53.225 | INFO     | __main__:execute_session:694 - Session complete for 573143114581: {'react': 1, 'read': 2}
+2026-04-01 19:58:53.232 | INFO     | __main__:run_session:762 - Inter-session gap: 39s
+2026-04-01 19:59:32.108 | INFO     | __main__:execute_session:625 - === EVENING session for 573147442883 (day 1) — {'read': 2, 'react': 2} ===
+2026-04-01 19:59:37.097 | INFO     | __main__:execute_session:665 - Connected as: Catalina (@None)
+2026-04-01 20:00:02.573 | INFO     | __main__:execute_session:694 - Session complete for 573147442883: {'react': 0, 'read': 0}
+2026-04-01 20:00:02.590 | INFO     | __main__:run_session:762 - Inter-session gap: 62s
+2026-04-01 20:01:05.030 | INFO     | __main__:execute_session:625 - === EVENING session for 12536603741 (day 1) — {'read': 2, 'react': 1} ===
+2026-04-01 20:01:12.837 | INFO     | __main__:execute_session:665 - Connected as: Abel (@None)
+2026-04-01 20:01:53.083 | INFO     | __main__:execute_session:694 - Session complete for 12536603741: {'react': 1, 'read': 1}
+2026-04-01 20:01:53.089 | INFO     | __main__:run_session:762 - Inter-session gap: 65s
+2026-04-01 20:02:58.029 | INFO     | __main__:execute_session:625 - === EVENING session for 13435696891 (day 1) — {'read': 2, 'react': 1} ===
+2026-04-01 20:03:04.168 | INFO     | __main__:execute_session:665 - Connected as: Tina (@None)
+2026-04-01 20:03:34.598 | INFO     | __main__:execute_session:694 - Session complete for 13435696891: {'react': 0, 'read': 0}
+2026-04-01 20:03:34.604 | INFO     | __main__:run_session:762 - Inter-session gap: 91s
+2026-04-01 20:05:05.611 | INFO     | __main__:execute_session:625 - === EVENING session for 13435696896 (day 1) — {'read': 3, 'react': 2} ===
+Attempt 1 at connecting failed: ConnectionError: Proxy connection timed out: 10
+Attempt 2 at connecting failed: ConnectionError: Proxy connection timed out: 10
+Attempt 3 at connecting failed: ConnectionError: Proxy connection timed out: 10
+Attempt 4 at connecting failed: ConnectionError: Proxy connection timed out: 10
+2026-04-01 20:05:56.072 | INFO     | __main__:execute_session:665 - Connected as: Sherry (@None)
+2026-04-01 20:06:22.261 | INFO     | __main__:execute_session:694 - Session complete for 13435696896: {'read': 0, 'react': 0}
+2026-04-01 20:06:22.275 | INFO     | __main__:run_session:762 - Inter-session gap: 35s
+2026-04-01 20:06:57.457 | INFO     | __main__:execute_session:625 - === EVENING session for 13435696897 (day 1) — {'read': 2, 'react': 2} ===
+Attempt 1 at connecting failed: ConnectionError: Proxy connection timed out: 10
+2026-04-01 20:07:29.005 | INFO     | __main__:execute_session:665 - Connected as: Susan (@None)
+2026-04-01 20:08:21.702 | INFO     | __main__:execute_session:694 - Session complete for 13435696897: {'read': 0, 'react': 0}
+2026-04-01 20:08:21.707 | INFO     | __main__:run_session:762 - Inter-session gap: 83s
+2026-04-01 20:09:44.532 | INFO     | __main__:execute_session:625 - === EVENING session for 13435696898 (day 1) — {'read': 2, 'react': 2} ===
+2026-04-01 20:09:55.716 | INFO     | __main__:execute_session:665 - Connected as: Richard (@None)
+2026-04-01 20:10:17.678 | INFO     | __main__:execute_session:694 - Session complete for 13435696898: {'read': 0, 'react': 0}
+2026-04-01 20:10:17.693 | INFO     | __main__:run_session:762 - Inter-session gap: 46s
+2026-04-01 20:11:03.765 | INFO     | __main__:run_session:752 - ⏭️ Skipping 17124179288 evening session (random skip)
+
+=============================================
+🌡️ EVENING Session Summary
+=============================================
+✅ Successful: 23/23
+  ✅ 573123248690 (day 1): {'react': 2, 'read': 2} [ok]
+  ✅ 573123252175 (day 1): {'react': 1, 'read': 2} [ok]
+  ✅ 573123255047 (day 1): {'read': 3, 'react': 1} [ok]
+  ✅ 573123258271 (day 1): {'read': 2, 'react': 2} [ok]
+  ✅ 12202424035 (day 1): {'read': 0, 'react': 0} [ok]
+  ✅ 12515711662 (day 1): {'read': 3, 'react': 2} [ok]
+  ✅ 12524189707 (day 1): {'read': 3, 'react': 1} [ok]
+  ✅ 12526555456 (day 1): {'react': 2, 'read': 3} [ok]
+  ✅ 17066408376 (day 1): {'react': 0, 'read': 0} [ok]
+  ✅ 17747715196 (day 1): {'react': 0, 'read': 0} [ok]
+  ✅ 18508525083 (day 1): {'react': 2, 'read': 3} [ok]
+  ✅ 19713912593 (day 1): {'react': 0, 'read': 0} [ok]
+  ✅ 573123208021 (day 1): {'read': 0, 'react': 0} [ok]
+  ✅ 573125636751 (day 1): {'read': 0, 'react': 0} [ok]
+  ✅ 573135285668 (day 1): {'react': 0, 'read': 0} [ok]
+  ✅ 573142343411 (day 1): {'read': 0, 'react': 0} [ok]
+  ✅ 573143114581 (day 1): {'react': 1, 'read': 2} [ok]
+  ✅ 573147442883 (day 1): {'react': 0, 'read': 0} [ok]
+  ✅ 12536603741 (day 1): {'react': 1, 'read': 1} [ok]
+  ✅ 13435696891 (day 1): {'react': 0, 'read': 0} [ok]
+  ✅ 13435696896 (day 1): {'read': 0, 'react': 0} [ok]
+  ✅ 13435696897 (day 1): {'read': 0, 'react': 0} [ok]
+  ✅ 13435696898 (day 1): {'read': 0, 'react': 0} [ok]
+
+2026-04-02 08:00:01.898 | INFO     | __main__:run_session:734 - ⏰ Circadian jitter: 1244s (21 min) before starting
+2026-04-02 08:20:45.998 | INFO     | __main__:execute_session:607 - Session 573123245812/morning day 1 already done, skipping
+2026-04-02 08:20:45.998 | INFO     | __main__:run_session:762 - Inter-session gap: 54s
+2026-04-02 08:21:39.950 | INFO     | __main__:execute_session:625 - === MORNING session for 573123248690 (day 2) — {'read': 4, 'react': 1} ===
+2026-04-02 08:21:45.565 | INFO     | __main__:execute_session:665 - Connected as: Ispxeimz (@None)
+2026-04-02 08:22:35.089 | INFO     | __main__:execute_session:694 - Session complete for 573123248690: {'react': 1, 'read': 2}
+2026-04-02 08:22:35.093 | INFO     | __main__:run_session:762 - Inter-session gap: 59s
+2026-04-02 08:23:34.519 | INFO     | __main__:execute_session:625 - === MORNING session for 573123252175 (day 2) — {'read': 6, 'react': 2} ===
+2026-04-02 08:23:40.285 | INFO     | __main__:execute_session:665 - Connected as: Djyenozk (@None)
+Server closed the connection: 0 bytes read on a total of 8 expected bytes
+2026-04-02 08:24:49.042 | INFO     | __main__:execute_session:694 - Session complete for 573123252175: {'react': 2, 'read': 3}
+2026-04-02 08:24:49.056 | INFO     | __main__:run_session:762 - Inter-session gap: 76s
+2026-04-02 08:26:04.911 | INFO     | __main__:execute_session:625 - === MORNING session for 573123255047 (day 2) — {'read': 4, 'react': 1} ===
+2026-04-02 08:26:11.521 | INFO     | __main__:execute_session:665 - Connected as: Mhclhrjjon (@None)
+2026-04-02 08:27:05.657 | INFO     | __main__:execute_session:694 - Session complete for 573123255047: {'react': 1, 'read': 3}
+2026-04-02 08:27:05.661 | INFO     | __main__:run_session:762 - Inter-session gap: 32s
+2026-04-02 08:27:37.310 | INFO     | __main__:execute_session:625 - === MORNING session for 573123258271 (day 2) — {'read': 6, 'react': 2} ===
+2026-04-02 08:27:42.656 | INFO     | __main__:execute_session:665 - Connected as: Brhoozglv (@None)
+2026-04-02 08:28:36.574 | INFO     | __main__:execute_session:694 - Session complete for 573123258271: {'read': 3, 'react': 2}
+2026-04-02 08:28:36.580 | INFO     | __main__:run_session:762 - Inter-session gap: 107s
+2026-04-02 08:30:23.947 | INFO     | __main__:execute_session:625 - === MORNING session for 12202424035 (day 1) — {'profile_setup': 1, 'join': 1, 'read': 2} ===
+2026-04-02 08:30:30.117 | INFO     | __main__:execute_session:665 - Connected as: Raymond (@None)
+2026-04-02 08:30:38.482 | DEBUG    | __main__:act_profile_setup:571 -   Profile setup failed: You tried to use a method that is not available for frozen accounts (caused by UpdateProfileRequest)
+2026-04-02 08:30:54.751 | INFO     | __main__:execute_session:694 - Session complete for 12202424035: {'profile_setup': 0, 'read': 0, 'join': 0}
+2026-04-02 08:30:54.755 | INFO     | __main__:run_session:762 - Inter-session gap: 47s
+2026-04-02 08:31:41.513 | INFO     | __main__:run_session:752 - ⏭️ Skipping 12515711662 morning session (random skip)
+2026-04-02 08:31:41.516 | INFO     | __main__:execute_session:625 - === MORNING session for 12524189707 (day 1) — {'profile_setup': 1, 'join': 1, 'read': 3} ===
+2026-04-02 08:31:47.366 | INFO     | __main__:execute_session:665 - Connected as: Morgan (@morgan_lee_27)
+2026-04-02 08:32:08.312 | INFO     | __main__:act_join:342 -   📥 Joined: '#JTS Blockchain & Gaming Community'
+2026-04-02 08:32:59.964 | INFO     | __main__:act_profile_setup:567 -   👤 Set bio: 'Tech enthusiast | Always learning'
+2026-04-02 08:33:52.657 | INFO     | __main__:execute_session:694 - Session complete for 12524189707: {'join': 1, 'profile_setup': 1, 'read': 3}
+2026-04-02 08:33:52.671 | INFO     | __main__:run_session:762 - Inter-session gap: 63s
+2026-04-02 08:34:55.301 | INFO     | __main__:execute_session:625 - === MORNING session for 12526555456 (day 1) — {'profile_setup': 1, 'join': 1, 'read': 3} ===
+2026-04-02 08:35:02.299 | INFO     | __main__:execute_session:665 - Connected as: Casey (@casey_kim_76)
+2026-04-02 08:35:16.999 | INFO     | __main__:act_join:342 -   📥 Joined: 'Magnetto | Digital Marketing Agency'
+Server closed the connection: 0 bytes read on a total of 8 expected bytes
+2026-04-02 08:36:40.446 | INFO     | __main__:act_profile_setup:567 -   👤 Set bio: 'Tech enthusiast | Always learning'
+2026-04-02 08:36:46.584 | INFO     | __main__:execute_session:694 - Session complete for 12526555456: {'join': 1, 'read': 3, 'profile_setup': 1}
+2026-04-02 08:36:46.598 | INFO     | __main__:run_session:762 - Inter-session gap: 81s
+2026-04-02 08:38:07.948 | INFO     | __main__:execute_session:625 - === MORNING session for 17066408376 (day 1) — {'profile_setup': 1, 'join': 1, 'read': 2} ===
+2026-04-02 08:38:14.398 | INFO     | __main__:execute_session:665 - Connected as: Вильям (@None)
+2026-04-02 08:38:50.041 | DEBUG    | __main__:act_profile_setup:571 -   Profile setup failed: You tried to use a method that is not available for frozen accounts (caused by UpdateProfileRequest)
+2026-04-02 08:39:11.076 | INFO     | __main__:execute_session:694 - Session complete for 17066408376: {'read': 0, 'profile_setup': 0, 'join': 0}
+2026-04-02 08:39:11.090 | INFO     | __main__:run_session:762 - Inter-session gap: 61s
+2026-04-02 08:40:12.194 | INFO     | __main__:execute_session:625 - === MORNING session for 17747715196 (day 1) — {'profile_setup': 1, 'join': 1, 'read': 2} ===
+2026-04-02 08:40:18.393 | INFO     | __main__:execute_session:665 - Connected as: Kenneth (@None)
+2026-04-02 08:40:39.548 | DEBUG    | __main__:act_profile_setup:571 -   Profile setup failed: You tried to use a method that is not available for frozen accounts (caused by UpdateProfileRequest)
+2026-04-02 08:40:50.119 | INFO     | __main__:execute_session:694 - Session complete for 17747715196: {'join': 0, 'profile_setup': 0, 'read': 0}
+2026-04-02 08:40:50.135 | INFO     | __main__:run_session:762 - Inter-session gap: 43s
+2026-04-02 08:41:32.878 | INFO     | __main__:execute_session:625 - === MORNING session for 18508525083 (day 1) — {'profile_setup': 1, 'join': 1, 'read': 3} ===
+2026-04-02 08:41:38.274 | INFO     | __main__:execute_session:665 - Connected as: Chris (@chris_nguyen_13)
+2026-04-02 08:41:50.014 | INFO     | __main__:act_profile_setup:567 -   👤 Set bio: 'Tech enthusiast | Always learning'
+2026-04-02 08:42:07.234 | INFO     | __main__:act_join:342 -   📥 Joined: 'CryptoJobsList | Web3 Jobs'
+2026-04-02 08:43:09.740 | INFO     | __main__:execute_session:694 - Session complete for 18508525083: {'profile_setup': 1, 'join': 1, 'read': 3}
+2026-04-02 08:43:09.744 | INFO     | __main__:run_session:762 - Inter-session gap: 50s
+2026-04-02 08:43:59.728 | INFO     | __main__:execute_session:625 - === MORNING session for 19713912593 (day 1) — {'profile_setup': 1, 'join': 1, 'read': 3} ===
+2026-04-02 08:44:04.895 | INFO     | __main__:execute_session:665 - Connected as: Cynthia (@wHnPa3UXoW)
+2026-04-02 08:44:12.161 | DEBUG    | __main__:act_profile_setup:571 -   Profile setup failed: You tried to use a method that is not available for frozen accounts (caused by UpdateProfileRequest)
+Server closed the connection: 0 bytes read on a total of 8 expected bytes
+2026-04-02 08:44:57.147 | INFO     | __main__:execute_session:694 - Session complete for 19713912593: {'profile_setup': 0, 'read': 0, 'join': 0}
+2026-04-02 08:44:57.151 | INFO     | __main__:run_session:762 - Inter-session gap: 96s
+2026-04-02 08:46:32.830 | INFO     | __main__:execute_session:625 - === MORNING session for 573122141010 (day 1) — {'profile_setup': 1, 'join': 1, 'read': 3} ===
+2026-04-02 08:46:38.489 | INFO     | __main__:execute_session:665 - Connected as: Claudine (@None)
+2026-04-02 08:46:54.827 | DEBUG    | __main__:act_profile_setup:571 -   Profile setup failed: You tried to use a method that is not available for frozen accounts (caused by UpdateProfileRequest)
+2026-04-02 08:47:20.726 | INFO     | __main__:execute_session:694 - Session complete for 573122141010: {'profile_setup': 0, 'read': 0, 'join': 0}
+2026-04-02 08:47:20.731 | INFO     | __main__:run_session:762 - Inter-session gap: 107s
+2026-04-02 08:49:08.089 | INFO     | __main__:execute_session:625 - === MORNING session for 573123208021 (day 1) — {'profile_setup': 1, 'join': 1, 'read': 2} ===
+2026-04-02 08:49:14.273 | INFO     | __main__:execute_session:665 - Connected as: Luna (@None)
+2026-04-02 08:49:29.632 | DEBUG    | __main__:act_profile_setup:571 -   Profile setup failed: You tried to use a method that is not available for frozen accounts (caused by UpdateProfileRequest)
+2026-04-02 08:49:56.014 | INFO     | __main__:execute_session:694 - Session complete for 573123208021: {'profile_setup': 0, 'join': 0, 'read': 0}
+2026-04-02 08:49:56.019 | INFO     | __main__:run_session:762 - Inter-session gap: 31s
+2026-04-02 08:50:26.916 | INFO     | __main__:run_session:752 - ⏭️ Skipping 573125636751 morning session (random skip)
+2026-04-02 08:50:26.929 | INFO     | __main__:execute_session:625 - === MORNING session for 573135285668 (day 1) — {'profile_setup': 1, 'join': 1, 'read': 2} ===
+2026-04-02 08:50:32.366 | INFO     | __main__:execute_session:665 - Connected as: Victor (@None)
+2026-04-02 08:51:15.089 | DEBUG    | __main__:act_profile_setup:571 -   Profile setup failed: You tried to use a method that is not available for frozen accounts (caused by UpdateProfileRequest)
+2026-04-02 08:51:28.747 | INFO     | __main__:execute_session:694 - Session complete for 573135285668: {'join': 0, 'profile_setup': 0, 'read': 0}
+2026-04-02 08:51:28.762 | INFO     | __main__:run_session:762 - Inter-session gap: 39s
+2026-04-02 08:52:07.704 | INFO     | __main__:execute_session:625 - === MORNING session for 573142343411 (day 1) — {'profile_setup': 1, 'join': 1, 'read': 3} ===
+Attempt 1 at connecting failed: ConnectionErrorExtra: Host unreachable
+Attempt 2 at connecting failed: ConnectionErrorExtra: Host unreachable
+Attempt 3 at connecting failed: ConnectionErrorExtra: Host unreachable
+Attempt 4 at connecting failed: ConnectionErrorExtra: Host unreachable
+Attempt 5 at connecting failed: ConnectionErrorExtra: Host unreachable
+Attempt 6 at connecting failed: ConnectionErrorExtra: Host unreachable
+2026-04-02 08:52:53.177 | ERROR    | __main__:execute_session:708 - ❌ 573142343411 — Error: Connection to Telegram failed 5 time(s)
+2026-04-02 08:52:53.180 | INFO     | __main__:run_session:762 - Inter-session gap: 58s
+2026-04-02 08:53:51.321 | INFO     | __main__:execute_session:625 - === MORNING session for 573143114581 (day 1) — {'profile_setup': 1, 'join': 1, 'read': 2} ===
+Attempt 1 at connecting failed: ConnectionErrorExtra: Host unreachable
+Attempt 2 at connecting failed: ConnectionErrorExtra: Host unreachable
+Attempt 3 at connecting failed: ConnectionErrorExtra: Host unreachable
+Attempt 4 at connecting failed: ConnectionErrorExtra: Host unreachable
+Attempt 5 at connecting failed: ConnectionErrorExtra: Host unreachable
+Attempt 6 at connecting failed: ConnectionErrorExtra: Host unreachable
+2026-04-02 08:54:13.964 | ERROR    | __main__:execute_session:708 - ❌ 573143114581 — Error: Connection to Telegram failed 5 time(s)
+2026-04-02 08:54:13.978 | INFO     | __main__:run_session:762 - Inter-session gap: 66s
+2026-04-02 08:55:20.489 | INFO     | __main__:execute_session:625 - === MORNING session for 573147442883 (day 1) — {'profile_setup': 1, 'join': 1, 'read': 3} ===
+2026-04-02 08:55:26.121 | INFO     | __main__:execute_session:665 - Connected as: Catalina (@None)
+Server closed the connection: 0 bytes read on a total of 8 expected bytes
+2026-04-02 08:56:02.864 | DEBUG    | __main__:act_profile_setup:571 -   Profile setup failed: You tried to use a method that is not available for frozen accounts (caused by UpdateProfileRequest)
+2026-04-02 08:56:02.865 | INFO     | __main__:execute_session:694 - Session complete for 573147442883: {'join': 0, 'read': 0, 'profile_setup': 0}
+2026-04-02 08:56:02.879 | INFO     | __main__:run_session:762 - Inter-session gap: 68s
+2026-04-02 08:57:11.278 | INFO     | __main__:execute_session:625 - === MORNING session for 12536603741 (day 1) — {'profile_setup': 1, 'join': 1, 'read': 3} ===
+2026-04-02 08:57:18.306 | INFO     | __main__:execute_session:665 - Connected as: Abel (@None)
+2026-04-02 08:57:25.610 | INFO     | __main__:act_profile_setup:567 -   👤 Set bio: 'Music lover 🎵 | Coffee addict ☕'
+2026-04-02 08:58:13.111 | INFO     | __main__:act_join:342 -   📥 Joined: 'Aleksandra’s Travel and Adventures'
+2026-04-02 08:58:38.653 | INFO     | __main__:execute_session:694 - Session complete for 12536603741: {'profile_setup': 1, 'read': 1, 'join': 1}
+2026-04-02 08:58:38.657 | INFO     | __main__:run_session:762 - Inter-session gap: 39s
+2026-04-02 08:59:17.775 | INFO     | __main__:execute_session:625 - === MORNING session for 13435696891 (day 1) — {'profile_setup': 1, 'join': 1, 'read': 2} ===
+2026-04-02 08:59:23.973 | INFO     | __main__:execute_session:665 - Connected as: Tina (@None)
+2026-04-02 08:59:58.445 | DEBUG    | __main__:act_profile_setup:571 -   Profile setup failed: You tried to use a method that is not available for frozen accounts (caused by UpdateProfileRequest)
+2026-04-02 09:00:14.519 | INFO     | __main__:execute_session:694 - Session complete for 13435696891: {'read': 0, 'profile_setup': 0, 'join': 0}
+2026-04-02 09:00:14.534 | INFO     | __main__:run_session:762 - Inter-session gap: 39s
+2026-04-02 09:00:53.671 | INFO     | __main__:execute_session:625 - === MORNING session for 13435696896 (day 1) — {'profile_setup': 1, 'join': 1, 'read': 2} ===
+Attempt 1 at connecting failed: ConnectionErrorExtra: Host unreachable
+Attempt 2 at connecting failed: ConnectionErrorExtra: Host unreachable
+Attempt 3 at connecting failed: ConnectionErrorExtra: Host unreachable
+Attempt 4 at connecting failed: ConnectionErrorExtra: Host unreachable
+Attempt 5 at connecting failed: ConnectionErrorExtra: Host unreachable
+Attempt 6 at connecting failed: ConnectionErrorExtra: Host unreachable
+2026-04-02 09:01:39.003 | ERROR    | __main__:execute_session:708 - ❌ 13435696896 — Error: Connection to Telegram failed 5 time(s)
+2026-04-02 09:01:39.007 | INFO     | __main__:run_session:762 - Inter-session gap: 62s
+2026-04-02 09:02:40.709 | INFO     | __main__:execute_session:625 - === MORNING session for 13435696897 (day 1) — {'profile_setup': 1, 'join': 1, 'read': 3} ===
+2026-04-02 09:02:46.804 | INFO     | __main__:execute_session:665 - Connected as: Susan (@None)
+2026-04-02 09:02:58.929 | DEBUG    | __main__:act_profile_setup:571 -   Profile setup failed: You tried to use a method that is not available for frozen accounts (caused by UpdateProfileRequest)
+Server closed the connection: 0 bytes read on a total of 8 expected bytes
+2026-04-02 09:03:48.362 | INFO     | __main__:execute_session:694 - Session complete for 13435696897: {'profile_setup': 0, 'join': 0, 'read': 0}
+2026-04-02 09:03:48.388 | INFO     | __main__:run_session:762 - Inter-session gap: 44s
+2026-04-02 09:04:31.987 | INFO     | __main__:execute_session:625 - === MORNING session for 13435696898 (day 1) — {'profile_setup': 1, 'join': 1, 'read': 2} ===
+2026-04-02 09:04:37.386 | INFO     | __main__:execute_session:665 - Connected as: Richard (@None)
+2026-04-02 09:05:11.496 | DEBUG    | __main__:act_profile_setup:571 -   Profile setup failed: You tried to use a method that is not available for frozen accounts (caused by UpdateProfileRequest)
+2026-04-02 09:05:22.248 | INFO     | __main__:execute_session:694 - Session complete for 13435696898: {'join': 0, 'profile_setup': 0, 'read': 0}
+2026-04-02 09:05:22.267 | INFO     | __main__:run_session:762 - Inter-session gap: 72s
+2026-04-02 09:06:34.571 | INFO     | __main__:execute_session:625 - === MORNING session for 17124179288 (day 1) — {'profile_setup': 1, 'join': 1, 'read': 3} ===
+2026-04-02 09:06:40.673 | INFO     | __main__:execute_session:665 - Connected as: Jarvis (@None)
+Server closed the connection: 0 bytes read on a total of 8 expected bytes
+2026-04-02 09:07:14.505 | INFO     | __main__:act_join:342 -   📥 Joined: 'חדשות סייבר - ארז דסה'
+2026-04-02 09:08:44.440 | INFO     | __main__:act_profile_setup:567 -   👤 Set bio: 'Tech enthusiast | Always learning'
+2026-04-02 09:08:54.409 | INFO     | __main__:execute_session:694 - Session complete for 17124179288: {'join': 1, 'read': 2, 'profile_setup': 1}
+
+=============================================
+🌡️ MORNING Session Summary
+=============================================
+✅ Successful: 20/24
+  ⏭️ 573123245812 (day 1): {} [already_done]
+  ✅ 573123248690 (day 2): {'react': 1, 'read': 2} [ok]
+  ✅ 573123252175 (day 2): {'react': 2, 'read': 3} [ok]
+  ✅ 573123255047 (day 2): {'react': 1, 'read': 3} [ok]
+  ✅ 573123258271 (day 2): {'read': 3, 'react': 2} [ok]
+  ✅ 12202424035 (day 1): {'profile_setup': 0, 'read': 0, 'join': 0} [ok]
+  ✅ 12524189707 (day 1): {'join': 1, 'profile_setup': 1, 'read': 3} [ok]
+  ✅ 12526555456 (day 1): {'join': 1, 'read': 3, 'profile_setup': 1} [ok]
+  ✅ 17066408376 (day 1): {'read': 0, 'profile_setup': 0, 'join': 0} [ok]
+  ✅ 17747715196 (day 1): {'join': 0, 'profile_setup': 0, 'read': 0} [ok]
+  ✅ 18508525083 (day 1): {'profile_setup': 1, 'join': 1, 'read': 3} [ok]
+  ✅ 19713912593 (day 1): {'profile_setup': 0, 'read': 0, 'join': 0} [ok]
+  ✅ 573122141010 (day 1): {'profile_setup': 0, 'read': 0, 'join': 0} [ok]
+  ✅ 573123208021 (day 1): {'profile_setup': 0, 'join': 0, 'read': 0} [ok]
+  ✅ 573135285668 (day 1): {'join': 0, 'profile_setup': 0, 'read': 0} [ok]
+  ⏭️ 573142343411 (day 1): {} [error]
+  ⏭️ 573143114581 (day 1): {} [error]
+  ✅ 573147442883 (day 1): {'join': 0, 'read': 0, 'profile_setup': 0} [ok]
+  ✅ 12536603741 (day 1): {'profile_setup': 1, 'read': 1, 'join': 1} [ok]
+  ✅ 13435696891 (day 1): {'read': 0, 'profile_setup': 0, 'join': 0} [ok]
+  ⏭️ 13435696896 (day 1): {} [error]
+  ✅ 13435696897 (day 1): {'profile_setup': 0, 'join': 0, 'read': 0} [ok]
+  ✅ 13435696898 (day 1): {'join': 0, 'profile_setup': 0, 'read': 0} [ok]
+  ✅ 17124179288 (day 1): {'join': 1, 'read': 2, 'profile_setup': 1} [ok]
+
+2026-04-02 13:00:02.120 | INFO     | __main__:run_session:734 - ⏰ Circadian jitter: 984s (16 min) before starting
+2026-04-02 13:16:26.220 | INFO     | __main__:execute_session:607 - Session 573123245812/afternoon day 1 already done, skipping
+2026-04-02 13:16:26.220 | INFO     | __main__:run_session:762 - Inter-session gap: 87s
+2026-04-02 13:17:52.928 | INFO     | __main__:execute_session:625 - === AFTERNOON session for 573123248690 (day 2) — {'join': 1, 'react': 3, 'read': 5} ===
+2026-04-02 13:17:59.192 | INFO     | __main__:execute_session:665 - Connected as: Ispxeimz (@None)
+2026-04-02 13:18:08.667 | INFO     | __main__:act_join:342 -   📥 Joined: 'YOUR MOTIVATION💪😜'
+2026-04-02 13:20:03.904 | INFO     | __main__:execute_session:694 - Session complete for 573123248690: {'join': 1, 'read': 3, 'react': 3}
+2026-04-02 13:20:03.918 | INFO     | __main__:run_session:762 - Inter-session gap: 65s
+2026-04-02 13:21:08.816 | INFO     | __main__:execute_session:625 - === AFTERNOON session for 573123252175 (day 2) — {'join': 1, 'react': 3, 'read': 5} ===
+2026-04-02 13:21:19.936 | INFO     | __main__:execute_session:665 - Connected as: Djyenozk (@None)
+2026-04-02 13:22:49.233 | INFO     | __main__:act_join:342 -   📥 Joined: 'Tajik Music Production'
+2026-04-02 13:23:14.515 | INFO     | __main__:execute_session:694 - Session complete for 573123252175: {'read': 3, 'react': 3, 'join': 1}
+2026-04-02 13:23:14.519 | INFO     | __main__:run_session:762 - Inter-session gap: 104s
+2026-04-02 13:24:58.757 | INFO     | __main__:execute_session:625 - === AFTERNOON session for 573123255047 (day 2) — {'join': 1, 'react': 2, 'read': 5} ===
+2026-04-02 13:25:05.187 | INFO     | __main__:execute_session:665 - Connected as: Mhclhrjjon (@None)
+Server closed the connection: 0 bytes read on a total of 8 expected bytes
+2026-04-02 13:26:09.699 | INFO     | __main__:act_join:342 -   📥 Joined: 'Senales Trading Quotex Forex'
+2026-04-02 13:27:25.397 | INFO     | __main__:execute_session:694 - Session complete for 573123255047: {'react': 2, 'join': 1, 'read': 4}
+2026-04-02 13:27:25.401 | INFO     | __main__:run_session:762 - Inter-session gap: 76s
+2026-04-02 13:28:41.448 | INFO     | __main__:execute_session:625 - === AFTERNOON session for 573123258271 (day 2) — {'join': 1, 'react': 3, 'read': 5} ===
+2026-04-02 13:28:47.455 | INFO     | __main__:execute_session:665 - Connected as: Brhoozglv (@None)
+2026-04-02 13:29:01.399 | INFO     | __main__:act_join:342 -   📥 Joined: 'Уральские авиалинии'
+2026-04-02 13:30:43.048 | INFO     | __main__:execute_session:694 - Session complete for 573123258271: {'join': 1, 'react': 3, 'read': 4}
+2026-04-02 13:30:43.063 | INFO     | __main__:run_session:762 - Inter-session gap: 55s
+2026-04-02 13:31:38.388 | INFO     | __main__:execute_session:607 - Session 12515711662/afternoon day 1 already done, skipping
+2026-04-02 13:31:38.388 | INFO     | __main__:run_session:762 - Inter-session gap: 74s
+2026-04-02 13:32:52.769 | INFO     | __main__:execute_session:607 - Session 12524189707/afternoon day 1 already done, skipping
+2026-04-02 13:32:52.769 | INFO     | __main__:run_session:762 - Inter-session gap: 99s
+2026-04-02 13:34:31.701 | INFO     | __main__:execute_session:625 - === AFTERNOON session for 12526555456 (day 2) — {'join': 1, 'react': 3, 'read': 5} ===
+2026-04-02 13:34:38.197 | INFO     | __main__:execute_session:665 - Connected as: Casey (@casey_kim_76)
+Server closed the connection: 0 bytes read on a total of 8 expected bytes
+2026-04-02 13:36:38.594 | INFO     | __main__:act_join:342 -   📥 Joined: 'Best Recipes | Cooking'
+2026-04-02 13:37:14.595 | INFO     | __main__:execute_session:694 - Session complete for 12526555456: {'read': 5, 'react': 3, 'join': 1}
+2026-04-02 13:37:14.599 | INFO     | __main__:run_session:762 - Inter-session gap: 64s
+2026-04-02 13:38:18.360 | INFO     | __main__:execute_session:625 - === AFTERNOON session for 18508525083 (day 2) — {'join': 1, 'react': 2, 'read': 3} ===
+2026-04-02 13:38:25.032 | INFO     | __main__:execute_session:665 - Connected as: Chris (@chris_nguyen_13)
+2026-04-02 13:38:44.717 | INFO     | __main__:act_join:342 -   📥 Joined: 'Choise.ai News'
+2026-04-02 19:00:02.111 | INFO     | __main__:run_session:734 - ⏰ Circadian jitter: 161s (3 min) before starting
+2026-04-02 19:02:43.211 | INFO     | __main__:run_session:752 - ⏭️ Skipping 573123245812 evening session (random skip)
+2026-04-02 19:02:43.215 | INFO     | __main__:execute_session:625 - === EVENING session for 573123248690 (day 2) — {'msg': 1, 'react': 1, 'read': 2} ===
+2026-04-02 19:02:48.734 | INFO     | __main__:execute_session:665 - Connected as: Ispxeimz (@None)
+2026-04-02 19:03:34.624 | INFO     | __main__:execute_session:694 - Session complete for 573123248690: {'react': 1, 'read': 2, 'msg': 0}
+2026-04-02 19:03:34.629 | INFO     | __main__:run_session:762 - Inter-session gap: 118s
+2026-04-02 19:05:32.525 | INFO     | __main__:execute_session:625 - === EVENING session for 573123252175 (day 2) — {'msg': 1, 'react': 1, 'read': 2} ===
+2026-04-02 19:05:38.764 | INFO     | __main__:execute_session:665 - Connected as: Djyenozk (@None)
+2026-04-02 19:06:38.290 | INFO     | __main__:execute_session:694 - Session complete for 573123252175: {'read': 2, 'msg': 0, 'react': 1}
+2026-04-02 19:06:38.296 | INFO     | __main__:run_session:762 - Inter-session gap: 68s
+2026-04-02 19:07:46.805 | INFO     | __main__:run_session:752 - ⏭️ Skipping 573123255047 evening session (random skip)
+2026-04-02 19:07:46.819 | INFO     | __main__:run_session:752 - ⏭️ Skipping 573123258271 evening session (random skip)
+2026-04-02 19:07:46.822 | INFO     | __main__:execute_session:607 - Session 12515711662/evening day 1 already done, skipping
+2026-04-02 19:07:46.822 | INFO     | __main__:run_session:762 - Inter-session gap: 75s
+2026-04-02 19:09:01.565 | INFO     | __main__:execute_session:607 - Session 12524189707/evening day 1 already done, skipping
+2026-04-02 19:09:01.565 | INFO     | __main__:run_session:762 - Inter-session gap: 52s
+2026-04-02 19:09:53.242 | INFO     | __main__:execute_session:625 - === EVENING session for 12526555456 (day 2) — {'msg': 1, 'react': 2, 'read': 3} ===
+2026-04-02 19:09:59.650 | INFO     | __main__:execute_session:665 - Connected as: Casey (@casey_kim_76)
+Server closed the connection: 47 bytes read on a total of 1347703872 expected bytes
+2026-04-02 19:11:44.506 | INFO     | __main__:act_msg:421 -   💬 Msg in 'WallStreetBets'
+2026-04-02 19:12:10.695 | INFO     | __main__:execute_session:694 - Session complete for 12526555456: {'react': 2, 'read': 3, 'msg': 1}
+2026-04-02 19:12:10.710 | INFO     | __main__:run_session:762 - Inter-session gap: 84s
+2026-04-02 19:13:34.331 | INFO     | __main__:execute_session:625 - === EVENING session for 18508525083 (day 2) — {'msg': 1, 'react': 1, 'read': 2} ===
+2026-04-02 19:13:40.928 | INFO     | __main__:execute_session:665 - Connected as: Chris (@chris_nguyen_13)
+2026-04-02 19:13:48.703 | INFO     | __main__:act_msg:421 -   💬 Msg in 'Spin Chat'
+2026-04-02 19:15:33.367 | INFO     | __main__:execute_session:694 - Session complete for 18508525083: {'msg': 1, 'react': 1, 'read': 2}
+2026-04-02 19:15:33.372 | INFO     | __main__:run_session:762 - Inter-session gap: 65s
+2026-04-02 19:16:38.370 | INFO     | __main__:execute_session:607 - Session 573143114581/evening day 1 already done, skipping
+2026-04-02 19:16:38.370 | INFO     | __main__:run_session:762 - Inter-session gap: 80s
+2026-04-02 19:17:58.220 | INFO     | __main__:run_session:752 - ⏭️ Skipping 12536603741 evening session (random skip)
+2026-04-02 19:17:58.224 | INFO     | __main__:execute_session:607 - Session 17124179288/evening day 1 already done, skipping
+
+=============================================
+🌡️ EVENING Session Summary
+=============================================
+✅ Successful: 4/8
+  ✅ 573123248690 (day 2): {'react': 1, 'read': 2, 'msg': 0} [ok]
+  ✅ 573123252175 (day 2): {'read': 2, 'msg': 0, 'react': 1} [ok]
+  ⏭️ 12515711662 (day 1): {} [already_done]
+  ⏭️ 12524189707 (day 1): {} [already_done]
+  ✅ 12526555456 (day 2): {'react': 2, 'read': 3, 'msg': 1} [ok]
+  ✅ 18508525083 (day 2): {'msg': 1, 'react': 1, 'read': 2} [ok]
+  ⏭️ 573143114581 (day 1): {} [already_done]
+  ⏭️ 17124179288 (day 1): {} [already_done]
+
+2026-04-03 08:00:01.584 | INFO     | __main__:run_session:734 - ⏰ Circadian jitter: 938s (16 min) before starting
+2026-04-03 08:15:39.685 | INFO     | __main__:execute_session:607 - Session 573123245812/morning day 1 already done, skipping
+2026-04-03 08:15:39.685 | INFO     | __main__:run_session:762 - Inter-session gap: 112s
+2026-04-03 08:17:32.040 | INFO     | __main__:execute_session:625 - === MORNING session for 573123248690 (day 3) — {'join': 1, 'read': 6, 'react': 3} ===
+2026-04-03 08:17:37.986 | INFO     | __main__:execute_session:665 - Connected as: Ispxeimz (@None)
+2026-04-03 08:18:46.508 | INFO     | __main__:act_join:342 -   📥 Joined: 'Aesthetics & Motivation'
+2026-04-03 08:19:14.628 | INFO     | __main__:execute_session:694 - Session complete for 573123248690: {'react': 3, 'read': 3, 'join': 1}
+2026-04-03 08:19:14.632 | INFO     | __main__:run_session:762 - Inter-session gap: 120s
+2026-04-03 08:21:14.380 | INFO     | __main__:execute_session:625 - === MORNING session for 573123252175 (day 3) — {'join': 1, 'read': 9, 'react': 3} ===
+2026-04-03 08:21:20.030 | INFO     | __main__:execute_session:665 - Connected as: Djyenozk (@None)
+2026-04-03 08:22:16.464 | INFO     | __main__:act_join:342 -   📥 Joined: 'YOUR MOTIVATION💪😜'
+2026-04-03 08:23:33.231 | INFO     | __main__:execute_session:694 - Session complete for 573123252175: {'react': 3, 'join': 1, 'read': 5}
+2026-04-03 08:23:33.235 | INFO     | __main__:run_session:762 - Inter-session gap: 81s
+2026-04-03 08:24:54.345 | INFO     | __main__:execute_session:607 - Session 573123255047/morning day 2 already done, skipping
+2026-04-03 08:24:54.345 | INFO     | __main__:run_session:762 - Inter-session gap: 110s
+2026-04-03 08:26:44.263 | INFO     | __main__:execute_session:607 - Session 573123258271/morning day 2 already done, skipping
+2026-04-03 08:26:44.263 | INFO     | __main__:run_session:762 - Inter-session gap: 56s
+2026-04-03 08:27:40.307 | INFO     | __main__:execute_session:607 - Session 12515711662/morning day 1 already done, skipping
+2026-04-03 08:27:40.307 | INFO     | __main__:run_session:762 - Inter-session gap: 106s
+2026-04-03 08:29:26.904 | INFO     | __main__:run_session:752 - ⏭️ Skipping 12524189707 morning session (random skip)
+2026-04-03 08:29:26.919 | INFO     | __main__:execute_session:625 - === MORNING session for 12526555456 (day 2) — {'read': 3, 'react': 2} ===
+2026-04-03 08:29:32.774 | INFO     | __main__:execute_session:665 - Connected as: Casey (@casey_kim_76)
+2026-04-03 08:30:40.135 | INFO     | __main__:execute_session:694 - Session complete for 12526555456: {'read': 3, 'react': 2}
+2026-04-03 08:30:40.140 | INFO     | __main__:run_session:762 - Inter-session gap: 94s
+2026-04-03 08:32:13.745 | INFO     | __main__:execute_session:625 - === MORNING session for 18508525083 (day 2) — {'read': 4, 'react': 2} ===
+2026-04-03 08:32:20.988 | INFO     | __main__:execute_session:665 - Connected as: Chris (@chris_nguyen_13)
+2026-04-03 08:33:28.575 | INFO     | __main__:execute_session:694 - Session complete for 18508525083: {'read': 4, 'react': 2}
+2026-04-03 08:33:28.590 | INFO     | __main__:run_session:762 - Inter-session gap: 100s
+2026-04-03 08:35:08.867 | INFO     | __main__:run_session:752 - ⏭️ Skipping 573143114581 morning session (random skip)
+2026-04-03 08:35:08.871 | INFO     | __main__:run_session:752 - ⏭️ Skipping 12536603741 morning session (random skip)
+2026-04-03 08:35:08.874 | INFO     | __main__:execute_session:607 - Session 17124179288/morning day 1 already done, skipping
+
+=============================================
+🌡️ MORNING Session Summary
+=============================================
+✅ Successful: 4/9
+  ⏭️ 573123245812 (day 1): {} [already_done]
+  ✅ 573123248690 (day 3): {'react': 3, 'read': 3, 'join': 1} [ok]
+  ✅ 573123252175 (day 3): {'react': 3, 'join': 1, 'read': 5} [ok]
+  ⏭️ 573123255047 (day 2): {} [already_done]
+  ⏭️ 573123258271 (day 2): {} [already_done]
+  ⏭️ 12515711662 (day 1): {} [already_done]
+  ✅ 12526555456 (day 2): {'read': 3, 'react': 2} [ok]
+  ✅ 18508525083 (day 2): {'read': 4, 'react': 2} [ok]
+  ⏭️ 17124179288 (day 1): {} [already_done]
+
+2026-04-03 13:00:02.192 | INFO     | __main__:run_session:734 - ⏰ Circadian jitter: 941s (16 min) before starting
+2026-04-03 13:15:43.293 | INFO     | __main__:execute_session:607 - Session 573123245812/afternoon day 1 already done, skipping
+2026-04-03 13:15:43.293 | INFO     | __main__:run_session:762 - Inter-session gap: 83s
+2026-04-03 13:17:06.140 | INFO     | __main__:execute_session:625 - === AFTERNOON session for 573123248690 (day 3) — {'msg': 1, 'react': 2, 'sticker': 1} ===
+2026-04-03 13:17:11.903 | INFO     | __main__:execute_session:665 - Connected as: Ispxeimz (@None)
+2026-04-03 13:18:28.511 | INFO     | __main__:execute_session:694 - Session complete for 573123248690: {'react': 2, 'msg': 0, 'sticker': 0}
+2026-04-03 13:18:28.517 | INFO     | __main__:run_session:762 - Inter-session gap: 110s
+2026-04-03 13:20:18.432 | INFO     | __main__:execute_session:625 - === AFTERNOON session for 573123252175 (day 3) — {'msg': 2, 'react': 2, 'sticker': 1} ===
+2026-04-03 13:20:25.176 | INFO     | __main__:execute_session:665 - Connected as: Djyenozk (@None)
+2026-04-03 13:21:22.012 | INFO     | __main__:execute_session:694 - Session complete for 573123252175: {'react': 2, 'msg': 0, 'sticker': 0}
+2026-04-03 13:21:22.017 | INFO     | __main__:run_session:762 - Inter-session gap: 71s
+2026-04-03 13:22:32.804 | INFO     | __main__:execute_session:607 - Session 573123255047/afternoon day 2 already done, skipping
+2026-04-03 13:22:32.804 | INFO     | __main__:run_session:762 - Inter-session gap: 119s
+2026-04-03 13:24:32.379 | INFO     | __main__:execute_session:607 - Session 573123258271/afternoon day 2 already done, skipping
+2026-04-03 13:24:32.379 | INFO     | __main__:run_session:762 - Inter-session gap: 100s
+2026-04-03 13:26:12.953 | INFO     | __main__:run_session:752 - ⏭️ Skipping 12515711662 afternoon session (random skip)
+2026-04-03 13:26:12.967 | INFO     | __main__:run_session:752 - ⏭️ Skipping 12524189707 afternoon session (random skip)
+2026-04-03 13:26:12.970 | INFO     | __main__:execute_session:625 - === AFTERNOON session for 12526555456 (day 3) — {'msg': 1, 'react': 3, 'sticker': 1} ===
+2026-04-03 13:26:19.157 | INFO     | __main__:execute_session:665 - Connected as: Casey (@casey_kim_76)
+2026-04-03 13:26:55.442 | INFO     | __main__:act_msg:421 -   💬 Msg in 'Ervin Boer Photography'
+2026-04-03 13:27:42.136 | INFO     | __main__:execute_session:694 - Session complete for 12526555456: {'react': 3, 'msg': 1, 'sticker': 0}
+2026-04-03 13:27:42.151 | INFO     | __main__:run_session:762 - Inter-session gap: 31s
+2026-04-03 13:28:12.842 | INFO     | __main__:execute_session:625 - === AFTERNOON session for 18508525083 (day 2) — {'join': 1, 'react': 3, 'read': 5} ===
+2026-04-03 13:28:18.520 | INFO     | __main__:execute_session:665 - Connected as: Chris (@chris_nguyen_13)
+2026-04-03 13:30:01.424 | INFO     | __main__:act_join:342 -   📥 Joined: 'Best Recipes | Cooking'
+2026-04-03 13:30:44.523 | INFO     | __main__:execute_session:694 - Session complete for 18508525083: {'react': 3, 'read': 5, 'join': 1}
+2026-04-03 13:30:44.527 | INFO     | __main__:run_session:762 - Inter-session gap: 112s
+2026-04-03 13:32:36.544 | INFO     | __main__:execute_session:607 - Session 573143114581/afternoon day 1 already done, skipping
+2026-04-03 13:32:36.544 | INFO     | __main__:run_session:762 - Inter-session gap: 116s
+2026-04-03 13:34:32.596 | INFO     | __main__:execute_session:625 - === AFTERNOON session for 12536603741 (day 2) — {'join': 1, 'react': 2, 'read': 5} ===
+2026-04-03 13:34:40.305 | INFO     | __main__:execute_session:665 - Connected as: Abel (@None)
+2026-04-03 13:34:58.510 | INFO     | __main__:act_join:342 -   📥 Joined: 'Small Business / Entrepreneurship🤝'
+2026-04-03 13:36:49.121 | INFO     | __main__:execute_session:694 - Session complete for 12536603741: {'join': 1, 'read': 3, 'react': 2}
+2026-04-03 13:36:49.136 | INFO     | __main__:run_session:762 - Inter-session gap: 97s
+2026-04-03 13:38:26.566 | INFO     | __main__:run_session:752 - ⏭️ Skipping 17124179288 afternoon session (random skip)
+
+=============================================
+🌡️ AFTERNOON Session Summary
+=============================================
+✅ Successful: 5/9
+  ⏭️ 573123245812 (day 1): {} [already_done]
+  ✅ 573123248690 (day 3): {'react': 2, 'msg': 0, 'sticker': 0} [ok]
+  ✅ 573123252175 (day 3): {'react': 2, 'msg': 0, 'sticker': 0} [ok]
+  ⏭️ 573123255047 (day 2): {} [already_done]
+  ⏭️ 573123258271 (day 2): {} [already_done]
+  ✅ 12526555456 (day 3): {'react': 3, 'msg': 1, 'sticker': 0} [ok]
+  ✅ 18508525083 (day 2): {'react': 3, 'read': 5, 'join': 1} [ok]
+  ⏭️ 573143114581 (day 1): {} [already_done]
+  ✅ 12536603741 (day 2): {'join': 1, 'read': 3, 'react': 2} [ok]
+
