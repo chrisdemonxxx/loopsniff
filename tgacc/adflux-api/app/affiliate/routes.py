@@ -50,6 +50,7 @@ async def get_or_create_affiliate_code(
     )
     db.add(new_code)
     await db.flush()
+    await db.commit()
     await db.refresh(new_code)
     return new_code
 
@@ -83,6 +84,7 @@ async def create_affiliate_code(
     )
     db.add(new_code)
     await db.flush()
+    await db.commit()
     await db.refresh(new_code)
     return new_code
 
@@ -242,6 +244,7 @@ async def admin_update_affiliate(
     for k, v in data.model_dump(exclude_unset=True).items():
         setattr(code, k, v)
     await db.flush()
+    await db.commit()
     await db.refresh(code)
     return code
 
@@ -296,5 +299,6 @@ async def admin_update_commission_status(
     if data.status == "paid":
         commission.paid_at = datetime.now(timezone.utc)
     await db.flush()
+    await db.commit()
     await db.refresh(commission)
     return commission

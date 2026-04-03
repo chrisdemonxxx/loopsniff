@@ -42,6 +42,7 @@ async def onboarding_register(
     )
     db.add(client)
     await db.flush()
+    await db.commit()
 
     hashed = bcrypt.hash(data.password)
     user = ClientUser(
@@ -53,10 +54,12 @@ async def onboarding_register(
     )
     db.add(user)
     await db.flush()
+    await db.commit()
 
     if data.phone:
         client.notes = f"Phone: {data.phone}"
         await db.flush()
+        await db.commit()
 
     token_data = {
         "sub": str(user.id),
@@ -96,6 +99,7 @@ async def select_platforms(
 
     client.niche = ",".join(data.platforms)
     await db.flush()
+    await db.commit()
 
     log.info("Onboarding: client %s selected platforms: %s", client_id, data.platforms)
     return {"detail": "Platforms saved", "platforms": data.platforms}
@@ -131,6 +135,7 @@ async def select_plan(
     if client:
         client.plan = plan.slug
     await db.flush()
+    await db.commit()
 
     log.info("Onboarding: client %s selected plan %s (%s)", client_id, plan.slug, data.interval)
     return {"detail": "Plan saved", "plan": plan.slug, "interval": data.interval}
@@ -155,6 +160,7 @@ async def complete_onboarding(
     client.status = "active"
     client.onboarded_at = datetime.now(timezone.utc)
     await db.flush()
+    await db.commit()
 
     log.info("Onboarding: client %s completed (payment: %s)", client_id, data.payment_method or "pay_later")
     return {"detail": "Onboarding complete", "status": "active"}

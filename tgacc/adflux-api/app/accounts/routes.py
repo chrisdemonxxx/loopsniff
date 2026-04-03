@@ -56,6 +56,7 @@ async def create_account(data: AccountCreate, user: dict = Depends(require_admin
     acct = AdAccount(**data.model_dump())
     db.add(acct)
     await db.flush()
+    await db.commit()
     await db.refresh(acct)
     return acct
 
@@ -72,6 +73,7 @@ async def update_account(
     for k, v in data.model_dump(exclude_unset=True).items():
         setattr(acct, k, v)
     await db.flush()
+    await db.commit()
     await db.refresh(acct)
     return acct
 
@@ -89,6 +91,7 @@ async def ban_account(
     acct.banned_at = datetime.now(timezone.utc)
     acct.ban_reason = data.reason
     await db.flush()
+    await db.commit()
     await db.refresh(acct)
     return acct
 
@@ -123,6 +126,7 @@ async def transfer_funds(
     )
     db.add(transfer)
     await db.flush()
+    await db.commit()
     return {"detail": "Transfer completed", "amount": float(amount)}
 
 

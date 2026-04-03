@@ -57,6 +57,7 @@ async def create_lead(data: OutreachLeadCreate, user: dict = Depends(get_current
     lead = OutreachLead(**data.model_dump())
     db.add(lead)
     await db.flush()
+    await db.commit()
     await db.refresh(lead)
     return lead
 
@@ -73,6 +74,7 @@ async def update_lead(
     for k, v in data.model_dump(exclude_unset=True).items():
         setattr(lead, k, v)
     await db.flush()
+    await db.commit()
     await db.refresh(lead)
     return lead
 

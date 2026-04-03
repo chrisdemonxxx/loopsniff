@@ -295,6 +295,7 @@ async def create_adjustment(
     )
     db.add(adj)
     await db.flush()
+    await db.commit()
 
     log.info(f"Adjustment {adj.id}: {body.type} {body.amount} for client {client.name} by {user['email']}")
     return AdjustmentOut(

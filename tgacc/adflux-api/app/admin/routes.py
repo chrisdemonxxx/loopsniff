@@ -101,5 +101,6 @@ async def update_admin_user(
         if k in allowed_fields:
             setattr(admin, k, v)
     await db.flush()
+    await db.commit()
     await db.refresh(admin)
     return admin

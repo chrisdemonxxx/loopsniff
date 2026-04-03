@@ -155,6 +155,7 @@ async def create_ticket(
     )
     db.add(ticket)
     await db.flush()
+    await db.commit()
 
     message = TicketMessage(
         ticket_id=ticket.id,
@@ -165,6 +166,7 @@ async def create_ticket(
     )
     db.add(message)
     await db.flush()
+    await db.commit()
 
     # Reload with messages
     result = await db.execute(
@@ -218,6 +220,7 @@ async def update_ticket(
 
     ticket.updated_at = datetime.utcnow()
     await db.flush()
+    await db.commit()
 
     if user["user_type"] == "client":
         ticket.messages = [m for m in ticket.messages if not m.is_internal]
@@ -263,5 +266,6 @@ async def add_message(
 
     ticket.updated_at = datetime.utcnow()
     await db.flush()
+    await db.commit()
 
     return message

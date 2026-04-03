@@ -104,6 +104,7 @@ async def subscribe(data: SubscribeRequest, user: dict = Depends(get_current_use
         client.plan = plan.slug
 
     await db.flush()
+    await db.commit()
     await db.refresh(sub)
     log.info("Client %s subscribed to %s (%s)", client_id, plan.slug, data.interval)
     return sub
@@ -125,6 +126,7 @@ async def cancel_subscription(data: CancelRequest, user: dict = Depends(get_curr
     sub.status = "cancelled"
     sub.cancelled_at = datetime.now(timezone.utc)
     await db.flush()
+    await db.commit()
     await db.refresh(sub)
     log.info("Client %s cancelled subscription (reason: %s)", client_id, data.reason)
     return sub
@@ -176,6 +178,7 @@ async def change_plan(data: SubscribeRequest, user: dict = Depends(get_current_u
         client.plan = plan.slug
 
     await db.flush()
+    await db.commit()
     await db.refresh(sub)
     log.info("Client %s changed plan to %s (%s)", client_id, plan.slug, data.interval)
     return sub
@@ -195,6 +198,7 @@ async def admin_create_plan(data: PlanCreate, user: dict = Depends(require_admin
     plan = SubscriptionPlan(**data.model_dump())
     db.add(plan)
     await db.flush()
+    await db.commit()
     await db.refresh(plan)
     return plan
 
@@ -211,6 +215,7 @@ async def admin_update_plan(
     for k, v in data.model_dump(exclude_unset=True).items():
         setattr(plan, k, v)
     await db.flush()
+    await db.commit()
     await db.refresh(plan)
     return plan
 
@@ -223,6 +228,7 @@ async def admin_delete_plan(plan_id: UUID, user: dict = Depends(require_admin), 
         raise HTTPException(status_code=404, detail="Plan not found")
     plan.is_active = False
     await db.flush()
+    await db.commit()
     return {"detail": "Plan deactivated"}
 
 
@@ -262,5 +268,6 @@ async def admin_update_subscription(
     if status == "cancelled":
         sub.cancelled_at = datetime.now(timezone.utc)
     await db.flush()
+    await db.commit()
     await db.refresh(sub)
     return sub

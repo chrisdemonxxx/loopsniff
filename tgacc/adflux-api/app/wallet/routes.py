@@ -47,6 +47,7 @@ async def _get_or_create_wallet(db: AsyncSession, client_id: UUID) -> Wallet:
     wallet = Wallet(client_id=client_id, currency="USD", balance=Decimal("0"), frozen_balance=Decimal("0"))
     db.add(wallet)
     await db.flush()
+    await db.commit()
     await db.refresh(wallet)
     return wallet
 
@@ -135,6 +136,7 @@ async def initiate_deposit(
     )
     db.add(txn)
     await db.flush()
+    await db.commit()
     await db.refresh(txn)
     return txn
 
@@ -174,6 +176,7 @@ async def request_withdrawal(
     )
     db.add(txn)
     await db.flush()
+    await db.commit()
     await db.refresh(txn)
     return txn
 
@@ -223,6 +226,7 @@ async def transfer_to_account(
     )
     db.add(txn)
     await db.flush()
+    await db.commit()
     await db.refresh(txn)
     return txn
 
@@ -316,6 +320,7 @@ async def admin_update_transaction_status(
             wallet.frozen_balance -= txn.amount
 
     await db.flush()
+    await db.commit()
     await db.refresh(txn)
     return txn
 
@@ -340,6 +345,7 @@ async def admin_create_deposit_config(
     config = DepositConfig(**data.model_dump())
     db.add(config)
     await db.flush()
+    await db.commit()
     await db.refresh(config)
     return config
 
@@ -361,5 +367,6 @@ async def admin_update_deposit_config(
     for k, v in data.model_dump(exclude_unset=True).items():
         setattr(config, k, v)
     await db.flush()
+    await db.commit()
     await db.refresh(config)
     return config

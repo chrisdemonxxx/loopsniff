@@ -110,6 +110,7 @@ async def create_lead(data: CRMLeadCreate, user: dict = Depends(require_admin), 
     lead.bant_score = _calc_bant_score(lead)
     db.add(lead)
     await db.flush()
+    await db.commit()
     await db.refresh(lead, attribute_names=["assigned_bdm"])
     return _lead_to_out(lead)
 
@@ -138,6 +139,7 @@ async def update_lead(
         setattr(lead, k, v)
     lead.bant_score = _calc_bant_score(lead)
     await db.flush()
+    await db.commit()
     await db.refresh(lead, attribute_names=["assigned_bdm"])
     return _lead_to_out(lead)
 
@@ -179,6 +181,7 @@ async def bulk_import_leads(
         db.add(lead)
         created += 1
     await db.flush()
+    await db.commit()
     return {"created": created, "updated": updated, "skipped": skipped}
 
 
@@ -199,6 +202,7 @@ async def assign_lead(
         raise HTTPException(status_code=404, detail="BDM user not found")
     lead.assigned_bdm_id = assigned_bdm_id
     await db.flush()
+    await db.commit()
     await db.refresh(lead, attribute_names=["assigned_bdm"])
     return _lead_to_out(lead)
 
@@ -225,9 +229,11 @@ async def convert_lead(
     )
     db.add(client)
     await db.flush()
+    await db.commit()
     lead.converted_client_id = client.id
     lead.status = "converted"
     await db.flush()
+    await db.commit()
     await db.refresh(lead, attribute_names=["assigned_bdm"])
     return _lead_to_out(lead)
 
@@ -262,6 +268,7 @@ async def create_target(data: TeamTargetCreate, user: dict = Depends(require_adm
     target = TeamTarget(**data.model_dump(), achieved_value=0)
     db.add(target)
     await db.flush()
+    await db.commit()
     await db.refresh(target, attribute_names=["admin"])
     data_out = {c.key: getattr(target, c.key) for c in TeamTarget.__table__.columns}
     data_out["admin_name"] = target.admin.name if target.admin else None
@@ -282,6 +289,7 @@ async def update_target(
     for k, v in data.model_dump(exclude_unset=True).items():
         setattr(target, k, v)
     await db.flush()
+    await db.commit()
     await db.refresh(target, attribute_names=["admin"])
     data_out = {c.key: getattr(target, c.key) for c in TeamTarget.__table__.columns}
     data_out["admin_name"] = target.admin.name if target.admin else None
