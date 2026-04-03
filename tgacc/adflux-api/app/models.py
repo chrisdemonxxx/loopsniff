@@ -148,6 +148,7 @@ class Subscription(Base):
     started_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     next_bill = Column(DateTime(timezone=True))
     cancelled_at = Column(DateTime(timezone=True))
+    notes = Column(Text)
 
     client = relationship("Client", back_populates="subscriptions")
 
@@ -477,6 +478,22 @@ class DepositConfig(Base):
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
+# ── Balance Adjustments ──
+
+class BalanceAdjustment(Base):
+    __tablename__ = "balance_adjustments"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    client_id = Column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=False)
+    type = Column(Text, nullable=False)  # credit, debit
+    amount = Column(Numeric, nullable=False)
+    reason = Column(Text, nullable=False)
+    created_by = Column(UUID(as_uuid=True), ForeignKey("admin_users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+
+    client = relationship("Client", backref="adjustments")
+
+
 # ── Affiliate System ──
 
 class AffiliateCode(Base):
@@ -746,3 +763,48 @@ class MetaAd(Base):
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
     ad_set = relationship("MetaAdSet", back_populates="ads")
+
+
+# ── Facebook/Instagram OAuth Integration ──
+
+class FacebookIntegration(Base):
+    __tablename__ = "facebook_integrations"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    client_id = Column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=False)
+    facebook_user_id = Column(Text, nullable=False)
+    facebook_user_name = Column(Text)
+    access_token = Column(Text, nullable=False)
+    token_expires_at = Column(DateTime(timezone=True))
+    scopes = Column(JSON, default=[])
+
+    connected_pages = Column(JSON, default=[])        # [{id, name, access_token}]
+    connected_ig_accounts = Column(JSON, default=[])   # [{id, username, name}]
+    connected_ad_accounts = Column(JSON, default=[])   # [{id, account_id, name, currency, timezone}]
+
+    status = Column(Text, default="active")
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    client = relationship("Client", backref="facebook_integration")
+
+
+# ── Stripe & Bank Transfer ──
+
+class BankTransferRequest(Base):
+    __tablename__ = "bank_transfer_requests"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    client_id = Column(UUID(as_uuid=True), ForeignKey("clients.id"), nullable=False)
+    amount = Column(Numeric, nullable=False)
+    currency = Column(Text, default="USD")
+    reference_code = Column(Text, nullable=False)
+    bank_name = Column(Text)
+    account_number = Column(Text)
+    swift_bic = Column(Text)
+    status = Column(Text, default="pending")  # pending, confirmed, rejected
+    admin_note = Column(Text)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    confirmed_at = Column(DateTime(timezone=True))
+
+    client = relationship("Client")
