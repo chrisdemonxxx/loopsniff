@@ -1,6 +1,7 @@
 import uuid
 import hashlib
 import logging
+from datetime import datetime, timezone, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -11,6 +12,7 @@ from sqlalchemy.orm import selectinload
 from app.database import get_db
 from app.models import Campaign, Sequence, SequenceStep, CampaignLead, ABTest
 from app.auth.dependencies import get_current_user, require_admin
+from app.outreach.engine import execute_sequence_step
 from app.outreach.campaign_schemas import (
     CampaignCreate,
     CampaignUpdate,
@@ -158,6 +160,150 @@ async def delete_campaign(
         raise HTTPException(400, "Only draft campaigns can be deleted")
     await db.delete(campaign)
     await db.flush()
+
+
+# ═══════════════════════════════════════════════════════════════
+#  Campaign execution
+# ═══════════════════════════════════════════════════════════════
+
+
+@router.post("/{campaign_id}/execute")
+async def execute_campaign(
+    campaign_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    user: dict = Depends(require_admin),
+):
+    """Execute the next pending sequence step for all eligible leads."""
+
+    # Load campaign with sequence + steps
+    stmt = (
+        select(Campaign)
+        .options(selectinload(Campaign.sequence).selectinload(Sequence.steps))
+        .where(Campaign.id == campaign_id)
+    )
+    result = await db.execute(stmt)
+    campaign = result.scalar_one_or_none()
+    if not campaign:
+        raise HTTPException(404, "Campaign not found")
+    if campaign.status != "active":
+        raise HTTPException(400, "Campaign must be active to execute")
+    if not campaign.sequence or not campaign.sequence.steps:
+        raise HTTPException(400, "Campaign has no sequence steps")
+
+    # Build step lookup by step_order
+    steps_by_order = {s.step_order: s for s in campaign.sequence.steps}
+    max_step = max(steps_by_order.keys()) if steps_by_order else 0
+
+    # Get enrolled / in_sequence leads
+    leads_stmt = select(CampaignLead).where(
+        CampaignLead.campaign_id == campaign_id,
+        CampaignLead.status.in_(["enrolled", "in_sequence"]),
+    )
+    leads_result = await db.execute(leads_stmt)
+    leads = leads_result.scalars().all()
+
+    now = datetime.now(timezone.utc)
+    sent_count = 0
+    failed_count = 0
+    skipped_count = 0
+    completed_count = 0
+    details: list[dict] = []
+
+    for lead in leads:
+        # Determine the next step to execute
+        next_order = lead.current_step + 1
+        step = steps_by_order.get(next_order)
+
+        if step is None:
+            # Lead has completed all steps
+            if lead.current_step >= max_step:
+                lead.status = "completed"
+                completed_count += 1
+                details.append({
+                    "tg_username": lead.tg_username,
+                    "action": "completed",
+                })
+            else:
+                skipped_count += 1
+            continue
+
+        # Check delay requirement
+        if step.delay_hours and step.delay_hours > 0 and lead.last_sent_at:
+            due_at = lead.last_sent_at + timedelta(hours=step.delay_hours)
+            if now < due_at:
+                skipped_count += 1
+                details.append({
+                    "tg_username": lead.tg_username,
+                    "action": "skipped",
+                    "reason": f"delay not met (due {due_at.isoformat()})",
+                })
+                continue
+
+        # Respect next_touch_at if set
+        if lead.next_touch_at and now < lead.next_touch_at:
+            skipped_count += 1
+            continue
+
+        # Pick template based on A/B variant
+        if lead.ab_variant == "B" and step.template_b:
+            message_text = step.template_b
+        else:
+            message_text = step.template_a
+
+        # Build the step/lead dicts for the engine
+        step_data = {
+            "channel": campaign.platform or "telegram",
+            "message": message_text,
+            "subject": f"{campaign.name} – Step {step.step_order}",
+        }
+        lead_data = {
+            "tg_username": lead.tg_username or "",
+            "tg_user_id": str(lead.tg_user_id) if lead.tg_user_id else "",
+            "name": lead.tg_username or "",
+            "company": "",
+        }
+
+        result = await execute_sequence_step(step_data, lead_data)
+
+        if result["success"]:
+            lead.current_step = next_order
+            lead.last_sent_at = now
+            lead.status = "in_sequence"
+            # Calculate next touch time
+            next_next_order = next_order + 1
+            next_step = steps_by_order.get(next_next_order)
+            if next_step and next_step.delay_hours:
+                lead.next_touch_at = now + timedelta(hours=next_step.delay_hours)
+            else:
+                lead.next_touch_at = None
+            sent_count += 1
+            details.append({
+                "tg_username": lead.tg_username,
+                "action": "sent",
+                "step": next_order,
+                "channel": result["channel"],
+            })
+        else:
+            failed_count += 1
+            details.append({
+                "tg_username": lead.tg_username,
+                "action": "failed",
+                "step": next_order,
+                "error": result.get("error"),
+            })
+
+    # Update campaign counters
+    campaign.total_sent = (campaign.total_sent or 0) + sent_count
+    await db.flush()
+
+    return {
+        "campaign_id": str(campaign_id),
+        "sent": sent_count,
+        "failed": failed_count,
+        "skipped": skipped_count,
+        "completed": completed_count,
+        "details": details,
+    }
 
 
 # ═══════════════════════════════════════════════════════════════
