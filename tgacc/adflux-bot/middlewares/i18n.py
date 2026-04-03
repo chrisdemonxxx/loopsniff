@@ -4,17 +4,21 @@ from aiogram import BaseMiddleware
 from aiogram.types import TelegramObject
 
 from texts import LANG_TEXTS
+from db.persistence import get_language, set_language
 
-# In-memory per-user language storage
+# In-memory per-user language cache (backed by SQLite via db.persistence)
 _user_langs: Dict[int, str] = {}
 
 
 def get_lang(user_id: int) -> str:
-    return _user_langs.get(user_id, "en")
+    if user_id not in _user_langs:
+        _user_langs[user_id] = get_language(user_id)
+    return _user_langs[user_id]
 
 
 def set_lang(user_id: int, lang: str) -> None:
     _user_langs[user_id] = lang
+    set_language(user_id, lang)
 
 
 def t(user_id: int, key: str, **kwargs: Any) -> str:
