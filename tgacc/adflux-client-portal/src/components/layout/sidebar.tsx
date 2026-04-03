@@ -18,6 +18,7 @@ import {
   Megaphone,
   Wallet2,
   Users,
+  Link2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +27,7 @@ const navItems = [
   { href: "/wallet", label: "Wallet", icon: Wallet2 },
   { href: "/accounts", label: "Accounts", icon: Layers },
   { href: "/ads-manager", label: "Ads Manager", icon: Megaphone },
+  { href: "/integrations", label: "Integrations", icon: Link2 },
   { href: "/topup", label: "Top Up", icon: CreditCard },
   { href: "/billing", label: "Billing", icon: Receipt },
   { href: "/spending", label: "Spending", icon: BarChart3 },
