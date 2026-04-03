@@ -12,7 +12,6 @@ import asyncio
 import logging
 import os
 import sys
-from collections import defaultdict
 from typing import Dict, List
 
 import aiohttp
@@ -23,6 +22,8 @@ from aiogram.enums import ChatAction, ParseMode
 from middlewares.i18n import t
 from keyboards.inline import main_menu_kb
 from utils.notifications import notify_admin
+from utils.llm_client import call_llm
+from db.persistence import save_message, get_history
 
 # ── Wire up RAG project ──────────────────────────────────────────────────
 # Import the RAG retriever in an isolated way so its `config` module
@@ -68,11 +69,7 @@ log = logging.getLogger(__name__)
 
 router = Router()
 
-# ── Ollama Cloud settings ────────────────────────────────────────────────
-
-OLLAMA_URL = os.getenv("OLLAMA_URL", "https://ollama.com/v1/chat/completions")
-OLLAMA_API_KEY = os.getenv("OLLAMA_API_KEY", "5d92bf191608457d951f3eea8459b66e")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
+# ── LLM settings ─────────────────────────────────────────────────────────
 
 SYSTEM_PROMPT = (
     "You are the AI assistant for AdFlux Media, a premium agency ad account "
@@ -83,10 +80,6 @@ SYSTEM_PROMPT = (
 )
 
 MAX_HISTORY = 10
-
-# ── In-memory conversation history (per user_id) ────────────────────────
-
-_conversations: Dict[int, List[dict]] = defaultdict(list)
 
 # ── RAG retriever singleton ──────────────────────────────────────────────
 
@@ -100,41 +93,6 @@ def _get_retriever():
         if cls is not None:
             _retriever = cls()
     return _retriever
-
-
-# ── Ollama Cloud client ──────────────────────────────────────────────────
-
-
-async def _ollama_chat(messages: list[dict]) -> str:
-    """Send chat completion to Ollama Cloud and return the reply text."""
-    payload = {
-        "model": OLLAMA_MODEL,
-        "messages": [{"role": "system", "content": SYSTEM_PROMPT}] + messages,
-        "temperature": 0.7,
-        "max_tokens": 400,
-    }
-    headers = {
-        "Authorization": f"Bearer {OLLAMA_API_KEY}",
-        "Content-Type": "application/json",
-    }
-
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                OLLAMA_URL,
-                headers=headers,
-                json=payload,
-                timeout=aiohttp.ClientTimeout(total=60),
-            ) as resp:
-                if resp.status != 200:
-                    body = await resp.text()
-                    log.error("Ollama Cloud error (%d): %s  [URL: %s]", resp.status, body, OLLAMA_URL)
-                    return ""
-                data = await resp.json()
-                return data["choices"][0]["message"]["content"]
-    except Exception as exc:
-        log.error("Ollama Cloud request failed: %s  [URL: %s]", exc, OLLAMA_URL)
-        return ""
 
 
 # ── RAG context builder ──────────────────────────────────────────────────
@@ -209,13 +167,17 @@ async def free_text_handler(message: Message) -> None:
             )
 
         # Append conversation history (last MAX_HISTORY messages)
-        llm_messages.extend(_conversations[uid][-MAX_HISTORY:])
+        llm_messages.extend(get_history(uid, limit=MAX_HISTORY))
 
         # Append current user message
         llm_messages.append({"role": "user", "content": text})
 
-        # 3. Generate AI response
-        ai_reply = await _ollama_chat(llm_messages)
+        # 3. Generate AI response via LLM client
+        ai_reply = await call_llm(
+            prompt=text,
+            system_prompt=SYSTEM_PROMPT,
+            history=llm_messages,
+        )
     except Exception as exc:
         log.error("AI pipeline failed for user %d: %s", uid, exc)
         ai_reply = ""
@@ -240,12 +202,8 @@ async def free_text_handler(message: Message) -> None:
         return
 
     # 4. Save conversation history
-    _conversations[uid].append({"role": "user", "content": text})
-    _conversations[uid].append({"role": "assistant", "content": ai_reply})
-
-    # Trim history
-    if len(_conversations[uid]) > MAX_HISTORY * 2:
-        _conversations[uid] = _conversations[uid][-MAX_HISTORY:]
+    save_message(uid, "user", text)
+    save_message(uid, "assistant", ai_reply)
 
     # 5. Reply to user
     await message.answer(ai_reply, parse_mode=None)
