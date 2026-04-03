@@ -3,6 +3,16 @@
 import React, { useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useApi, useApiToken, apiFetch, API_URL } from "@/lib/api";
+import { useToast } from "@/components/ui/toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import {
   Globe,
   Image,
@@ -15,6 +25,7 @@ import {
   Plus,
   Shield,
   Megaphone,
+  AlertTriangle,
 } from "lucide-react";
 
 interface FacebookPage {
@@ -63,6 +74,8 @@ export default function IntegrationsPage() {
     refetch,
   } = useApi<ConnectionStatus>("/facebook/status");
 
+  const { toast } = useToast();
+  const [disconnectOpen, setDisconnectOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showPages, setShowPages] = useState(false);
   const [showIgAccounts, setShowIgAccounts] = useState(false);
@@ -81,24 +94,25 @@ export default function IntegrationsPage() {
       );
       window.location.href = data.auth_url;
     } catch {
-      alert("Failed to start Facebook connection");
+      toast("Failed to start Facebook connection", "error");
     } finally {
       setActionLoading(null);
     }
   }, [token]);
 
   const handleDisconnect = useCallback(async () => {
-    if (!token || !confirm("Disconnect Facebook? This will remove all connected pages and accounts.")) return;
+    if (!token) return;
     setActionLoading("disconnect");
     try {
       await apiFetch("/facebook/disconnect", token, { method: "DELETE" });
       refetch();
+      setDisconnectOpen(false);
     } catch {
-      alert("Failed to disconnect");
+      toast("Failed to disconnect", "error");
     } finally {
       setActionLoading(null);
     }
-  }, [token, refetch]);
+  }, [token, refetch, toast]);
 
   const fetchPages = useCallback(async () => {
     if (!token) return;
@@ -111,7 +125,7 @@ export default function IntegrationsPage() {
       setAvailablePages(data.pages);
       setShowPages(true);
     } catch {
-      alert("Failed to fetch pages");
+      toast("Failed to fetch pages", "error");
     } finally {
       setActionLoading(null);
     }
@@ -128,7 +142,7 @@ export default function IntegrationsPage() {
         refetch();
         setShowPages(false);
       } catch {
-        alert("Failed to connect page");
+        toast("Failed to connect page", "error");
       } finally {
         setActionLoading(null);
       }
@@ -147,7 +161,7 @@ export default function IntegrationsPage() {
       setAvailableIg(data.accounts);
       setShowIgAccounts(true);
     } catch {
-      alert("Failed to fetch Instagram accounts");
+      toast("Failed to fetch Instagram accounts", "error");
     } finally {
       setActionLoading(null);
     }
@@ -164,7 +178,7 @@ export default function IntegrationsPage() {
         refetch();
         setShowIgAccounts(false);
       } catch {
-        alert("Failed to connect Instagram account");
+        toast("Failed to connect Instagram account", "error");
       } finally {
         setActionLoading(null);
       }
@@ -183,7 +197,7 @@ export default function IntegrationsPage() {
       setAvailableAdAccounts(data.ad_accounts);
       setShowAdAccounts(true);
     } catch {
-      alert("Failed to fetch ad accounts");
+      toast("Failed to fetch ad accounts", "error");
     } finally {
       setActionLoading(null);
     }
@@ -202,7 +216,7 @@ export default function IntegrationsPage() {
         refetch();
         setShowAdAccounts(false);
       } catch {
-        alert("Failed to connect ad account");
+        toast("Failed to connect ad account", "error");
       } finally {
         setActionLoading(null);
       }
@@ -255,7 +269,7 @@ export default function IntegrationsPage() {
                   Connected
                 </span>
                 <button
-                  onClick={handleDisconnect}
+                  onClick={() => setDisconnectOpen(true)}
                   disabled={actionLoading === "disconnect"}
                   className="flex items-center gap-1.5 rounded-lg border border-red-800 px-3 py-1.5 text-xs font-medium text-red-400 transition hover:bg-red-900/20 disabled:opacity-50"
                 >
@@ -606,6 +620,29 @@ export default function IntegrationsPage() {
           )}
         </div>
       )}
+      {/* Disconnect confirmation dialog */}
+      <Dialog open={disconnectOpen} onOpenChange={(open) => !open && setDisconnectOpen(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-400" />
+              Disconnect Facebook
+            </DialogTitle>
+            <DialogDescription>
+              This will remove all connected pages and accounts. Are you sure you want to disconnect?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDisconnectOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDisconnect}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              Disconnect
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
