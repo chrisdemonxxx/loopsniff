@@ -1,92 +1,204 @@
+"""Integration tests for /auth/* endpoints."""
+
 import pytest
+from tests.conftest import ADMIN_ID, CLIENT_USER_ID
 
 pytestmark = pytest.mark.asyncio
 
 
-class TestAuthLogin:
-    """Tests for POST /auth/login."""
+# ---------------------------------------------------------------------------
+# Registration
+# ---------------------------------------------------------------------------
+
+
+class TestRegister:
+    async def test_register_success(self, client):
+        resp = await client.post("/auth/register", json={
+            "email": "newuser@example.com",
+            "password": "Str0ngP@ss!",
+            "name": "New User",
+        })
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["user_type"] == "client"
+        assert "access_token" in data
+        assert "refresh_token" in data
+        assert data["name"] == "New User"
+
+    async def test_register_duplicate_email(self, client, seed_db):
+        resp = await client.post("/auth/register", json={
+            "email": "client@test.com",
+            "password": "AnyP@ss1",
+            "name": "Dup",
+        })
+        assert resp.status_code == 400
+        assert "already registered" in resp.json()["detail"].lower()
+
+    async def test_register_admin_forbidden(self, client):
+        resp = await client.post("/auth/register", json={
+            "email": "hack@evil.com",
+            "password": "whatever",
+            "name": "Hacker",
+            "user_type": "admin",
+        })
+        assert resp.status_code == 403
+
+    async def test_register_missing_fields(self, client):
+        resp = await client.post("/auth/register", json={})
+        assert resp.status_code == 422
+
+
+# ---------------------------------------------------------------------------
+# Login
+# ---------------------------------------------------------------------------
+
+
+class TestLogin:
+    async def test_login_valid_client(self, client, seed_db):
+        resp = await client.post("/auth/login", json={
+            "email": "client@test.com",
+            "password": "clientpass123",
+        })
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["user_type"] == "client"
+        assert data["user_id"] == str(CLIENT_USER_ID)
+        assert "access_token" in data
+
+    async def test_login_valid_admin(self, client, seed_db):
+        resp = await client.post("/auth/login", json={
+            "email": "admin@test.com",
+            "password": "adminpass123",
+        })
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["user_type"] == "admin"
+        assert data["user_id"] == str(ADMIN_ID)
+
+    async def test_login_wrong_password(self, client, seed_db):
+        resp = await client.post("/auth/login", json={
+            "email": "client@test.com",
+            "password": "wrongpassword",
+        })
+        assert resp.status_code == 401
+
+    async def test_login_nonexistent_user(self, client, seed_db):
+        resp = await client.post("/auth/login", json={
+            "email": "nobody@example.com",
+            "password": "whatever",
+        })
+        assert resp.status_code == 401
 
     async def test_login_missing_body(self, client):
-        response = await client.post("/auth/login")
-        assert response.status_code == 422
-
-    async def test_login_invalid_credentials(self, client):
-        response = await client.post(
-            "/auth/login",
-            json={"email": "nobody@example.com", "password": "wrongpass"},
-        )
-        assert response.status_code in (401, 404, 422, 500)
-
-    async def test_login_empty_email(self, client):
-        response = await client.post(
-            "/auth/login",
-            json={"email": "", "password": "somepass"},
-        )
-        assert response.status_code in (401, 422)
+        resp = await client.post("/auth/login")
+        assert resp.status_code == 422
 
 
-class TestAuthRegister:
-    """Tests for POST /auth/register."""
-
-    async def test_register_missing_body(self, client):
-        response = await client.post("/auth/register")
-        assert response.status_code == 422
-
-    async def test_register_invalid_email(self, client):
-        response = await client.post(
-            "/auth/register",
-            json={
-                "email": "not-an-email",
-                "password": "StrongP@ss1",
-                "full_name": "Test",
-            },
-        )
-        assert response.status_code == 422
+# ---------------------------------------------------------------------------
+# Token refresh
+# ---------------------------------------------------------------------------
 
 
-class TestAuthRefresh:
-    """Tests for POST /auth/refresh."""
+class TestRefresh:
+    async def test_refresh_with_valid_token(self, client, seed_db):
+        # First login to get a real refresh token
+        login = await client.post("/auth/login", json={
+            "email": "client@test.com",
+            "password": "clientpass123",
+        })
+        refresh_token = login.json()["refresh_token"]
 
-    async def test_refresh_missing_token(self, client):
-        response = await client.post("/auth/refresh")
-        assert response.status_code in (401, 422)
+        resp = await client.post("/auth/refresh", json={
+            "refresh_token": refresh_token,
+        })
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "access_token" in data
+        assert "refresh_token" in data
+        assert data["user_type"] == "client"
 
-    async def test_refresh_invalid_token(self, client):
-        response = await client.post(
-            "/auth/refresh",
-            json={"refresh_token": "invalid-token"},
-        )
-        assert response.status_code in (401, 422, 500)
+    async def test_refresh_with_invalid_token(self, client):
+        resp = await client.post("/auth/refresh", json={
+            "refresh_token": "garbage-token",
+        })
+        assert resp.status_code == 401
+
+    async def test_refresh_missing_body(self, client):
+        resp = await client.post("/auth/refresh")
+        assert resp.status_code == 422
 
 
-class TestAuthPasswordReset:
-    """Tests for password-reset flow."""
+# ---------------------------------------------------------------------------
+# /auth/me
+# ---------------------------------------------------------------------------
 
-    async def test_forgot_password_missing_body(self, client):
-        response = await client.post("/auth/forgot-password")
-        assert response.status_code == 422
 
-    async def test_reset_password_missing_body(self, client):
-        response = await client.post("/auth/reset-password")
-        assert response.status_code == 422
+class TestMe:
+    async def test_me_unauthenticated(self, client):
+        resp = await client.get("/auth/me")
+        assert resp.status_code in (401, 403)
+
+    async def test_me_as_client(self, auth_client, seed_db):
+        resp = await auth_client.get("/auth/me")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["email"] == "client@test.com"
+        assert data["user_type"] == "client"
+        assert data["is_active"] is True
+
+    async def test_me_as_admin(self, admin_client, seed_db):
+        resp = await admin_client.get("/auth/me")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["user_type"] == "admin"
+
+
+# ---------------------------------------------------------------------------
+# Password reset flow
+# ---------------------------------------------------------------------------
+
+
+class TestPasswordReset:
+    async def test_forgot_password_always_succeeds(self, client, seed_db):
+        # Existing email
+        resp = await client.post("/auth/forgot-password", json={
+            "email": "client@test.com",
+        })
+        assert resp.status_code == 200
+        assert "reset_token" in resp.json()
+
+    async def test_forgot_password_unknown_email(self, client, seed_db):
+        resp = await client.post("/auth/forgot-password", json={
+            "email": "nonexistent@example.com",
+        })
+        assert resp.status_code == 200
+        # Must NOT leak whether email exists
+        assert "reset_token" not in resp.json()
+
+    async def test_reset_password_with_valid_token(self, client, seed_db):
+        # Get reset token
+        forgot = await client.post("/auth/forgot-password", json={
+            "email": "client@test.com",
+        })
+        token = forgot.json()["reset_token"]
+
+        resp = await client.post("/auth/reset-password", json={
+            "token": token,
+            "new_password": "NewStr0ng!Pass",
+        })
+        assert resp.status_code == 200
+        assert "reset successfully" in resp.json()["message"].lower()
+
+        # Verify new password works
+        login = await client.post("/auth/login", json={
+            "email": "client@test.com",
+            "password": "NewStr0ng!Pass",
+        })
+        assert login.status_code == 200
 
     async def test_reset_password_invalid_token(self, client):
-        response = await client.post(
-            "/auth/reset-password",
-            json={"token": "bad", "new_password": "NewP@ss1"},
-        )
-        assert response.status_code in (400, 401, 422, 500)
-
-
-class TestAuthMe:
-    """Tests for GET /auth/me."""
-
-    async def test_me_no_auth(self, client):
-        response = await client.get("/auth/me")
-        assert response.status_code in (401, 403)
-
-    async def test_me_invalid_token(self, client):
-        response = await client.get(
-            "/auth/me", headers={"Authorization": "Bearer invalid"}
-        )
-        assert response.status_code in (401, 403)
+        resp = await client.post("/auth/reset-password", json={
+            "token": "bad-token",
+            "new_password": "irrelevant",
+        })
+        assert resp.status_code == 400

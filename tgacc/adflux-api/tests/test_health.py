@@ -3,19 +3,33 @@ import pytest
 pytestmark = pytest.mark.asyncio
 
 
-class TestHealth:
-    """Tests for the health / root endpoints."""
+class TestRoot:
+    async def test_root_returns_200(self, client):
+        resp = await client.get("/")
+        assert resp.status_code == 200
 
-    async def test_root(self, client):
-        response = await client.get("/")
-        assert response.status_code == 200
-        data = response.json()
+    async def test_root_structure(self, client):
+        data = (await client.get("/")).json()
         assert data["status"] == "ok"
-        assert "version" in data
+        assert data["version"] == "1.0.0"
+        assert "service" in data
 
-    async def test_health(self, client):
-        response = await client.get("/health")
-        assert response.status_code == 200
-        data = response.json()
+
+class TestHealth:
+    async def test_health_returns_200(self, client):
+        resp = await client.get("/health")
+        assert resp.status_code == 200
+
+    async def test_health_structure(self, client):
+        data = (await client.get("/health")).json()
         assert data["status"] == "healthy"
-        assert "version" in data
+        assert data["version"] == "1.0.0"
+
+
+class TestDocs:
+    async def test_openapi_json(self, client):
+        resp = await client.get("/openapi.json")
+        assert resp.status_code == 200
+        schema = resp.json()
+        assert schema["info"]["title"] == "AdFlux API"
+        assert "paths" in schema
