@@ -1,0 +1,7 @@
+2026-04-02 22:09:07,869 [INFO] Loaded 215,184 domains from output/crux_ecom_ultra.csv
+2026-04-02 22:09:07,870 [INFO] Resuming: 500 already done
+2026-04-02 22:09:07,878 [INFO] To process: 214,684
+2026-04-02 22:09:07,878 [INFO] Workers: 10, Chunk size: 500
+2026-04-02 22:14:25,001 [INFO] Chunk 1/430 | Processed: 500 | Active: 199 | E-commerce: 23 (4.6%) | Rate: 2/s | ETA: 37.7h
+2026-04-02 22:20:24,856 [INFO] Chunk 2/430 | Processed: 1,000 | Active: 390 | E-commerce: 38 (3.8%) | Rate: 1/s | ETA: 40.2h
+2026-04-02 22:26:32,838 [INFO] Chunk 3/430 | Processed: 1,500 | Active: 565 | E-commerce: 78 (5.2%) | Rate: 1/s | ETA: 41.3h

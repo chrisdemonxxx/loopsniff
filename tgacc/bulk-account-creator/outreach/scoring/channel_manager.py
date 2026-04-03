@@ -32,7 +32,7 @@ class ChannelManager:
 
     def __init__(
         self,
-        channel_id: Optional[int] = None,
+        channel_id: Optional[int] = -1003751157980,
         bot_token: str = BOT_TOKEN,
     ):
         self.channel_id = channel_id

@@ -1,0 +1,5 @@
+{
+  "success": false,
+  "error": "404, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url='https://api.sms-man.com/api/v2/getBalance?api_key=h7JScoczqj5cnWBC-493ihnHCprzvHda'",
+  "timestamp": "2026-03-23T18:58:39.428656"
+}

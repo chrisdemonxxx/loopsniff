@@ -1,0 +1,49 @@
+nohup: ignoring input
+2026-04-02 14:47:59.817 | INFO     | __main__:run_daemon:720 - ✅ Connected as Roger (@Roger_Adflux) | Premium: True
+2026-04-02 14:47:59.817 | INFO     | __main__:run_daemon:720 - ✅ Connected as Roger (@Roger_Adflux) | Premium: True
+2026-04-02 14:47:59.894 | INFO     | __main__:register_ai_responder:562 - 🧠 AI auto-responder registered on client
+2026-04-02 14:47:59.894 | INFO     | __main__:register_ai_responder:562 - 🧠 AI auto-responder registered on client
+2026-04-02 14:47:59.894 | INFO     | __main__:run_daemon:725 - 🧠 AI brain active — RAG + Ollama Cloud ready
+2026-04-02 14:47:59.894 | INFO     | __main__:run_daemon:725 - 🧠 AI brain active — RAG + Ollama Cloud ready
+2026-04-02 14:47:59.894 | INFO     | __main__:run_daemon:748 - 🟢 Premium daemon LIVE — outreach + AI responder running
+2026-04-02 14:47:59.894 | INFO     | __main__:run_daemon:748 - 🟢 Premium daemon LIVE — outreach + AI responder running
+2026-04-02 14:47:59.894 | INFO     | __main__:run_daemon:749 -    Session windows: morning(11-14 UTC), afternoon(17-20 UTC), evening(23-02 UTC)
+2026-04-02 14:47:59.894 | INFO     | __main__:run_daemon:749 -    Session windows: morning(11-14 UTC), afternoon(17-20 UTC), evening(23-02 UTC)
+2026-04-02 14:48:16.871 | INFO     | __main__:run_daemon:778 - 📤 Follow-up sent to @8304426599
+2026-04-02 14:48:16.871 | INFO     | __main__:run_daemon:778 - 📤 Follow-up sent to @8304426599
+2026-04-02 14:48:45.465 | INFO     | __main__:run_daemon:778 - 📤 Follow-up sent to @6437788584
+2026-04-02 14:48:45.465 | INFO     | __main__:run_daemon:778 - 📤 Follow-up sent to @6437788584
+2026-04-02 14:48:56.921 | INFO     | __main__:run_daemon:794 - ⏰ Outreach window 'afternoon' active — starting in 386s
+2026-04-02 14:48:56.921 | INFO     | __main__:run_daemon:794 - ⏰ Outreach window 'afternoon' active — starting in 386s
+2026-04-02 14:55:22.944 | INFO     | __main__:run_outreach_session:573 - 🚀 Starting AFTERNOON session — DM quota: 8
+2026-04-02 14:55:22.944 | INFO     | __main__:run_outreach_session:573 - 🚀 Starting AFTERNOON session — DM quota: 8
+2026-04-02 14:55:22.944 | INFO     | __main__:run_outreach_session:583 - 📖 Phase 1: Opening organic activity...
+2026-04-02 14:55:22.944 | INFO     | __main__:run_outreach_session:583 - 📖 Phase 1: Opening organic activity...
+2026-04-02 14:56:30.036 | INFO     | __main__:run_outreach_session:592 - 📨 Phase 2: Sending DM batch 1 (3 DMs)...
+2026-04-02 14:56:30.036 | INFO     | __main__:run_outreach_session:592 - 📨 Phase 2: Sending DM batch 1 (3 DMs)...
+2026-04-02 14:56:30.645 | WARNING  | __main__:send_dm_batch:462 - ❌ DM to @iamtechalpha failed: The authorization key (session file) was used under two different IP addresses s
+2026-04-02 14:56:30.645 | WARNING  | __main__:send_dm_batch:462 - ❌ DM to @iamtechalpha failed: The authorization key (session file) was used under two different IP addresses s
+2026-04-02 14:56:30.645 | DEBUG    | __main__:send_dm_batch:468 - ⏳ Inter-DM delay: 22.3s
+2026-04-02 14:56:30.645 | DEBUG    | __main__:send_dm_batch:468 - ⏳ Inter-DM delay: 22.3s
+2026-04-02 14:56:53.559 | WARNING  | __main__:send_dm_batch:462 - ❌ DM to @daisy6553 failed: The authorization key (session file) was used under two different IP addresses s
+2026-04-02 14:56:53.559 | WARNING  | __main__:send_dm_batch:462 - ❌ DM to @daisy6553 failed: The authorization key (session file) was used under two different IP addresses s
+2026-04-02 14:56:53.559 | DEBUG    | __main__:send_dm_batch:468 - ⏳ Inter-DM delay: 36.8s
+2026-04-02 14:56:53.559 | DEBUG    | __main__:send_dm_batch:468 - ⏳ Inter-DM delay: 36.8s
+2026-04-02 14:57:31.155 | WARNING  | __main__:send_dm_batch:462 - ❌ DM to @virtualdog99 failed: The authorization key (session file) was used under two different IP addresses s
+2026-04-02 14:57:31.155 | WARNING  | __main__:send_dm_batch:462 - ❌ DM to @virtualdog99 failed: The authorization key (session file) was used under two different IP addresses s
+2026-04-02 14:57:31.155 | INFO     | __main__:run_outreach_session:605 - 📖 Phase 3: Mid-session organic activity...
+2026-04-02 14:57:31.155 | INFO     | __main__:run_outreach_session:605 - 📖 Phase 3: Mid-session organic activity...
+2026-04-02 14:58:43.627 | INFO     | __main__:run_outreach_session:613 - 📨 Phase 4: Sending DM batch 2 (8 DMs)...
+2026-04-02 14:58:43.627 | INFO     | __main__:run_outreach_session:613 - 📨 Phase 4: Sending DM batch 2 (8 DMs)...
+2026-04-02 14:58:44.230 | WARNING  | __main__:send_dm_batch:462 - ❌ DM to @shelby_8899 failed: The authorization key (session file) was used under two different IP addresses s
+2026-04-02 14:58:44.230 | WARNING  | __main__:send_dm_batch:462 - ❌ DM to @shelby_8899 failed: The authorization key (session file) was used under two different IP addresses s
+2026-04-02 14:58:44.230 | DEBUG    | __main__:send_dm_batch:468 - ⏳ Inter-DM delay: 20.0s
+2026-04-02 14:58:44.230 | DEBUG    | __main__:send_dm_batch:468 - ⏳ Inter-DM delay: 20.0s
+2026-04-02 14:59:04.832 | WARNING  | __main__:send_dm_batch:462 - ❌ DM to @OfficialMbogiBet failed: The authorization key (session file) was used under two different IP addresses s
+2026-04-02 14:59:04.832 | WARNING  | __main__:send_dm_batch:462 - ❌ DM to @OfficialMbogiBet failed: The authorization key (session file) was used under two different IP addresses s
+2026-04-02 14:59:04.832 | DEBUG    | __main__:send_dm_batch:468 - ⏳ Inter-DM delay: 51.5s
+2026-04-02 14:59:04.832 | DEBUG    | __main__:send_dm_batch:468 - ⏳ Inter-DM delay: 51.5s
+2026-04-02 14:59:57.185 | WARNING  | __main__:send_dm_batch:462 - ❌ DM to @solenya4 failed: The authorization key (session file) was used under two different IP addresses s
+2026-04-02 14:59:57.185 | WARNING  | __main__:send_dm_batch:462 - ❌ DM to @solenya4 failed: The authorization key (session file) was used under two different IP addresses s
+2026-04-02 14:59:57.185 | DEBUG    | __main__:send_dm_batch:468 - ⏳ Inter-DM delay: 41.8s
+2026-04-02 14:59:57.185 | DEBUG    | __main__:send_dm_batch:468 - ⏳ Inter-DM delay: 41.8s

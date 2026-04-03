@@ -1,0 +1,129 @@
+{
+  "tg_573143114581": {
+    "platform": "ios",
+    "api_id": 10840,
+    "api_hash": "33c45224029d59cb3ad0c16134215aeb",
+    "device_model": "iPhone 12 Pro Max",
+    "system_version": "14.8.1",
+    "app_version": "8.4",
+    "lang_code": "en",
+    "system_lang_code": "en-US"
+  },
+  "tg_12524189707": {
+    "platform": "android",
+    "api_id": 6,
+    "api_hash": "eb06d4abfb49dc3eeb1aeb98ae0f581e",
+    "device_model": "OnePlus Nord N10",
+    "system_version": "SDK 30",
+    "app_version": "8.3.0 (2530)",
+    "lang_code": "en",
+    "system_lang_code": "es-CO"
+  },
+  "tg_12515711662": {
+    "platform": "android",
+    "api_id": 6,
+    "api_hash": "eb06d4abfb49dc3eeb1aeb98ae0f581e",
+    "device_model": "Samsung SM-A127F",
+    "system_version": "SDK 32",
+    "app_version": "8.5.4 (2597)",
+    "lang_code": "en",
+    "system_lang_code": "en-US"
+  },
+  "tg_12526555456": {
+    "platform": "android",
+    "api_id": 6,
+    "api_hash": "eb06d4abfb49dc3eeb1aeb98ae0f581e",
+    "device_model": "Xiaomi POCO X3",
+    "system_version": "SDK 31",
+    "app_version": "8.2.2 (2518)",
+    "lang_code": "es",
+    "system_lang_code": "en-US"
+  },
+  "tg_18508525083": {
+    "platform": "android",
+    "api_id": 6,
+    "api_hash": "eb06d4abfb49dc3eeb1aeb98ae0f581e",
+    "device_model": "OnePlus 7 Pro",
+    "system_version": "SDK 32",
+    "app_version": "8.3.5 (2569)",
+    "lang_code": "es",
+    "system_lang_code": "en-US"
+  },
+  "tg_573123245812": {
+    "platform": "ios",
+    "api_id": 10840,
+    "api_hash": "33c45224029d59cb3ad0c16134215aeb",
+    "device_model": "iPhone 14 Pro",
+    "system_version": "iOS 17.2",
+    "app_version": "11.8.0",
+    "lang_code": "en",
+    "system_lang_code": "en-US"
+  },
+  "tg_573123248690": {
+    "platform": "android",
+    "api_id": 2040,
+    "api_hash": "b18441a1ff607e10a989891a5462e627",
+    "device_model": "Google Pixel 6",
+    "system_version": "Android 13.0",
+    "app_version": "11.7.0",
+    "lang_code": "en",
+    "system_lang_code": "en-US"
+  },
+  "tg_573123252175": {
+    "platform": "android",
+    "api_id": 2040,
+    "api_hash": "b18441a1ff607e10a989891a5462e627",
+    "device_model": "Google Pixel 7",
+    "system_version": "Android 14.0",
+    "app_version": "11.8.2",
+    "lang_code": "en",
+    "system_lang_code": "en-US"
+  },
+  "tg_573123255047": {
+    "platform": "android",
+    "api_id": 21724,
+    "api_hash": "3e0cb5efcd52300aec5994fdfc5bdc16",
+    "device_model": "OnePlus 9",
+    "system_version": "Android 12.0",
+    "app_version": "11.6.0",
+    "lang_code": "en",
+    "system_lang_code": "en-US"
+  },
+  "tg_573123258271": {
+    "platform": "android",
+    "api_id": 21724,
+    "api_hash": "3e0cb5efcd52300aec5994fdfc5bdc16",
+    "device_model": "OnePlus 10 Pro",
+    "system_version": "Android 13.0",
+    "app_version": "11.7.4",
+    "lang_code": "en",
+    "system_lang_code": "en-US"
+  },
+  "tg_12536603741": {
+    "api_id": 2040,
+    "api_hash": "b18441a1ff607e10a989891a5462e627",
+    "device_model": "Samsung SM-A127F",
+    "system_version": "SDK 31",
+    "app_version": "9.7.6",
+    "lang_code": "en",
+    "system_lang_code": "en-US"
+  },
+  "tg_17124179288": {
+    "api_id": 2040,
+    "api_hash": "b18441a1ff607e10a989891a5462e627",
+    "device_model": "Samsung SM-A127F",
+    "system_version": "SDK 31",
+    "app_version": "9.7.6",
+    "lang_code": "en",
+    "system_lang_code": "en-US"
+  },
+  "tg_16562292535": {
+    "api_id": "2040",
+    "api_hash": "b18441a1ff607e10a989891a5462e627",
+    "device_model": "iPhone 15 Pro",
+    "system_version": "iOS 18.2",
+    "app_version": "11.5.4",
+    "lang_code": "en",
+    "system_lang_code": "en-US"
+  }
+}

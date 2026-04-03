@@ -9,7 +9,6 @@ import {
   Mail,
   MessageSquare,
   Smartphone,
-  Plus,
   Save,
   Loader2,
 } from "lucide-react";
@@ -29,7 +28,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useApi } from "@/lib/api";
+import { useApi, useApiToken, apiFetch } from "@/lib/api";
 import { useSession } from "next-auth/react";
 
 interface UserInfo {
@@ -68,6 +67,9 @@ export default function SettingsPage() {
     sms: false,
   });
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const token = useApiToken();
 
   useEffect(() => {
     if (userInfo) {
@@ -79,9 +81,22 @@ export default function SettingsPage() {
   const loading = userLoading || clientLoading;
   const plan = clientInfo?.plan || "starter";
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const handleSave = async () => {
+    if (!clientId || !token) return;
+    setSaving(true);
+    setSaveError("");
+    try {
+      await apiFetch(`/clients/${clientId}`, token, {
+        method: "PUT",
+        body: JSON.stringify({ name, email, telegram_username: telegram }),
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err: any) {
+      setSaveError(err.message || "Failed to save");
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) {
@@ -158,11 +173,12 @@ export default function SettingsPage() {
               </div>
 
               <div className="flex items-center gap-3">
-                <Button onClick={handleSave}>
-                  <Save className="mr-2 h-4 w-4" />
+                <Button onClick={handleSave} disabled={saving}>
+                  {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                   Save Changes
                 </Button>
                 {saved && <span className="text-sm text-green-400">✓ Saved successfully</span>}
+                {saveError && <span className="text-sm text-red-400">{saveError}</span>}
               </div>
             </CardContent>
           </Card>
@@ -242,13 +258,9 @@ export default function SettingsPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>Team Management</CardTitle>
-                <CardDescription>Manage team members and permissions</CardDescription>
+                <CardTitle>Team Members</CardTitle>
+                <CardDescription>Current team members</CardDescription>
               </div>
-              <Button size="sm">
-                <Plus className="mr-2 h-4 w-4" />
-                Invite Member
-              </Button>
             </CardHeader>
             <CardContent>
               <Table>
