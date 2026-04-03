@@ -34,6 +34,7 @@ from app.crm.routes import router as crm_router
 from app.subscriptions.routes import router as subscriptions_router
 from app.alerts.routes import router as alerts_router
 from app.affiliate.routes import router as affiliate_router
+from app.onboarding.routes import router as onboarding_router
 from app.facebook.routes import router as facebook_router
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
@@ -128,6 +129,7 @@ app.include_router(subscriptions_router)
 app.include_router(alerts_router)
 app.include_router(affiliate_router)
 app.include_router(facebook_router)
+app.include_router(onboarding_router)
 
 
 @app.get("/")
