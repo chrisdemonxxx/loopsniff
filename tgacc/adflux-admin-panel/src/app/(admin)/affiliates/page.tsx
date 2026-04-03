@@ -10,6 +10,7 @@ import { Modal } from "@/components/ui/modal"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Search, Loader2, Link2, DollarSign, Users, CheckCircle2 } from "lucide-react"
 import { useApi, useApiToken, apiFetch } from "@/lib/api"
+import { useToast } from "@/components/ui/toast"
 import { formatCurrency, formatDate } from "@/lib/utils"
 
 interface Affiliate {
@@ -48,6 +49,7 @@ export default function AffiliatesPage() {
   const [approving, setApproving] = useState<string | null>(null)
 
   const token = useApiToken()
+  const { toast } = useToast()
   const { data: affiliates, loading: affLoading, error: affError, refetch: refetchAff } = useApi<Affiliate[]>("/admin/affiliates")
   const { data: referrals, loading: refLoading, error: refError, refetch: refetchRef } = useApi<Referral[]>("/admin/referrals")
 
@@ -61,7 +63,7 @@ export default function AffiliatesPage() {
       await apiFetch(`/admin/referrals/${referralId}/approve`, token, { method: "POST" })
       refetchRef()
     } catch (err: any) {
-      alert(err.message || "Failed to approve")
+      toast(err.message || "Failed to approve", "error")
     } finally {
       setApproving(null)
     }

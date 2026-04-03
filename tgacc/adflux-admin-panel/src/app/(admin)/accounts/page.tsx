@@ -105,7 +105,7 @@ export default function AccountsPage() {
       setSelected([])
       refetch()
     } catch (e: any) {
-      alert(e.message)
+      toast(e.message, "error")
     } finally {
       setActionLoading(false)
     }

@@ -15,6 +15,7 @@ import {
   Loader2, AlertTriangle, CheckCircle, XCircle, Search,
 } from "lucide-react"
 import { useApi, useApiToken, apiFetch } from "@/lib/api"
+import { useToast } from "@/components/ui/toast"
 import { formatCurrency, formatDateTime } from "@/lib/utils"
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts"
 
@@ -89,6 +90,7 @@ const COLORS = ["#10b981", "#3b82f6", "#8b5cf6", "#f59e0b", "#ef4444", "#06b6d4"
 
 export default function FinancePage() {
   const token = useApiToken()
+  const { toast } = useToast()
   const { data: summary, loading: sumLoading } = useApi<FinanceSummary>("/finance/summary")
   const { data: revenue, loading: revLoading } = useApi<RevenueData>("/finance/revenue")
   const { data: deposits, loading: depLoading, refetch: refetchDeposits } = useApi<Deposit[]>("/finance/deposits")
@@ -121,7 +123,7 @@ export default function FinancePage() {
       await apiFetch(`/finance/deposits/${id}/approve`, token, { method: "PUT" })
       refetchDeposits()
     } catch (e: any) {
-      alert(e.message)
+      toast(e.message, "error")
     } finally {
       setActionLoading(false)
     }
@@ -139,7 +141,7 @@ export default function FinancePage() {
       setRejectReason("")
       refetchDeposits()
     } catch (e: any) {
-      alert(e.message)
+      toast(e.message, "error")
     } finally {
       setActionLoading(false)
     }
