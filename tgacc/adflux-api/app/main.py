@@ -6,10 +6,14 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from slowapi.errors import RateLimitExceeded
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.config import get_settings
 from app.database import engine
+from app.middleware.rate_limit import limiter, rate_limit_exceeded_handler
+from app.middleware.security_headers import SecurityHeadersMiddleware
+from app.middleware.csrf import CSRFMiddleware
 
 from app.auth.routes import router as auth_router
 from app.clients.routes import router as clients_router
@@ -43,11 +47,38 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="AdFlux Media API",
-    description="Backend API for AdFlux Media ad account management platform",
+    title="AdFlux API",
+    description="AdFlux Ad Account Management Platform API",
     version="1.0.0",
     lifespan=lifespan,
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_tags=[
+        {"name": "Auth", "description": "Authentication and authorization"},
+        {"name": "Accounts", "description": "Ad account management"},
+        {"name": "Wallet", "description": "Multi-currency wallet system"},
+        {"name": "Subscriptions", "description": "Subscription plans and billing"},
+        {"name": "Affiliate", "description": "Affiliate and referral program"},
+        {"name": "CRM", "description": "Customer relationship management"},
+        {"name": "Facebook", "description": "Facebook/Instagram integration"},
+        {"name": "Payments", "description": "Payment processing"},
+        {"name": "Finance", "description": "Financial operations (admin)"},
+        {"name": "Alerts", "description": "System alerts and notifications"},
+        {"name": "Tickets", "description": "Support ticket system"},
+        {"name": "Orders", "description": "Order management"},
+        {"name": "Chat", "description": "WebSocket chat"},
+    ],
 )
+
+# --- Rate limiting (slowapi) ---
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+
+# --- Security headers ---
+app.add_middleware(SecurityHeadersMiddleware)
+
+# --- CSRF protection ---
+app.add_middleware(CSRFMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
@@ -61,7 +92,7 @@ app.add_middleware(
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization", "ngrok-skip-browser-warning"],
+    allow_headers=["Content-Type", "Authorization", "ngrok-skip-browser-warning", "X-CSRF-Token"],
 )
 
 @app.middleware("http")
