@@ -46,8 +46,12 @@ class Settings(BaseSettings):
     ALERT_PHONE: str = ""
 
     SENDGRID_API_KEY: str = ""
+    SENDGRID_FROM_EMAIL: str = "noreply@adflux.io"
     ALERT_EMAIL_FROM: str = "alerts@adflux.store"
     ALERT_EMAIL_TO: str = "admin@adflux.store"
+
+    FRONTEND_URL: str = "http://localhost:3000"
+    ADMIN_URL: str = "http://localhost:3001"
 
     WHATSAPP_FROM: str = ""
     WHATSAPP_TO: str = ""
@@ -59,6 +63,8 @@ class Settings(BaseSettings):
     BANK_NAME: str = "AdFlux Holdings Ltd"
     BANK_ACCOUNT_NUMBER: str = ""
     BANK_SWIFT_BIC: str = ""
+
+    TELEGRAM_BOT_TOKEN: str = ""
 
     OUTREACH_DB_PATH: str = "/home/cjs/tgacc/bulk-account-creator/outreach/data/outreach.db"
 
