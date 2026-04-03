@@ -96,6 +96,22 @@ class MetaAPIClient:
         url = f"{GRAPH_API_BASE}/act_{ad_account_id}/ads"
         return await self._request("POST", url, access_token, json_body=ad_data)
 
+    # ── Business Manager ──
+
+    async def create_ad_account(
+        self,
+        business_id: str,
+        access_token: str,
+        account_data: dict,
+    ) -> dict:
+        """Create a new ad account under a Business Manager.
+
+        ``account_data`` should include at least ``name``, ``currency``,
+        ``timezone_id`` and ``end_advertiser``.
+        """
+        url = f"{GRAPH_API_BASE}/{business_id}/adaccount"
+        return await self._request("POST", url, access_token, data=account_data)
+
     # ── Insights ──
 
     async def get_campaign_insights(
@@ -128,6 +144,36 @@ class MetaAPIClient:
             "fields": "ad_name,spend,impressions,clicks,ctr,cpc,cpm,conversions,cost_per_action_type,actions",
             "date_preset": date_preset,
         }
+        result = await self._request("GET", url, access_token, params=params)
+        return result.get("data", [])
+
+    async def get_account_insights(
+        self,
+        ad_account_id: str,
+        access_token: str,
+        *,
+        date_preset: str | None = None,
+        time_range: dict | None = None,
+        level: str = "account",
+        time_increment: str = "1",
+    ) -> list[dict]:
+        """Fetch spend / impression / click data for an ad account.
+
+        Use *either* ``date_preset`` (e.g. ``"last_7d"``) *or*
+        ``time_range`` (``{"since": "2024-01-01", "until": "2024-01-07"}``).
+        ``time_increment="1"`` returns daily rows.
+        """
+        url = f"{GRAPH_API_BASE}/act_{ad_account_id}/insights"
+        params: dict[str, str] = {
+            "fields": "spend,impressions,clicks,conversions,date_start,date_stop",
+            "level": level,
+            "time_increment": time_increment,
+        }
+        if time_range:
+            import json as _json
+            params["time_range"] = _json.dumps(time_range)
+        else:
+            params["date_preset"] = date_preset or "last_7d"
         result = await self._request("GET", url, access_token, params=params)
         return result.get("data", [])
 

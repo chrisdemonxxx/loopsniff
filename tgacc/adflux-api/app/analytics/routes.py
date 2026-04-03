@@ -10,15 +10,18 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import select, func, case
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.dependencies import get_current_user
+from app.auth.dependencies import get_current_user, require_admin
 from app.database import get_db
-from app.models import AdAccount, SpendingRecord
+from app.models import AdAccount, MetaAdAccount, SpendingRecord
+from app.meta.client import MetaAPIClient, MetaAPIError
 from app.analytics.schemas import (
     OverviewMetrics,
     CampaignMetrics,
     DailyMetrics,
     PlatformMetrics,
     TopPerformingItem,
+    AccountSyncResult,
+    SyncSummary,
 )
 
 log = logging.getLogger(__name__)
@@ -347,3 +350,115 @@ async def analytics_export(
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename=analytics_{d_start}_{d_end}.csv"},
     )
+
+
+# ── Meta Insights Sync ──
+
+meta_client = MetaAPIClient()
+
+
+@router.post("/sync", response_model=SyncSummary)
+async def analytics_sync(
+    days: int = Query(7, ge=1, le=90, description="Number of past days to sync"),
+    user: dict = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Pull spend data from Meta Insights API for all active MetaAdAccount
+    records and insert SpendingRecord rows.
+
+    Designed to be called by a cron job (e.g. daily).  Existing records for
+    the same account + date are skipped to avoid duplicates.
+    """
+    stmt = (
+        select(MetaAdAccount)
+        .join(AdAccount, MetaAdAccount.ad_account_id == AdAccount.id)
+        .where(MetaAdAccount.status == "active", AdAccount.status == "active")
+    )
+    result = await db.execute(stmt)
+    meta_accounts = result.scalars().all()
+
+    today = date.today()
+    since = today - timedelta(days=days)
+    time_range = {"since": since.isoformat(), "until": today.isoformat()}
+
+    summary = SyncSummary(accounts_processed=len(meta_accounts))
+    results: list[AccountSyncResult] = []
+
+    for ma in meta_accounts:
+        acct_result = AccountSyncResult(
+            ad_account_id=ma.ad_account_id,
+            meta_account_id=ma.meta_account_id,
+        )
+
+        if not ma.access_token:
+            acct_result.error = "No access token configured"
+            summary.errors += 1
+            results.append(acct_result)
+            continue
+
+        # Strip act_ prefix if present for the API call
+        raw_id = ma.meta_account_id.replace("act_", "")
+
+        try:
+            insights = await meta_client.get_account_insights(
+                ad_account_id=raw_id,
+                access_token=ma.access_token,
+                time_range=time_range,
+            )
+        except MetaAPIError as exc:
+            acct_result.error = exc.message[:200]
+            summary.errors += 1
+            results.append(acct_result)
+            log.error("Insights sync failed for %s: %s", ma.meta_account_id, exc.message)
+            continue
+
+        created = 0
+        for row in insights:
+            row_date = date.fromisoformat(row.get("date_start", today.isoformat()))
+
+            # Skip if record already exists for this account + date
+            exists = await db.execute(
+                select(SpendingRecord.id).where(
+                    SpendingRecord.account_id == ma.ad_account_id,
+                    SpendingRecord.date == row_date,
+                )
+            )
+            if exists.scalar_one_or_none():
+                continue
+
+            spend_val = Decimal(str(row.get("spend", "0")))
+            impressions_val = int(row.get("impressions", 0))
+            clicks_val = int(row.get("clicks", 0))
+
+            # Conversions may come as an actions list or scalar
+            conversions_val = 0
+            raw_conversions = row.get("conversions")
+            if isinstance(raw_conversions, list):
+                for action in raw_conversions:
+                    if action.get("action_type") in ("offsite_conversion", "lead", "purchase"):
+                        conversions_val += int(action.get("value", 0))
+            elif raw_conversions is not None:
+                conversions_val = int(raw_conversions)
+
+            record = SpendingRecord(
+                account_id=ma.ad_account_id,
+                date=row_date,
+                spend=spend_val,
+                impressions=impressions_val,
+                clicks=clicks_val,
+                conversions=conversions_val,
+            )
+            db.add(record)
+            created += 1
+
+        acct_result.records_created = created
+        summary.total_records_created += created
+        results.append(acct_result)
+
+    summary.results = results
+    await db.commit()
+    log.info(
+        "Analytics sync: %d accounts, %d records created, %d errors",
+        summary.accounts_processed, summary.total_records_created, summary.errors,
+    )
+    return summary
