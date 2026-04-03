@@ -8,10 +8,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_user
-from app.auth.jwt import create_access_token, create_refresh_token
+from app.auth.jwt import create_access_token, create_refresh_token, create_verification_token
 from app.auth.schemas import TokenResponse
 from app.database import get_db
-from app.models import Client, ClientUser, SubscriptionPlan
+from app.email.service import send_verification_email
+from app.models import Client, ClientUser, Subscription, SubscriptionPlan, Wallet
 from app.onboarding.schemas import (
     OnboardingCompleteRequest,
     OnboardingRegister,
@@ -60,6 +61,23 @@ async def onboarding_register(
         client.notes = f"Phone: {data.phone}"
         await db.flush()
         await db.commit()
+
+    wallet = Wallet(client_id=client.id, currency="USD", balance=0, frozen_balance=0)
+    db.add(wallet)
+
+    subscription = Subscription(
+        client_id=client.id,
+        plan="starter",
+        price=0,
+        interval_type="monthly",
+        status="active",
+    )
+    db.add(subscription)
+    await db.flush()
+    await db.commit()
+
+    verification_token = create_verification_token(data.email)
+    await send_verification_email(data.email, verification_token, data.name)
 
     token_data = {
         "sub": str(user.id),
