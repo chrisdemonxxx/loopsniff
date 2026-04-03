@@ -19,6 +19,8 @@ from app.auth.routes import router as auth_router
 from app.clients.routes import router as clients_router
 from app.accounts.routes import router as accounts_router
 from app.payments.routes import router as payments_router
+from app.payments.stripe_routes import router as stripe_router
+from app.payments.bank_routes import router as bank_router
 from app.chat.routes import router as chat_router
 from app.outreach.routes import router as outreach_router
 from app.outreach.campaigns import router as campaigns_router, seq_router as sequences_router
@@ -32,6 +34,7 @@ from app.crm.routes import router as crm_router
 from app.subscriptions.routes import router as subscriptions_router
 from app.alerts.routes import router as alerts_router
 from app.affiliate.routes import router as affiliate_router
+from app.facebook.routes import router as facebook_router
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 log = logging.getLogger(__name__)
@@ -108,6 +111,8 @@ app.include_router(auth_router)
 app.include_router(clients_router)
 app.include_router(accounts_router)
 app.include_router(payments_router)
+app.include_router(stripe_router)
+app.include_router(bank_router)
 app.include_router(chat_router)
 app.include_router(outreach_router)
 app.include_router(campaigns_router)
@@ -122,6 +127,7 @@ app.include_router(wallet_router)
 app.include_router(subscriptions_router)
 app.include_router(alerts_router)
 app.include_router(affiliate_router)
+app.include_router(facebook_router)
 
 
 @app.get("/")
