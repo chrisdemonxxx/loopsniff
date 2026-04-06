@@ -28,8 +28,12 @@ BUDGET_SCORES: Dict[str, int] = {
 PLATFORM_SCORES: Dict[str, int] = {
     "google": 25,
     "meta": 22,
+    "tiktok": 22,
+    "bing": 20,
     "taboola": 20,
     "outbrain": 20,
+    "snapchat": 18,
+    "twitter": 18,
     "mediago": 18,
     "multiple": 25,
     "unknown": 10,
@@ -38,8 +42,11 @@ PLATFORM_SCORES: Dict[str, int] = {
 NICHE_SCORES: Dict[str, int] = {
     "crypto": 15,
     "finance": 15,
+    "gambling": 15,
     "nutra": 12,
     "trading": 12,
+    "dating": 12,
+    "tech_support": 12,
     "sweepstakes": 10,
     "ecommerce": 8,
     "other": 5,
@@ -59,40 +66,137 @@ TIMELINE_SCORES: Dict[str, int] = {
 # ---------------------------------------------------------------------------
 
 _BUDGET_PATTERNS: list[tuple[re.Pattern, str]] = [
-    (re.compile(r"\$\s*50\s*k|\$\s*50[\s,]*000|50k\+?|100k|200k", re.I), "$50k+"),
-    (re.compile(r"\$\s*[1-4]\d\s*k|\$\s*[1-4]\d[\s,]*000|(?:1[0-9]|2[0-9]|3[0-9]|4[0-9])k", re.I), "$10k-$50k"),
-    (re.compile(r"\$\s*[5-9]\s*k|\$\s*[5-9][\s,]*000|[5-9]k|\d{4,}/\s*day", re.I), "$5k-$10k"),
-    (re.compile(r"\$\s*[1-4]\s*k|\$\s*[1-4][\s,]*000|[1-4]k|\d{3,4}\s*/\s*day", re.I), "$1k-$5k"),
-    (re.compile(r"\$\s*\d{2,3}(?!\d)|few hundred|small budget", re.I), "< $1k"),
+    # $50k+
+    (re.compile(r"\$\s*50\s*k|\$\s*50[\s,]*000|50k\+?|100k|200k|50\s*тыс|100\s*тыс", re.I), "$50k+"),
+    # $10k-$50k
+    (re.compile(
+        r"\$\s*[1-4]\d\s*k|\$\s*[1-4]\d[\s,]*000|(?:1[0-9]|2[0-9]|3[0-9]|4[0-9])k"
+        r"|20k|30k|40k|15k|25k|35k|45k"
+        r"|20\s*тыс|30\s*тыс|40\s*тыс", re.I
+    ), "$10k-$50k"),
+    # $5k-$10k
+    (re.compile(
+        r"\$\s*[5-9]\s*k|\$\s*[5-9][\s,]*000|[5-9]k"
+        r"|\d{4,}/\s*day|\d{4,}\s*/\s*день"
+        r"|5\s*тыс|6\s*тыс|7\s*тыс|8\s*тыс|9\s*тыс", re.I
+    ), "$5k-$10k"),
+    # $1k-$5k
+    (re.compile(
+        r"\$\s*[1-4]\s*k|\$\s*[1-4][\s,]*000|[1-4]k"
+        r"|\d{3,4}\s*/\s*day|\d{3,4}\s*/\s*день"
+        r"|1\s*тыс|2\s*тыс|3\s*тыс|4\s*тыс"
+        r"|1000\b|2000\b|3000\b|4000\b|5000\b", re.I
+    ), "$1k-$5k"),
+    # < $1k
+    (re.compile(
+        r"\$\s*\d{2,3}(?!\d)|few hundred|small budget"
+        r"|маленький бюджет|немного", re.I
+    ), "< $1k"),
 ]
 
 _PLATFORM_KEYWORDS: dict[str, list[str]] = {
-    "google": ["google", "google ads", "adwords", "gads", "pmax", "performance max", "gg ", "gg\n", "bsod"],
-    "meta": ["meta", "facebook", "fb ads", "instagram", "ig ads", "fb"],
-    "taboola": ["taboola"],
-    "outbrain": ["outbrain"],
-    "mediago": ["mediago", "media go"],
+    "google": [
+        "google", "google ads", "adwords", "gads", "pmax", "performance max",
+        "gg ", "gg\n", "bsod", "гугл", "гугл адс", "адвордс",
+        "гг ", "гг\n", "agency account", "agency acc", "mcc",
+        "гугл аккаунт", "гугл акк",
+    ],
+    "meta": [
+        "meta", "facebook", "fb ads", "instagram", "ig ads", "fb ",
+        "fb\n", "фб", "фейсбук", "инста", "инстаграм", "мета",
+        "bm ", "bm\n", "business manager", "бм ",
+    ],
+    "tiktok": [
+        "tiktok", "tik tok", "tt ads", "tt ", "tt\n",
+        "тикток", "тик ток", "тт ",
+    ],
+    "bing": [
+        "bing", "microsoft ads", "bing ads",
+        "бинг", "майкрософт",
+    ],
+    "taboola": ["taboola", "табула"],
+    "outbrain": ["outbrain", "аутбрейн"],
+    "mediago": ["mediago", "media go", "медиаго"],
+    "snapchat": ["snapchat", "snap ads", "снэпчат"],
+    "twitter": ["twitter", "x ads", "твиттер"],
 }
 
 _NICHE_KEYWORDS: dict[str, list[str]] = {
-    "crypto": ["crypto", "bitcoin", "btc", "defi", "web3", "nft"],
-    "finance": ["finance", "forex", "stocks", "insurance", "loans", "fintech"],
-    "nutra": ["nutra", "health", "supplement", "weight loss", "diet"],
-    "trading": ["trading", "binary", "options", "cfd"],
-    "sweepstakes": ["sweepstakes", "sweeps", "giveaway", "contest"],
-    "ecommerce": ["ecommerce", "e-commerce", "shopify", "dropship", "store"],
+    "crypto": [
+        "crypto", "bitcoin", "btc", "defi", "web3", "nft",
+        "крипто", "биткоин", "криптовалют",
+    ],
+    "finance": [
+        "finance", "forex", "stocks", "insurance", "loans", "fintech",
+        "финанс", "форекс", "страхов", "кредит",
+    ],
+    "nutra": [
+        "nutra", "health", "supplement", "weight loss", "diet",
+        "нутра", "здоровье", "похуде", "добавк",
+    ],
+    "gambling": [
+        "gambling", "casino", "betting", "slots", "poker", "bet ",
+        "гемблинг", "казино", "ставки", "покер", "слоты", "букмекер",
+    ],
+    "trading": [
+        "trading", "binary", "options", "cfd",
+        "трейдинг", "бинарные", "опционы",
+    ],
+    "sweepstakes": [
+        "sweepstakes", "sweeps", "giveaway", "contest",
+        "свипстейк", "розыгрыш",
+    ],
+    "dating": [
+        "dating", "adult", "18+",
+        "дейтинг", "знакомств",
+    ],
+    "ecommerce": [
+        "ecommerce", "e-commerce", "shopify", "dropship", "store",
+        "екоммерс", "дропшип", "магазин",
+    ],
+    "tech_support": [
+        "tech support", "techsupport", "call center", "pop up",
+        "тех поддержк", "колл центр",
+    ],
 }
 
 _URGENCY_PATTERNS: list[tuple[re.Pattern, str]] = [
-    (re.compile(r"\basap\b|right now|immediately|urgent|today|\bnow\b|looking to buy|need .{0,10}(now|asap|today|urgently)", re.I), "asap"),
-    (re.compile(r"this week|next few days|in a couple days|ready to buy|want to buy|looking for", re.I), "this_week"),
-    (re.compile(r"this month|next week|soon|shortly|interested", re.I), "this_month"),
-    (re.compile(r"exploring|just looking|researching|maybe|later", re.I), "exploring"),
+    (re.compile(
+        r"\basap\b|right now|immediately|urgent|today|\bnow\b"
+        r"|looking to buy|need .{0,10}(now|asap|today|urgently)"
+        r"|срочно|прямо сейчас|сегодня|немедленно"
+        r"|готов купить|нужн.{0,5}сейчас", re.I
+    ), "asap"),
+    (re.compile(
+        r"this week|next few days|in a couple days|ready to buy|want to buy"
+        r"|looking for|на этой неделе|хочу купить|готов заказ", re.I
+    ), "this_week"),
+    (re.compile(
+        r"this month|next week|soon|shortly|interested"
+        r"|на следующей|скоро|интересует|в этом месяце", re.I
+    ), "this_month"),
+    (re.compile(
+        r"exploring|just looking|researching|maybe|later"
+        r"|просто смотрю|может быть|потом|позже", re.I
+    ), "exploring"),
 ]
 
 # Negative / disqualification signals
 _NEGATIVE_SIGNALS = re.compile(
-    r"\bnot interested\b|\bstop\b|\bunsubscribe\b|\bno thanks\b|\bleave me alone\b|\bspam\b",
+    r"\bnot interested\b|\bstop\b|\bunsubscribe\b|\bno thanks\b"
+    r"|\bleave me alone\b|\bspam\b"
+    r"|не интересует|отстань|не надо|стоп|отписаться",
+    re.I,
+)
+
+# Buying intent signals — boost score when detected
+_BUYING_INTENT = re.compile(
+    r"\bneed\b|\bwant\b|\blooking for\b|\bgot\s*\?\b|\bhave\s*\?\b"
+    r"|\bsell\b|\bbuy\b|\bpurchas\w*\b|\bcop\b|\bgrab\b|\bscoop\b"
+    r"|\bhow much\b|\bpric\w*\b|\bcost\b|\brate\b"
+    r"|\baccounts?\b|\baccs?\b"
+    r"|\bнужн\w*\b|\bкупить\b|\bпродаёшь\b|\bпродаешь\b|\bесть\b"
+    r"|\bсколько\b|\bцена\b|\bстоимость\b|\bаккаунт\w*\b|\bакк\w*\b",
     re.I,
 )
 
@@ -186,6 +290,7 @@ class BANTScorer:
         best_niche: Optional[str] = None
         best_timeline: Optional[str] = None
         has_negative = False
+        has_buying_intent = False
 
         for text in messages:
             b = self._detect_budget(text)
@@ -203,6 +308,8 @@ class BANTScorer:
                 best_timeline = t
             if _NEGATIVE_SIGNALS.search(text):
                 has_negative = True
+            if _BUYING_INTENT.search(text):
+                has_buying_intent = True
 
         result = self.score(
             budget=best_budget,
@@ -210,7 +317,12 @@ class BANTScorer:
             niche=best_niche,
             timeline=best_timeline,
         )
+        # Buying intent bonus: +10 if they're actively asking to buy/price
+        if has_buying_intent:
+            result["total"] = min(result["total"] + 10, 100)
+            result["tier"] = _tier_from_score(result["total"])
         result["negative"] = has_negative
+        result["buying_intent"] = has_buying_intent
         result["extracted"] = {
             "budget": best_budget,
             "platform": best_platform,
