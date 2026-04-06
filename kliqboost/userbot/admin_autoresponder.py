@@ -812,59 +812,108 @@ async def main(test: bool = False) -> None:
                                 await _save_message(key, direction, m["content"],
                                                     row["bant_score"], "present")
 
-                        # 2. Create the group
-                        group_users = [user_id] + HUMAN_ADMINS
-                        group = await client(CreateChatRequest(
-                            users=group_users,
-                            title=f"Kliqboost — @{uname}",
-                        ))
-                        group_entity = group.chats[0]
-
-                        # 3. Export invite link
-                        from telethon.tl.functions.messages import ExportChatInviteRequest
-                        invite_result = await client(ExportChatInviteRequest(group_entity))
-                        invite_link = invite_result.link
-
-                        # 4. First message references the bot conversation naturally
-                        if bot_history:
-                            # Extract what the client was looking for
-                            user_msgs = " ".join(m["content"] for m in bot_history if m["role"] == "user")
-                            platform = row["platform"] or ""
-                            niche = row["niche"] or ""
-                            opener = (
-                                f"hey @{uname}! chris here 👋 nexus flagged you over — "
-                                f"sounds like you're looking for "
-                            )
-                            if platform and platform != "None":
-                                opener += f"{platform} accounts"
-                                if niche and niche != "None":
-                                    opener += f" for {niche}"
-                            else:
-                                opener += "ad accounts"
-                            opener += (
-                                f". pulled in the team so we can get this sorted quick.\n\n"
-                                f"@bigbunnn @david_bazzana — this is a new one, let's take care of them 🔥"
-                            )
-                        else:
-                            opener = (
-                                f"hey @{uname}! chris here. moved you to a private deal room "
-                                f"with the team — @bigbunnn @david_bazzana.\n\n"
-                                f"so what are you looking for exactly?"
-                            )
-
-                        # Human-like delay before first message
-                        await asyncio.sleep(random.uniform(3, 8))
-                        await client.send_message(group_entity, opener)
-
-                        # 5. Update bridge DB
+                        # 2. Create the group — with fallback chain
                         import time as _time
-                        conn.execute(
-                            "UPDATE pending_deal_rooms SET status = 'done', invite_link = ?, completed_at = ? WHERE id = ?",
-                            (invite_link, _time.time(), row["id"]),
-                        )
-                        conn.commit()
-                        responder._groups_created.add(uname.lower())
-                        log.info("✅ Bridge: group created for @%s — %s", uname, invite_link)
+                        from telethon.tl.functions.messages import ExportChatInviteRequest
+                        group_created = False
+                        invite_link = None
+                        ref_code = None
+
+                        # Strategy A: Add user directly to group
+                        try:
+                            group_users = [user_id] + HUMAN_ADMINS
+                            group = await client(CreateChatRequest(
+                                users=group_users,
+                                title=f"Kliqboost — @{uname}",
+                            ))
+                            group_entity = group.chats[0]
+                            invite_result = await client(ExportChatInviteRequest(group_entity))
+                            invite_link = invite_result.link
+                            group_created = True
+                            log.info("✅ Strategy A: group created with user @%s", uname)
+                        except Exception as e_a:
+                            log.warning("Strategy A failed for @%s: %s — trying B", uname, e_a)
+
+                        # Strategy B: Create group WITHOUT user, send invite link
+                        if not group_created:
+                            try:
+                                group = await client(CreateChatRequest(
+                                    users=HUMAN_ADMINS,
+                                    title=f"Kliqboost — @{uname}",
+                                ))
+                                group_entity = group.chats[0]
+                                invite_result = await client(ExportChatInviteRequest(group_entity))
+                                invite_link = invite_result.link
+                                group_created = True
+                                log.info("✅ Strategy B: group created without user, invite=%s", invite_link)
+
+                                # Send opener in group (without @-ing the lead since they're not in yet)
+                                await asyncio.sleep(random.uniform(2, 5))
+                                await client.send_message(
+                                    group_entity,
+                                    f"deal room for @{uname} — they'll join via invite link.\n\n"
+                                    f"@bigbunnn @david_bazzana heads up 🔥",
+                                )
+                            except Exception as e_b:
+                                log.warning("Strategy B also failed for @%s: %s", uname, e_b)
+
+                        # Strategy C: Generate reference code for manual handoff
+                        if not group_created:
+                            ref_code = f"KLQ-{row['id']:04d}"
+                            log.info("⚠️ Strategy C: manual refer for @%s — ref=%s", uname, ref_code)
+                            conn.execute(
+                                "UPDATE pending_deal_rooms SET status = 'manual_refer', ref_code = ?, completed_at = ? WHERE id = ?",
+                                (ref_code, _time.time(), row["id"]),
+                            )
+                            conn.commit()
+                            responder._groups_created.add(uname.lower())
+                            continue
+
+                        # Group was created (A or B) — send opener + update DB
+                        if group_created and invite_link:
+                            # Send opener in group (only if user was added directly via A)
+                            if bot_history:
+                                platform = row["platform"] or ""
+                                niche = row["niche"] or ""
+                                opener = (
+                                    f"hey @{uname}! chris here 👋 nexus flagged you over — "
+                                    f"sounds like you're looking for "
+                                )
+                                if platform and platform != "None":
+                                    opener += f"{platform} accounts"
+                                    if niche and niche != "None":
+                                        opener += f" for {niche}"
+                                else:
+                                    opener += "ad accounts"
+                                opener += (
+                                    f". pulled in the team so we can get this sorted quick.\n\n"
+                                    f"@bigbunnn @david_bazzana — this is a new one, let's take care of them 🔥"
+                                )
+                            else:
+                                opener = (
+                                    f"hey @{uname}! chris here. moved you to a private deal room "
+                                    f"with the team — @bigbunnn @david_bazzana.\n\n"
+                                    f"so what are you looking for exactly?"
+                                )
+
+                            await asyncio.sleep(random.uniform(3, 8))
+                            try:
+                                await client.send_message(group_entity, opener)
+                            except Exception:
+                                pass
+
+                            # Determine status based on which strategy worked
+                            status = "done"  # Strategy A
+                            if not any(u == user_id for u in [p.user_id for p in getattr(group, 'users', [])]):
+                                status = "invite_sent"  # Strategy B
+
+                            conn.execute(
+                                "UPDATE pending_deal_rooms SET status = ?, invite_link = ?, completed_at = ? WHERE id = ?",
+                                (status, invite_link, _time.time(), row["id"]),
+                            )
+                            conn.commit()
+                            responder._groups_created.add(uname.lower())
+                            log.info("✅ Bridge: group for @%s — status=%s link=%s", uname, status, invite_link)
 
                     except Exception as grp_exc:
                         log.error("Bridge: failed to create group for @%s: %s", uname, grp_exc)

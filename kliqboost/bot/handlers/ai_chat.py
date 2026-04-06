@@ -317,7 +317,30 @@ async def nexus_handler(message: Message) -> None:
             f"timeline={bant.get('extracted',{}).get('timeline','?')}]"
         )
         if uid in _group_triggered:
-            bant_hint += "\n[DEAL ROOM TRIGGERED — tell the user a private group is being set up with the team.]"
+            deal = _check_deal_status(uid)
+            if deal:
+                st = deal["status"]
+                if st == "manual_refer" and deal.get("ref_code"):
+                    bant_hint += (
+                        f"\n[GROUP CREATION FAILED — ask the user to DM @Chris_Darton "
+                        f"with reference code {deal['ref_code']} to continue. "
+                        f"Be apologetic but brief. Also suggest they check their "
+                        f"Telegram privacy settings (Settings → Privacy → Groups — set to Everyone).]"
+                    )
+                elif st == "failed":
+                    bant_hint += (
+                        "\n[GROUP CREATION FAILED — tell the user to DM @Chris_Darton directly "
+                        "to continue the conversation. Also suggest checking their privacy settings "
+                        "(Settings → Privacy → Groups → Everyone).]"
+                    )
+                elif st == "invite_sent" and deal.get("invite_link"):
+                    bant_hint += "\n[DEAL ROOM READY — share the invite link with the user.]"
+                elif st == "done":
+                    bant_hint += "\n[DEAL ROOM TRIGGERED — tell the user a private group is being set up with the team.]"
+                else:
+                    bant_hint += "\n[DEAL ROOM TRIGGERED — tell the user a private group is being set up with the team.]"
+            else:
+                bant_hint += "\n[DEAL ROOM TRIGGERED — tell the user a private group is being set up with the team.]"
 
         llm_messages.append({"role": "user", "content": bant_hint})
         llm_messages.append({"role": "assistant", "content": "Understood."})
@@ -342,10 +365,18 @@ async def nexus_handler(message: Message) -> None:
             "or DM @Chris_Darton directly."
         )
 
-    # Check if invite link is ready
-    invite = _check_invite_link(uid)
-    if invite and uid in _group_triggered:
-        ai_reply += f"\n\n💎 Your deal room is ready — join here: {invite}"
+    # Check deal room status and append relevant info
+    if uid in _group_triggered:
+        deal = _check_deal_status(uid)
+        if deal:
+            st = deal["status"]
+            if st in ("done", "invite_sent") and deal.get("invite_link"):
+                ai_reply += f"\n\n💎 Your deal room is ready — join here: {deal['invite_link']}"
+            elif st == "manual_refer" and deal.get("ref_code"):
+                ai_reply += (
+                    f"\n\n📋 DM @Chris_Darton with your reference: **{deal['ref_code']}** "
+                    f"and he'll get you sorted right away."
+                )
 
     # Save + reply
     save_message(uid, "user", text)
