@@ -278,7 +278,16 @@ async def nexus_handler(message: Message) -> None:
     username = message.from_user.username or ""
     full_name = message.from_user.full_name or ""
 
-    # Track user messages for BANT scoring
+    # Track user messages for BANT scoring (load from DB on first encounter)
+    if uid not in _user_messages:
+        db_history = get_history(uid, limit=50)
+        _user_messages[uid] = [
+            m["content"] for m in db_history if m.get("role") == "user"
+        ]
+        # Check if deal room was already triggered (survives restart)
+        deal = _check_deal_status(uid)
+        if deal and deal["status"] in ("done", "invite_sent", "manual_refer", "pending"):
+            _group_triggered.add(uid)
     _user_messages[uid].append(text)
 
     try:
@@ -286,6 +295,8 @@ async def nexus_handler(message: Message) -> None:
 
         # 1. BANT score across full conversation
         bant = _scorer.score_from_conversation(_user_messages[uid])
+        log.info("BANT @%s (uid=%d): score=%d tier=%s msgs=%d",
+                 username, uid, bant["total"], bant.get("tier","?"), len(_user_messages[uid]))
 
         # 2. Check if we should trigger deal room
         if bant["total"] >= HOT_LEAD_THRESHOLD and uid not in _group_triggered:
