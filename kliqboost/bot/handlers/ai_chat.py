@@ -65,7 +65,7 @@ log = logging.getLogger(__name__)
 router = Router()
 
 # ── Constants ────────────────────────────────────────────────────────────
-HOT_LEAD_THRESHOLD = 75
+HOT_LEAD_THRESHOLD = 60
 MAX_HISTORY = 12
 ADMIN_CHAT_ID = int(os.getenv("ADMIN_CHAT_ID", "0"))
 

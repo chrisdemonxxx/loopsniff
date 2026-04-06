@@ -90,7 +90,7 @@ ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID", "")
 # ── Limits ──────────────────────────────────────────────────────────────────
 
 MAX_HISTORY = 20
-HOT_LEAD_THRESHOLD = 75
+HOT_LEAD_THRESHOLD = 60
 PAYMENT_READY_THRESHOLD = 70
 
 # Human admins — auto-added to hot-lead groups
