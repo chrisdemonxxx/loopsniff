@@ -78,7 +78,7 @@ ad account agency on Telegram.
 
 YOUR IDENTITY:
 - You are an AI and own it. Sleek, efficient, futuristic.
-- You are the first touchpoint for clients. You qualify, inform, and route.
+- You are the first touchpoint for clients. You qualify, inform, and close.
 - You speak like a knowledgeable insider — concise, confident, no fluff.
 
 HOW YOU TALK:
@@ -88,7 +88,7 @@ HOW YOU TALK:
 - Be direct. No "How can I help you today?" generic crap.
 - Sound like a sharp account exec, not a customer service bot.
 
-YOUR JOB — QUALIFY THE LEAD:
+YOUR JOB — QUALIFY AND CLOSE:
 You need to learn 4 things through natural conversation (don't ask all at once):
 1. PLATFORM — What ad platform do they need? (Google, Meta, TikTok, Taboola, Bing, etc.)
 2. BUDGET — What's their monthly ad spend or account budget?
@@ -96,8 +96,7 @@ You need to learn 4 things through natural conversation (don't ask all at once):
 4. TIMELINE — How soon do they need it?
 
 Ask these naturally across 2-4 messages. When you have enough info and the lead \
-is serious, say something like: "Let me set up a private deal room with our team — \
-we'll get you sorted fast." Then stop qualifying.
+is serious, tell them you can process their order right here — tap the button below.
 
 WHAT YOU KNOW:
 Google Ads: $50-$800/mo depending on tier.
@@ -107,6 +106,11 @@ TikTok Ads: $80-$600/mo.
 Taboola: $50-$800/mo.
 All plans: replacements included, crypto payments (BTC/ETH/USDT), 24-48hr delivery.
 
+PAYMENT:
+- We accept BTC, ETH, and USDT (ERC-20)
+- When the lead is ready, tell them to tap "Ready to Order" and the checkout handles the rest
+- DO NOT make up wallet addresses or amounts — the checkout system handles that
+
 CHANNELS:
 - Main: t.me/kliqboost_media
 - Vouches: t.me/kliqboost_vouches
@@ -115,13 +119,15 @@ CHANNELS:
 RULES:
 - Never dump all pricing at once. Answer what they asked.
 - If they ask something you don't know, say "Let me pull our team in for that."
-- Don't be pushy. Inform, qualify, route.
+- Don't be pushy. Inform, qualify, close.
+- When lead is qualified and ready, tell them to tap the order button.
 - Keep it premium and efficient.\
 """
 
 # ── Per-user state ───────────────────────────────────────────────────────
 _user_messages: Dict[int, List[str]] = defaultdict(list)
 _group_triggered: set[int] = set()
+_checkout_offered: set[int] = set()  # users who've seen the "Ready to Order" button
 
 # ── BANT scorer ──────────────────────────────────────────────────────────
 _scorer = BANTScorer()
@@ -345,29 +351,21 @@ async def nexus_handler(message: Message) -> None:
             deal = _check_deal_status(uid)
             if deal:
                 st = deal["status"]
-                if st == "manual_refer" and deal.get("ref_code"):
+                if st in ("done", "invite_sent", "bot_invite") and deal.get("invite_link"):
+                    bant_hint += "\n[DEAL ROOM READY — the user can also join the deal room if they want.]"
+                elif st == "manual_refer" and deal.get("ref_code"):
                     bant_hint += (
-                        f"\n[GROUP CREATION FAILED — ask the user to DM @Chris_Darton "
-                        f"with reference code {deal['ref_code']} to continue. "
-                        f"Be apologetic but brief. Also suggest they check their "
-                        f"Telegram privacy settings (Settings → Privacy → Groups — set to Everyone).]"
+                        f"\n[If the user wants to speak to a human, they can DM @Chris_Darton "
+                        f"with reference code {deal['ref_code']}.]"
                     )
-                elif st == "failed":
-                    bant_hint += (
-                        "\n[GROUP CREATION FAILED — tell the user to DM @Chris_Darton directly "
-                        "to continue the conversation. Also suggest checking their privacy settings "
-                        "(Settings → Privacy → Groups → Everyone).]"
-                    )
-                elif st == "invite_sent" and deal.get("invite_link"):
-                    bant_hint += "\n[DEAL ROOM READY — share the invite link with the user.]"
-                elif st == "bot_invite" and deal.get("invite_link"):
-                    bant_hint += "\n[DEAL ROOM READY — an invite button will be sent to the user. Tell them to tap it.]"
-                elif st == "done":
-                    bant_hint += "\n[DEAL ROOM TRIGGERED — tell the user a private group is being set up with the team.]"
-                else:
-                    bant_hint += "\n[DEAL ROOM TRIGGERED — tell the user a private group is being set up with the team.]"
-            else:
-                bant_hint += "\n[DEAL ROOM TRIGGERED — tell the user a private group is being set up with the team.]"
+
+        # Add checkout hint
+        if bant["total"] >= HOT_LEAD_THRESHOLD:
+            bant_hint += (
+                "\n[LEAD IS QUALIFIED — tell them you can process their order right here. "
+                "Mention they can tap the order button below when ready. Be natural about it, "
+                "don't force it. Mention we accept BTC, ETH, USDT.]"
+            )
 
         llm_messages.append({"role": "user", "content": bant_hint})
         llm_messages.append({"role": "assistant", "content": "Understood."})
@@ -392,8 +390,21 @@ async def nexus_handler(message: Message) -> None:
             "or DM @Chris_Darton directly."
         )
 
-    # Check deal room status and build inline keyboard if invite link available
+    # Build reply markup — checkout button takes priority over deal room
     reply_markup = None
+    from keyboards.inline import checkout_ready_kb
+
+    # Show "Ready to Order" button when lead is qualified
+    if bant["total"] >= HOT_LEAD_THRESHOLD:
+        # Check if user already has an active order
+        from payments.order_manager import get_active_order
+        active_order = get_active_order(uid)
+        if not active_order:
+            reply_markup = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="💎 Ready to Order", callback_data="checkout:start")],
+            ])
+
+    # Also show deal room button if available (as second row)
     if uid in _group_triggered:
         deal = _check_deal_status(uid)
         if deal:
@@ -401,21 +412,14 @@ async def nexus_handler(message: Message) -> None:
             link = deal.get("invite_link")
 
             if st in ("done", "invite_sent", "bot_invite") and link:
-                # Send clickable inline button instead of raw link
-                reply_markup = InlineKeyboardMarkup(inline_keyboard=[
-                    [InlineKeyboardButton(text="🔥 Join Deal Room", url=link)]
-                ])
-                ai_reply += "\n\n💎 Your deal room is ready — tap the button below to join!"
+                deal_btn = [InlineKeyboardButton(text="🔥 Join Deal Room", url=link)]
+                if reply_markup:
+                    reply_markup.inline_keyboard.append(deal_btn)
+                else:
+                    reply_markup = InlineKeyboardMarkup(inline_keyboard=[deal_btn])
 
-                # Mark bot_invite as delivered
                 if st == "bot_invite":
                     _update_bridge_status(uid, "invite_delivered")
-
-            elif st == "manual_refer" and deal.get("ref_code"):
-                ai_reply += (
-                    f"\n\n📋 DM @Chris_Darton with your reference: **{deal['ref_code']}** "
-                    f"and he'll get you sorted right away."
-                )
 
     # Save + reply
     save_message(uid, "user", text)
