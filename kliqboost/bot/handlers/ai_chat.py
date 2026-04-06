@@ -20,7 +20,7 @@ from typing import Dict, List
 
 import aiohttp
 from aiogram import Router
-from aiogram.types import Message
+from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.enums import ChatAction, ParseMode
 
 from utils.llm_client import call_llm
@@ -242,6 +242,20 @@ def _check_invite_link(user_id: int) -> str | None:
         return result["invite_link"]
     return None
 
+def _update_bridge_status(user_id: int, new_status: str):
+    """Update the bridge DB status for a user."""
+    try:
+        conn = sqlite3.connect(str(BRIDGE_DB))
+        conn.execute(
+            "UPDATE pending_deal_rooms SET status = ? WHERE user_id = ? AND status = 'bot_invite'",
+            (new_status, user_id),
+        )
+        conn.commit()
+        conn.close()
+        log.info("Bridge status updated for uid=%d → %s", user_id, new_status)
+    except Exception as exc:
+        log.warning("Failed to update bridge status for uid=%d: %s", user_id, exc)
+
 # ── Admin notification ───────────────────────────────────────────────────
 async def _notify_admin(bot, user_id: int, username: str, bant: dict):
     if not ADMIN_CHAT_ID:
@@ -286,7 +300,7 @@ async def nexus_handler(message: Message) -> None:
         ]
         # Check if deal room was already triggered (survives restart)
         deal = _check_deal_status(uid)
-        if deal and deal["status"] in ("done", "invite_sent", "manual_refer", "pending"):
+        if deal and deal["status"] in ("done", "invite_sent", "bot_invite", "manual_refer", "pending"):
             _group_triggered.add(uid)
     _user_messages[uid].append(text)
 
@@ -346,6 +360,8 @@ async def nexus_handler(message: Message) -> None:
                     )
                 elif st == "invite_sent" and deal.get("invite_link"):
                     bant_hint += "\n[DEAL ROOM READY — share the invite link with the user.]"
+                elif st == "bot_invite" and deal.get("invite_link"):
+                    bant_hint += "\n[DEAL ROOM READY — an invite button will be sent to the user. Tell them to tap it.]"
                 elif st == "done":
                     bant_hint += "\n[DEAL ROOM TRIGGERED — tell the user a private group is being set up with the team.]"
                 else:
@@ -376,13 +392,25 @@ async def nexus_handler(message: Message) -> None:
             "or DM @Chris_Darton directly."
         )
 
-    # Check deal room status and append relevant info
+    # Check deal room status and build inline keyboard if invite link available
+    reply_markup = None
     if uid in _group_triggered:
         deal = _check_deal_status(uid)
         if deal:
             st = deal["status"]
-            if st in ("done", "invite_sent") and deal.get("invite_link"):
-                ai_reply += f"\n\n💎 Your deal room is ready — join here: {deal['invite_link']}"
+            link = deal.get("invite_link")
+
+            if st in ("done", "invite_sent", "bot_invite") and link:
+                # Send clickable inline button instead of raw link
+                reply_markup = InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(text="🔥 Join Deal Room", url=link)]
+                ])
+                ai_reply += "\n\n💎 Your deal room is ready — tap the button below to join!"
+
+                # Mark bot_invite as delivered
+                if st == "bot_invite":
+                    _update_bridge_status(uid, "invite_delivered")
+
             elif st == "manual_refer" and deal.get("ref_code"):
                 ai_reply += (
                     f"\n\n📋 DM @Chris_Darton with your reference: **{deal['ref_code']}** "
@@ -392,4 +420,4 @@ async def nexus_handler(message: Message) -> None:
     # Save + reply
     save_message(uid, "user", text)
     save_message(uid, "assistant", ai_reply)
-    await message.answer(ai_reply, parse_mode=None)
+    await message.answer(ai_reply, parse_mode=None, reply_markup=reply_markup)

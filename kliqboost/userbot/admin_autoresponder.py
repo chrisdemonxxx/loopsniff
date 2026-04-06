@@ -19,6 +19,7 @@ import asyncio
 import logging
 import os
 import random
+import re
 import signal
 import sys
 from collections import defaultdict
@@ -37,6 +38,8 @@ sys.path.insert(0, str(_base))
 from retrieval.retriever import Retriever
 from scoring.bant_scorer import BANTScorer
 
+_BOT_DATA_DB = str(_base / "bot" / "bot_data.db")
+
 from telethon import TelegramClient, events
 from telethon.tl.functions.messages import CreateChatRequest, AddChatUserRequest
 
@@ -47,6 +50,22 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 log = logging.getLogger("admin_autoresponder")
+
+
+def _load_bot_conversation(user_id: int) -> list[dict]:
+    """Read the bot's conversation history for a user from bot_data.db."""
+    import sqlite3 as _sq
+    try:
+        db = _sq.connect(_BOT_DATA_DB)
+        rows = db.execute(
+            "SELECT role, content FROM conversations WHERE user_id = ? ORDER BY timestamp, rowid",
+            (user_id,),
+        ).fetchall()
+        db.close()
+        return [{"role": r[0], "content": r[1]} for r in rows]
+    except Exception as exc:
+        log.warning("Could not read bot history for uid=%d: %s", user_id, exc)
+        return []
 
 # ── Configuration ───────────────────────────────────────────────────────────
 
@@ -418,6 +437,34 @@ class AdminResponder:
     ) -> Dict[str, Any]:
         """Process an inbound DM and return an AI response."""
 
+        # ── Check for reference code (from bot fallback) ──────────────
+        ref_match = re.search(r"KLQ-\d{4}", message_text, re.I)
+        if ref_match:
+            ref_code = ref_match.group().upper()
+            lead_info = self._lookup_ref_code(ref_code)
+            if lead_info:
+                log.info("📋 Ref code %s from @%s — lead @%s (uid=%d)",
+                         ref_code, username, lead_info["username"], lead_info["user_id"])
+                # Load bot conversation into Chris's memory for this lead
+                bot_history = _load_bot_conversation(lead_info["user_id"])
+                if bot_history:
+                    key = username.lower()
+                    self._history[key] = bot_history[-MAX_HISTORY:]
+                    self._stages[key] = "present"
+
+                platform = lead_info.get("platform", "ad")
+                return {
+                    "response": (
+                        f"hey! got your ref ({ref_code}) — you're the one looking for "
+                        f"{platform} accounts right? let me set up a deal room with the team real quick 🔥"
+                    ),
+                    "auto_respond": True,
+                    "bant": {"total": lead_info.get("bant_score", 75)},
+                    "stage": "present",
+                    "create_group": True,
+                    "username": username,
+                }
+
         # Load history from DB on first interaction
         if username not in self._history:
             db_history = await _load_history(username)
@@ -528,6 +575,28 @@ class AdminResponder:
                 parts.append(r["text"])
 
         return "\n\n".join(parts) if parts else ""
+
+    @staticmethod
+    def _lookup_ref_code(ref_code: str) -> Optional[dict]:
+        """Look up a reference code in the bridge DB."""
+        import sqlite3 as _sqlite3
+        bridge_path = Path(_base / "bridge" / "deal_rooms.db")
+        if not bridge_path.exists():
+            return None
+        try:
+            conn = _sqlite3.connect(str(bridge_path))
+            conn.row_factory = _sqlite3.Row
+            row = conn.execute(
+                "SELECT user_id, username, bant_score, platform, niche "
+                "FROM pending_deal_rooms WHERE ref_code = ? LIMIT 1",
+                (ref_code,),
+            ).fetchone()
+            conn.close()
+            if row:
+                return dict(row)
+        except Exception as e:
+            log.error("Ref code lookup failed: %s", e)
+        return None
 
     def _build_llm_messages(
         self, username: str, rag_context: str,
@@ -746,22 +815,6 @@ async def main(test: bool = False) -> None:
 
     # ── Deal-room bridge watcher (polls bot's qualified leads) ──────────
     BRIDGE_DB = str(_base / "bridge" / "deal_rooms.db")
-    BOT_DATA_DB = str(_base / "bot" / "bot_data.db")
-
-    def _load_bot_conversation(user_id: int) -> list[dict]:
-        """Read the bot's conversation history for a user from bot_data.db."""
-        import sqlite3 as _sq
-        try:
-            db = _sq.connect(BOT_DATA_DB)
-            rows = db.execute(
-                "SELECT role, content FROM conversations WHERE user_id = ? ORDER BY timestamp, rowid",
-                (user_id,),
-            ).fetchall()
-            db.close()
-            return [{"role": r[0], "content": r[1]} for r in rows]
-        except Exception as exc:
-            log.warning("Could not read bot history for uid=%d: %s", user_id, exc)
-            return []
 
     def _summarize_bot_convo(history: list[dict]) -> str:
         """Create a concise summary of the bot conversation for Chris's context."""
@@ -812,14 +865,16 @@ async def main(test: bool = False) -> None:
                                 await _save_message(key, direction, m["content"],
                                                     row["bant_score"], "present")
 
-                        # 2. Create the group — with fallback chain
+                        # 2. Create the group — with 6-strategy fallback chain
                         import time as _time
                         from telethon.tl.functions.messages import ExportChatInviteRequest
                         group_created = False
+                        user_in_group = False
                         invite_link = None
                         ref_code = None
+                        group_entity = None
 
-                        # Strategy A: Add user directly to group
+                        # ── Strategy A: Add user directly to group ──────────
                         try:
                             group_users = [user_id] + HUMAN_ADMINS
                             group = await client(CreateChatRequest(
@@ -830,11 +885,12 @@ async def main(test: bool = False) -> None:
                             invite_result = await client(ExportChatInviteRequest(group_entity))
                             invite_link = invite_result.link
                             group_created = True
+                            user_in_group = True
                             log.info("✅ Strategy A: group created with user @%s", uname)
                         except Exception as e_a:
                             log.warning("Strategy A failed for @%s: %s — trying B", uname, e_a)
 
-                        # Strategy B: Create group WITHOUT user, send invite link
+                        # ── Strategy B: Create group WITHOUT user, export invite link ──
                         if not group_created:
                             try:
                                 group = await client(CreateChatRequest(
@@ -847,7 +903,6 @@ async def main(test: bool = False) -> None:
                                 group_created = True
                                 log.info("✅ Strategy B: group created without user, invite=%s", invite_link)
 
-                                # Send opener in group (without @-ing the lead since they're not in yet)
                                 await asyncio.sleep(random.uniform(2, 5))
                                 await client.send_message(
                                     group_entity,
@@ -855,12 +910,38 @@ async def main(test: bool = False) -> None:
                                     f"@bigbunnn @david_bazzana heads up 🔥",
                                 )
                             except Exception as e_b:
-                                log.warning("Strategy B also failed for @%s: %s", uname, e_b)
+                                log.warning("Strategy B failed for @%s: %s — trying C", uname, e_b)
 
-                        # Strategy C: Generate reference code for manual handoff
+                        # ── Strategy C: Userbot DMs invite link to lead ─────
+                        dm_sent = False
+                        if group_created and not user_in_group and invite_link:
+                            try:
+                                await asyncio.sleep(random.uniform(2, 5))
+                                await client.send_message(
+                                    user_id,
+                                    f"hey! set up a private deal room for you with the team — "
+                                    f"hop in whenever you're ready 🔥\n\n{invite_link}",
+                                )
+                                dm_sent = True
+                                log.info("✅ Strategy C: DM'd invite link to @%s", uname)
+                            except Exception as e_c:
+                                log.warning("Strategy C (DM invite) failed for @%s: %s — trying D (bot invite)", uname, e_c)
+
+                        # ── Strategy D: Signal bot to send inline button ────
+                        if group_created and not user_in_group and not dm_sent and invite_link:
+                            conn.execute(
+                                "UPDATE pending_deal_rooms SET status = 'bot_invite', invite_link = ?, completed_at = ? WHERE id = ?",
+                                (invite_link, _time.time(), row["id"]),
+                            )
+                            conn.commit()
+                            responder._groups_created.add(uname.lower())
+                            log.info("✅ Strategy D: signaled bot to send invite button to @%s (link=%s)", uname, invite_link)
+                            continue
+
+                        # ── Strategy F: Generate ref code for manual handoff ──
                         if not group_created:
                             ref_code = f"KLQ-{row['id']:04d}"
-                            log.info("⚠️ Strategy C: manual refer for @%s — ref=%s", uname, ref_code)
+                            log.info("⚠️ Strategy F: manual refer for @%s — ref=%s", uname, ref_code)
                             conn.execute(
                                 "UPDATE pending_deal_rooms SET status = 'manual_refer', ref_code = ?, completed_at = ? WHERE id = ?",
                                 (ref_code, _time.time(), row["id"]),
@@ -869,9 +950,8 @@ async def main(test: bool = False) -> None:
                             responder._groups_created.add(uname.lower())
                             continue
 
-                        # Group was created (A or B) — send opener + update DB
-                        if group_created and invite_link:
-                            # Send opener in group (only if user was added directly via A)
+                        # ── Group was created — send opener + update DB ─────
+                        if group_created and group_entity:
                             if bot_history:
                                 platform = row["platform"] or ""
                                 niche = row["niche"] or ""
@@ -902,10 +982,13 @@ async def main(test: bool = False) -> None:
                             except Exception:
                                 pass
 
-                            # Determine status based on which strategy worked
-                            status = "done"  # Strategy A
-                            if not any(u == user_id for u in [p.user_id for p in getattr(group, 'users', [])]):
-                                status = "invite_sent"  # Strategy B
+                            # Determine final status
+                            if user_in_group:
+                                status = "done"
+                            elif dm_sent:
+                                status = "invite_sent"
+                            else:
+                                status = "invite_sent"
 
                             conn.execute(
                                 "UPDATE pending_deal_rooms SET status = ?, invite_link = ?, completed_at = ? WHERE id = ?",
