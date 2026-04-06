@@ -112,11 +112,10 @@ MAX_HISTORY = 20
 HOT_LEAD_THRESHOLD = 60
 PAYMENT_READY_THRESHOLD = 70
 
-# Human admins — auto-added to hot-lead groups
-HUMAN_ADMINS = [
-    6136131094,   # @Bigbunnn — Account Manager
-    8756787507,   # @David_Bazzana — Senior Partner
-]
+# Human admins — auto-added to hot-lead groups (usernames for reliable entity resolution)
+HUMAN_ADMIN_USERNAMES = ["Bigbunnn", "David_Bazzana"]
+HUMAN_ADMIN_IDS = [6136131094, 8756787507]  # fallback
+_resolved_admin_entities: list = []  # populated at startup
 
 SALES_STAGES = [
     "opener", "qualify", "present", "handle_objections", "close", "payment",
@@ -715,6 +714,20 @@ async def main(test: bool = False) -> None:
     me = await client.get_me()
     log.info("✅ Connected as %s (@%s, id=%s)", me.first_name, me.username, me.id)
 
+    # Pre-resolve admin entities for group creation
+    global _resolved_admin_entities
+    _resolved_admin_entities = []
+    for uname in HUMAN_ADMIN_USERNAMES:
+        try:
+            entity = await client.get_input_entity(uname)
+            _resolved_admin_entities.append(entity)
+            log.info("✅ Resolved admin @%s → %s", uname, entity)
+        except Exception as e:
+            log.warning("⚠️ Could not resolve admin @%s: %s — will use ID fallback", uname, e)
+    if not _resolved_admin_entities:
+        log.warning("⚠️ No admin entities resolved — group creation will use raw IDs (may fail)")
+        _resolved_admin_entities = HUMAN_ADMIN_IDS[:]
+
     # Register inbound DM + group message handler
     @client.on(events.NewMessage(incoming=True))
     async def _on_message(event):
@@ -748,23 +761,36 @@ async def main(test: bool = False) -> None:
             if result.get("create_group") and not is_group:
                 log.info("🔥 Creating deal group for hot lead @%s", username)
                 try:
-                    group_users = [sender.id] + HUMAN_ADMINS
-                    group = await client(CreateChatRequest(
-                        users=group_users,
-                        title=f"Kliqboost — @{username}",
-                    ))
-                    responder._groups_created.add(username)
-                    group_entity = group.chats[0]
-                    await client.send_message(
-                        group_entity,
-                        f"hey @{username}! 🔥 moved you here for a dedicated convo. "
-                        f"easier to keep track of everything in one place.\n\n"
-                        f"so where were we?",
-                    )
-                    log.info("✅ Group created for @%s (id=%d)", username, group_entity.id)
+                    # Try with sender + admins, fall back to admins only, then single admin
+                    from telethon.tl.functions.messages import ExportChatInviteRequest as _ExpReq
+                    _group_ok = False
+                    for _label, _users in [
+                        ("lead+admins", [sender.id] + _resolved_admin_entities),
+                        ("admins", list(_resolved_admin_entities)),
+                    ] + [(f"admin_{i}", [a]) for i, a in enumerate(_resolved_admin_entities)]:
+                        if _group_ok:
+                            break
+                        try:
+                            group = await client(CreateChatRequest(
+                                users=_users, title=f"Kliqboost — @{username}",
+                            ))
+                            _group_ok = True
+                            responder._groups_created.add(username)
+                            group_entity = group.chats[0]
+                            _inv = await client(_ExpReq(group_entity))
+                            await client.send_message(
+                                group_entity,
+                                f"hey @{username}! 🔥 moved you here for a dedicated convo. "
+                                f"easier to keep track of everything in one place.\n\n"
+                                f"so where were we?",
+                            )
+                            log.info("✅ Group created for @%s via %s (id=%d)", username, _label, group_entity.id)
+                        except Exception as _eg:
+                            log.warning("Inline group %s failed for @%s: %s", _label, username, _eg)
+                    if not _group_ok:
+                        result = await responder.handle_message(username, text)
                 except Exception as grp_exc:
                     log.error("Failed to create group for @%s: %s", username, grp_exc)
-                    # Fall back to replying in DM
                     result = await responder.handle_message(username, text)
 
             if result.get("auto_respond") and result.get("response"):
@@ -832,6 +858,7 @@ async def main(test: bool = False) -> None:
     async def _deal_room_watcher():
         """Poll the bot's bridge DB for qualified leads and create groups."""
         import sqlite3 as _sqlite3
+        _flood_until = 0  # timestamp when CreateChatRequest flood expires
         while not stop_event.is_set():
             try:
                 bridge_path = Path(BRIDGE_DB)
@@ -848,6 +875,15 @@ async def main(test: bool = False) -> None:
                 for row in rows:
                     user_id = row["user_id"]
                     uname = row["username"] or f"id_{user_id}"
+
+                    # Skip if we're still flood-limited
+                    import time as _time
+                    if _time.time() < _flood_until:
+                        remaining = int(_flood_until - _time.time())
+                        if remaining % 300 < 20:  # log every ~5 min
+                            log.info("⏳ Flood wait: %ds remaining — deferring @%s", remaining, uname)
+                        continue
+
                     log.info("🔔 Bridge: creating deal room for @%s (uid=%d, bant=%d)",
                              uname, user_id, row["bant_score"])
                     try:
@@ -865,67 +901,102 @@ async def main(test: bool = False) -> None:
                                 await _save_message(key, direction, m["content"],
                                                     row["bant_score"], "present")
 
-                        # 2. Create the group — with 6-strategy fallback chain
+                        # 2. Create the group — robust fallback chain
                         import time as _time
                         from telethon.tl.functions.messages import ExportChatInviteRequest
+                        from telethon.errors import FloodWaitError, ChatWriteForbiddenError
                         group_created = False
                         user_in_group = False
                         invite_link = None
                         ref_code = None
                         group_entity = None
 
-                        # ── Strategy A: Add user directly to group ──────────
+                        # Resolve lead entity (needed for Strategy A)
+                        lead_entity = None
                         try:
-                            group_users = [user_id] + HUMAN_ADMINS
-                            group = await client(CreateChatRequest(
-                                users=group_users,
-                                title=f"Kliqboost — @{uname}",
-                            ))
-                            group_entity = group.chats[0]
-                            invite_result = await client(ExportChatInviteRequest(group_entity))
-                            invite_link = invite_result.link
-                            group_created = True
-                            user_in_group = True
-                            log.info("✅ Strategy A: group created with user @%s", uname)
-                        except Exception as e_a:
-                            log.warning("Strategy A failed for @%s: %s — trying B", uname, e_a)
+                            lead_entity = await client.get_input_entity(uname)
+                        except Exception:
+                            try:
+                                lead_entity = await client.get_input_entity(user_id)
+                            except Exception:
+                                log.debug("Could not resolve lead entity for @%s", uname)
 
-                        # ── Strategy B: Create group WITHOUT user, export invite link ──
-                        if not group_created:
+                        # Build candidate user lists in priority order
+                        group_attempts = []
+                        # A1: lead + all admins
+                        if lead_entity:
+                            group_attempts.append(("A1", [lead_entity] + _resolved_admin_entities, True))
+                        # A2: lead + each admin individually
+                        if lead_entity:
+                            for i, admin in enumerate(_resolved_admin_entities):
+                                group_attempts.append((f"A2.{i}", [lead_entity, admin], True))
+                        # B1: all admins (no lead)
+                        group_attempts.append(("B1", list(_resolved_admin_entities), False))
+                        # B2: each admin individually (no lead)
+                        for i, admin in enumerate(_resolved_admin_entities):
+                            group_attempts.append((f"B2.{i}", [admin], False))
+                        # B3: just the bot (always addable)
+                        BOT_USERNAME = "kliqboostmedia_bot"
+                        try:
+                            bot_entity = await client.get_input_entity(BOT_USERNAME)
+                            group_attempts.append(("B3-bot", [bot_entity], False))
+                        except Exception:
+                            log.debug("Could not resolve bot entity")
+
+                        # Try each attempt
+                        for label, users_list, includes_lead in group_attempts:
+                            if group_created:
+                                break
                             try:
                                 group = await client(CreateChatRequest(
-                                    users=HUMAN_ADMINS,
+                                    users=users_list,
                                     title=f"Kliqboost — @{uname}",
                                 ))
                                 group_entity = group.chats[0]
                                 invite_result = await client(ExportChatInviteRequest(group_entity))
                                 invite_link = invite_result.link
                                 group_created = True
-                                log.info("✅ Strategy B: group created without user, invite=%s", invite_link)
+                                user_in_group = includes_lead
+                                log.info("✅ Strategy %s: group created for @%s (user_in=%s, link=%s)",
+                                         label, uname, user_in_group, invite_link)
+                            except FloodWaitError as fw:
+                                _flood_until = _time.time() + fw.seconds
+                                log.warning("⏳ FloodWait %ds on strategy %s for @%s — will retry after %ds",
+                                            fw.seconds, label, uname, fw.seconds)
+                                break  # Don't keep trying, we're rate-limited
+                            except Exception as e:
+                                log.warning("Strategy %s failed for @%s: %s", label, uname, e)
+                                await asyncio.sleep(1)
 
-                                await asyncio.sleep(random.uniform(2, 5))
+                        # Post-group-creation: send opener in group
+                        if group_created and group_entity:
+                            await asyncio.sleep(random.uniform(2, 5))
+                            try:
                                 await client.send_message(
                                     group_entity,
-                                    f"deal room for @{uname} — they'll join via invite link.\n\n"
-                                    f"@bigbunnn @david_bazzana heads up 🔥",
+                                    f"deal room for @{uname} — "
+                                    + ("they're in the group." if user_in_group
+                                       else "they'll join via invite link.")
+                                    + f"\n\n@bigbunnn @david_bazzana heads up 🔥",
                                 )
-                            except Exception as e_b:
-                                log.warning("Strategy B failed for @%s: %s — trying C", uname, e_b)
+                            except Exception:
+                                pass
 
                         # ── Strategy C: Userbot DMs invite link to lead ─────
                         dm_sent = False
                         if group_created and not user_in_group and invite_link:
                             try:
+                                target = lead_entity or user_id
                                 await asyncio.sleep(random.uniform(2, 5))
                                 await client.send_message(
-                                    user_id,
+                                    target,
                                     f"hey! set up a private deal room for you with the team — "
                                     f"hop in whenever you're ready 🔥\n\n{invite_link}",
                                 )
                                 dm_sent = True
                                 log.info("✅ Strategy C: DM'd invite link to @%s", uname)
                             except Exception as e_c:
-                                log.warning("Strategy C (DM invite) failed for @%s: %s — trying D (bot invite)", uname, e_c)
+                                log.warning("Strategy C (DM) failed for @%s: %s — trying D", uname, e_c)
 
                         # ── Strategy D: Signal bot to send inline button ────
                         if group_created and not user_in_group and not dm_sent and invite_link:
@@ -940,6 +1011,10 @@ async def main(test: bool = False) -> None:
 
                         # ── Strategy F: Generate ref code for manual handoff ──
                         if not group_created:
+                            # If flood-limited, keep as pending for automatic retry
+                            if _time.time() < _flood_until:
+                                log.info("⏳ Keeping @%s as pending — will retry when flood expires", uname)
+                                continue
                             ref_code = f"KLQ-{row['id']:04d}"
                             log.info("⚠️ Strategy F: manual refer for @%s — ref=%s", uname, ref_code)
                             conn.execute(
@@ -950,39 +1025,8 @@ async def main(test: bool = False) -> None:
                             responder._groups_created.add(uname.lower())
                             continue
 
-                        # ── Group was created — send opener + update DB ─────
-                        if group_created and group_entity:
-                            if bot_history:
-                                platform = row["platform"] or ""
-                                niche = row["niche"] or ""
-                                opener = (
-                                    f"hey @{uname}! chris here 👋 nexus flagged you over — "
-                                    f"sounds like you're looking for "
-                                )
-                                if platform and platform != "None":
-                                    opener += f"{platform} accounts"
-                                    if niche and niche != "None":
-                                        opener += f" for {niche}"
-                                else:
-                                    opener += "ad accounts"
-                                opener += (
-                                    f". pulled in the team so we can get this sorted quick.\n\n"
-                                    f"@bigbunnn @david_bazzana — this is a new one, let's take care of them 🔥"
-                                )
-                            else:
-                                opener = (
-                                    f"hey @{uname}! chris here. moved you to a private deal room "
-                                    f"with the team — @bigbunnn @david_bazzana.\n\n"
-                                    f"so what are you looking for exactly?"
-                                )
-
-                            await asyncio.sleep(random.uniform(3, 8))
-                            try:
-                                await client.send_message(group_entity, opener)
-                            except Exception:
-                                pass
-
-                            # Determine final status
+                        # ── Update bridge DB with final status ──────────────
+                        if group_created:
                             if user_in_group:
                                 status = "done"
                             elif dm_sent:
