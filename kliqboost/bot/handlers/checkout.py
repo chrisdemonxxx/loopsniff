@@ -130,12 +130,15 @@ async def cb_checkout_start(callback: CallbackQuery, state: FSMContext) -> None:
     bant = scorer.score_from_conversation(user_msgs)
     extracted = bant.get("extracted", {})
 
-    platform = str(extracted.get("platform", "Ad accounts"))
-    niche = str(extracted.get("niche", "General"))
-    budget_str = str(extracted.get("budget", "$1,000"))
+    platform = extracted.get("platform") or "Ad accounts"
+    niche = extracted.get("niche") or "General"
+    budget_str = extracted.get("budget")
 
-    # Parse budget to a number
-    budget_num = _parse_budget_amount(budget_str)
+    # If budget wasn't detected, don't default to $1000 — show "TBD" and let user modify
+    if budget_str:
+        budget_num = _parse_budget_amount(budget_str)
+    else:
+        budget_num = 0  # Will prompt user to set via Modify button
 
     # Create the order
     order = create_order(
@@ -150,13 +153,15 @@ async def cb_checkout_start(callback: CallbackQuery, state: FSMContext) -> None:
     await state.set_state(CheckoutStates.confirm_order)
     await state.update_data(order_code=order["order_code"])
 
+    budget_display = f"${budget_num:,.0f}" if budget_num > 0 else "TBD — tap Modify to set"
+
     summary = (
         f"📋 <b>ORDER SUMMARY</b>\n"
         f"━━━━━━━━━━━━━━━━━━━\n"
         f"🎫 Order: <code>{order['order_code']}</code>\n"
         f"🔧 Platform: {platform}\n"
         f"🏷 Niche: {niche}\n"
-        f"💰 Amount: <b>${budget_num:,.0f}</b>\n\n"
+        f"💰 Amount: <b>{budget_display}</b>\n\n"
         f"Review your order above. Hit <b>Confirm</b> to proceed to payment."
     )
 
@@ -606,4 +611,4 @@ def _parse_budget_amount(budget_str: str) -> float:
         if key in budget_str.lower():
             return val
 
-    return 1000  # Default fallback
+    return 0  # Unknown budget — let user specify

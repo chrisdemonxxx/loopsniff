@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import re
 import sys
 import sqlite3
 import time
@@ -65,8 +66,8 @@ log = logging.getLogger(__name__)
 router = Router()
 
 # ── Constants ────────────────────────────────────────────────────────────
-HOT_LEAD_THRESHOLD = 60
-MAX_HISTORY = 12
+HOT_LEAD_THRESHOLD = 30
+MAX_HISTORY = 30
 ADMIN_CHAT_ID = int(os.getenv("ADMIN_CHAT_ID", "0"))
 
 # Bridge DB — shared with autoresponder for group creation
@@ -104,7 +105,7 @@ Meta Ads: $200-$1000/mo.
 Bing Ads: $100-$1000/mo.
 TikTok Ads: $80-$600/mo.
 Taboola: $50-$800/mo.
-All plans: replacements included, crypto payments (BTC/ETH/USDT), 24-48hr delivery.
+All plans: replacements included, crypto payments (BTC/ETH/USDT), 2-hour delivery.
 
 PAYMENT:
 - We accept BTC, ETH, and USDT (ERC-20)
@@ -121,7 +122,12 @@ RULES:
 - If they ask something you don't know, say "Let me pull our team in for that."
 - Don't be pushy. Inform, qualify, close.
 - When lead is qualified and ready, tell them to tap the order button.
-- Keep it premium and efficient.\
+- Keep it premium and efficient.
+- NEVER say a button is there if it's not — only mention the order button when you're told it's shown.
+- NEVER make up features, buttons, or links that don't exist.
+- NEVER say "24-48 hours" — delivery is always 2 hours.
+- If you're unsure about platform/niche/budget, ASK the user — don't guess.
+- Stay consistent with what the user told you. If they said "Google BSOD 3k", repeat that back.\
 """
 
 # ── Per-user state ───────────────────────────────────────────────────────
@@ -339,32 +345,60 @@ async def nexus_handler(message: Message) -> None:
                 "content": "Got it.",
             })
 
-        # Add BANT state as system context
-        bant_hint = (
-            f"[LEAD STATE: BANT={bant['total']} tier={bant.get('tier','?')}. "
-            f"Extracted: platform={bant.get('extracted',{}).get('platform','?')}, "
-            f"budget={bant.get('extracted',{}).get('budget','?')}, "
-            f"niche={bant.get('extracted',{}).get('niche','?')}, "
-            f"timeline={bant.get('extracted',{}).get('timeline','?')}]"
-        )
+        # Add BANT state as system context — only confirmed fields
+        extracted = bant.get("extracted", {})
+        confirmed_parts = []
+        if extracted.get("platform"):
+            confirmed_parts.append(f"platform={extracted['platform']}")
+        if extracted.get("budget"):
+            confirmed_parts.append(f"budget={extracted['budget']}")
+        if extracted.get("niche"):
+            confirmed_parts.append(f"niche={extracted['niche']}")
+        if extracted.get("timeline"):
+            confirmed_parts.append(f"timeline={extracted['timeline']}")
+
+        bant_hint = f"[LEAD STATE: BANT={bant['total']} tier={bant.get('tier','?')}."
+        if confirmed_parts:
+            bant_hint += f" Confirmed: {', '.join(confirmed_parts)}."
+        else:
+            bant_hint += " No confirmed details yet — ask what they need."
+        bant_hint += "]"
         if uid in _group_triggered:
             deal = _check_deal_status(uid)
             if deal:
                 st = deal["status"]
                 if st in ("done", "invite_sent", "bot_invite") and deal.get("invite_link"):
                     bant_hint += "\n[DEAL ROOM READY — the user can also join the deal room if they want.]"
-                elif st == "manual_refer" and deal.get("ref_code"):
-                    bant_hint += (
-                        f"\n[If the user wants to speak to a human, they can DM @Chris_Darton "
-                        f"with reference code {deal['ref_code']}.]"
-                    )
+                elif st == "pending":
+                    bant_hint += "\n[Deal room is being set up — tell user it's coming shortly if they ask.]"
+
+        # Pre-compute if checkout button will be shown
+        _CHECKOUT_TRIGGERS = re.compile(
+            r"\border\b|\bbuy\b|\bpurchas\w*\b|\bready\b|\bcheckout\b|\bpay\b"
+            r"|\bget started\b|\bsign me up\b|\blet'?s go\b|\blet'?s do it\b"
+            r"|\bhow do i pay\b|\bwhere.{0,10}pay\b|\bsend.{0,10}invoice\b"
+            r"|\bзаказ\w*\b|\bкупить\b|\bоплат\w*\b|\bготов\b|\bдавай\b",
+            re.I,
+        )
+        has_checkout_intent = bool(_CHECKOUT_TRIGGERS.search(text))
+        will_show_button = (bant["total"] >= HOT_LEAD_THRESHOLD or has_checkout_intent)
+
+        if will_show_button:
+            from payments.order_manager import get_active_order
+            if get_active_order(uid):
+                will_show_button = False
 
         # Add checkout hint
-        if bant["total"] >= HOT_LEAD_THRESHOLD:
+        if will_show_button:
             bant_hint += (
-                "\n[LEAD IS QUALIFIED — tell them you can process their order right here. "
-                "Mention they can tap the order button below when ready. Be natural about it, "
-                "don't force it. Mention we accept BTC, ETH, USDT.]"
+                "\n[CHECKOUT BUTTON IS SHOWN BELOW YOUR REPLY — tell them to tap "
+                "'Ready to Order' below to start checkout. Be natural about it. "
+                "Mention we accept BTC, ETH, USDT. Delivery: 2 hours.]"
+            )
+        elif bant["total"] >= HOT_LEAD_THRESHOLD:
+            bant_hint += (
+                "\n[LEAD IS QUALIFIED but already has an active order. "
+                "Don't offer a new order — ask about their existing one.]"
             )
 
         llm_messages.append({"role": "user", "content": bant_hint})
@@ -394,15 +428,11 @@ async def nexus_handler(message: Message) -> None:
     reply_markup = None
     from keyboards.inline import checkout_ready_kb
 
-    # Show "Ready to Order" button when lead is qualified
-    if bant["total"] >= HOT_LEAD_THRESHOLD:
-        # Check if user already has an active order
-        from payments.order_manager import get_active_order
-        active_order = get_active_order(uid)
-        if not active_order:
-            reply_markup = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="💎 Ready to Order", callback_data="checkout:start")],
-            ])
+    # Show "Ready to Order" button (already pre-computed before LLM call)
+    if will_show_button:
+        reply_markup = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="💎 Ready to Order", callback_data="checkout:start")],
+        ])
 
     # Also show deal room button if available (as second row)
     if uid in _group_triggered:

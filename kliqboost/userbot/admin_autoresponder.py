@@ -182,7 +182,7 @@ accounts or want to compare, lmk. no pressure.
 CLOSING THE SALE:
 - When they're ready to buy, confirm: platform, plan tier, quantity
 - Then say you'll send them a payment link (crypto — BTC, ETH, USDT accepted)
-- After payment confirm, tell them account will be ready within 24-48 hrs
+- After payment confirm, tell them account will be ready within 2 hours
 - Give them your TG handle for ongoing support
 
 RULES:
@@ -229,7 +229,7 @@ STAGE_INSTRUCTIONS = {
     ),
     "payment": (
         "They've agreed. Tell them you'll send a payment link right now. "
-        "Confirm the amount. Let them know accounts are ready within 24-48 hrs "
+        "Confirm the amount. Let them know accounts are ready within 2 hours "
         "after payment."
     ),
 }
@@ -1009,20 +1009,10 @@ async def main(test: bool = False) -> None:
                             log.info("✅ Strategy D: signaled bot to send invite button to @%s (link=%s)", uname, invite_link)
                             continue
 
-                        # ── Strategy F: Generate ref code for manual handoff ──
+                        # ── Strategy F: Auto-retry instead of manual handoff ──
                         if not group_created:
-                            # If flood-limited, keep as pending for automatic retry
-                            if _time.time() < _flood_until:
-                                log.info("⏳ Keeping @%s as pending — will retry when flood expires", uname)
-                                continue
-                            ref_code = f"KLQ-{row['id']:04d}"
-                            log.info("⚠️ Strategy F: manual refer for @%s — ref=%s", uname, ref_code)
-                            conn.execute(
-                                "UPDATE pending_deal_rooms SET status = 'manual_refer', ref_code = ?, completed_at = ? WHERE id = ?",
-                                (ref_code, _time.time(), row["id"]),
-                            )
-                            conn.commit()
-                            responder._groups_created.add(uname.lower())
+                            # Always keep as pending for automatic retry — never manual refer
+                            log.info("⏳ Keeping @%s as pending — will retry on next cycle", uname)
                             continue
 
                         # ── Update bridge DB with final status ──────────────

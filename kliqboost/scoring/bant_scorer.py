@@ -100,22 +100,38 @@ _PLATFORM_KEYWORDS: dict[str, list[str]] = {
         "gg ", "gg\n", "bsod", "гугл", "гугл адс", "адвордс",
         "гг ", "гг\n", "agency account", "agency acc", "mcc",
         "гугл аккаунт", "гугл акк",
+        # Slang EN
+        "blue screen", "bluescreen", "rdp", "pop traffic", "pop-up",
+        "tech call", "call center", "cold call",
+        "g ads", "google ac", "ggl", "goog",
+        # Slang RU
+        "бсод", "синий экран", "рдп", "поп трафик",
+        "колл центр", "холодные звонки",
     ],
     "meta": [
         "meta", "facebook", "fb ads", "instagram", "ig ads", "fb ",
         "fb\n", "фб", "фейсбук", "инста", "инстаграм", "мета",
         "bm ", "bm\n", "business manager", "бм ",
+        # Slang EN
+        "zuck", "fbm", "fb bm", "cloaking", "cloak", "fb acc",
+        "insta ads", "reels ads", "кло",
+        # Slang RU
+        "фб акк", "бизнес менеджер", "клоака", "клоакинг",
     ],
     "tiktok": [
         "tiktok", "tik tok", "tt ads", "tt ", "tt\n",
         "тикток", "тик ток", "тт ",
+        # Slang
+        "tok ads", "tt acc",
     ],
     "bing": [
         "bing", "microsoft ads", "bing ads",
         "бинг", "майкрософт",
+        # Slang
+        "msft ads", "ms ads",
     ],
-    "taboola": ["taboola", "табула"],
-    "outbrain": ["outbrain", "аутбрейн"],
+    "taboola": ["taboola", "табула", "tab ads"],
+    "outbrain": ["outbrain", "аутбрейн", "ob ads"],
     "mediago": ["mediago", "media go", "медиаго"],
     "snapchat": ["snapchat", "snap ads", "снэпчат"],
     "twitter": ["twitter", "x ads", "твиттер"],
@@ -125,38 +141,76 @@ _NICHE_KEYWORDS: dict[str, list[str]] = {
     "crypto": [
         "crypto", "bitcoin", "btc", "defi", "web3", "nft",
         "крипто", "биткоин", "криптовалют",
+        # Slang EN
+        "eth", "usdt", "tether", "binance", "coinbase", "exchange",
+        "dex", "wallet", "token", "blockchain", "mining",
+        "shitcoin", "altcoin", "presale", "ico",
+        # Slang RU
+        "эфир", "тезер", "бинанс", "монета", "токен",
+        "майнинг", "блокчейн", "кошелёк", "кошелек",
     ],
     "finance": [
         "finance", "forex", "stocks", "insurance", "loans", "fintech",
         "финанс", "форекс", "страхов", "кредит",
+        # Slang EN
+        "fx", "credit card", "cc", "banking", "fin", "investment",
+        "payday", "mortgage", "debt", "tax",
+        # Slang RU
+        "инвестиц", "ипотек", "долг", "налог", "банковск",
     ],
     "nutra": [
         "nutra", "health", "supplement", "weight loss", "diet",
         "нутра", "здоровье", "похуде", "добавк",
+        # Slang
+        "keto", "cbd", "detox", "skincare", "anti-aging",
+        "витамин", "бад",
     ],
     "gambling": [
         "gambling", "casino", "betting", "slots", "poker", "bet ",
         "гемблинг", "казино", "ставки", "покер", "слоты", "букмекер",
+        # Slang EN
+        "igaming", "i-gaming", "sportsbook", "roulette", "blackjack",
+        "bookie", "wager", "odds", "jackpot", "spin",
+        "1xbet", "pin-up", "vulkan", "mostbet",
+        # Slang RU
+        "рулетк", "блэкджек", "ставочн", "вулкан", "пин-ап",
+        "мостбет", "азартн", "игровые автоматы", "игровой",
     ],
     "trading": [
         "trading", "binary", "options", "cfd",
         "трейдинг", "бинарные", "опционы",
+        # Slang
+        "mt4", "mt5", "metatrader", "signals", "copy trading",
+        "сигналы", "копитрейдинг",
     ],
     "sweepstakes": [
         "sweepstakes", "sweeps", "giveaway", "contest",
         "свипстейк", "розыгрыш",
+        # Slang
+        "cc submit", "soi", "doi", "pin submit", "survey",
     ],
     "dating": [
         "dating", "adult", "18+",
         "дейтинг", "знакомств",
+        # Slang
+        "hookup", "match", "tinder",
     ],
     "ecommerce": [
         "ecommerce", "e-commerce", "shopify", "dropship", "store",
         "екоммерс", "дропшип", "магазин",
+        # Slang
+        "amazon", "woo", "woocommerce", "alibaba", "cod",
     ],
     "tech_support": [
         "tech support", "techsupport", "call center", "pop up",
         "тех поддержк", "колл центр",
+        # Slang EN
+        "bsod", "blue screen", "bluescreen", "error", "popup",
+        "pop-up", "refund scam", "remote desktop", "rdp",
+        "tech scam", "support scam", "lockout", "screen lock",
+        # Slang RU
+        "бсод", "синий экран", "поп-ап", "удалённый доступ",
+        "экран блокировки", "техподдержка",
     ],
 }
 
@@ -195,8 +249,11 @@ _BUYING_INTENT = re.compile(
     r"|\bsell\b|\bbuy\b|\bpurchas\w*\b|\bcop\b|\bgrab\b|\bscoop\b"
     r"|\bhow much\b|\bpric\w*\b|\bcost\b|\brate\b"
     r"|\baccounts?\b|\baccs?\b"
+    r"|\border\b|\bcheckout\b|\bpay\b|\binvoice\b|\bready\b"
+    r"|\bget started\b|\bsign me up\b|\blet'?s go\b|\blet'?s do it\b"
     r"|\bнужн\w*\b|\bкупить\b|\bпродаёшь\b|\bпродаешь\b|\bесть\b"
-    r"|\bсколько\b|\bцена\b|\bстоимость\b|\bаккаунт\w*\b|\bакк\w*\b",
+    r"|\bсколько\b|\bцена\b|\bстоимость\b|\bаккаунт\w*\b|\bакк\w*\b"
+    r"|\bзаказ\w*\b|\bоплат\w*\b|\bготов\b|\bдавай\b",
     re.I,
 )
 
