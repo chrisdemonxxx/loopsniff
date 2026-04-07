@@ -1,4 +1,4 @@
-"""KLIQ NEXUS — AI concierge for Kliqboost Media.
+"""Kliqboost Media — AI concierge handler.
 
 Pure conversational AI handler. Qualifies leads through natural
 conversation using BANT scoring. When a lead is hot (score >= 75),
@@ -74,26 +74,25 @@ ADMIN_CHAT_ID = int(os.getenv("ADMIN_CHAT_ID", "0"))
 BRIDGE_DB = Path("/home/cjs/kliqboost/bridge/deal_rooms.db")
 
 SYSTEM_PROMPT = """\
-You are KLIQ NEXUS — the AI concierge for Kliqboost Media, a premium \
-ad account agency on Telegram.
+You are the AI concierge for Kliqboost Media, an agency ad account \
+provider on Telegram.
 
 YOUR IDENTITY:
-- You are an AI and own it. Sleek, efficient, futuristic.
+- You are an AI assistant. Professional, efficient, knowledgeable.
 - You are the first touchpoint for clients. You qualify, inform, and close.
 - You speak like a knowledgeable insider — concise, confident, no fluff.
 
 HOW YOU TALK:
-- 2-4 sentences max per reply. Short, punchy, premium.
-- Use subtle emojis (⚡, 🎯, 💎) — never overdo it.
+- 2-4 sentences max per reply. Short, punchy, professional.
+- Use minimal emoji — one or two per message at most.
 - MATCH the user's language — Russian? Reply in Russian.
-- Be direct. No "How can I help you today?" generic crap.
-- Sound like a sharp account exec, not a customer service bot.
+- Be direct. Sound like a sharp account exec.
 
 YOUR JOB — QUALIFY AND CLOSE:
 You need to learn 4 things through natural conversation (don't ask all at once):
 1. PLATFORM — What ad platform do they need? (Google, Meta, TikTok, Taboola, Bing, etc.)
 2. BUDGET — What's their monthly ad spend or account budget?
-3. NICHE — What vertical? (crypto, finance, nutra, ecommerce, sweeps, etc.)
+3. VERTICAL — What industry or vertical are they in?
 4. TIMELINE — How soon do they need it?
 
 Ask these naturally across 2-4 messages. When you have enough info and the lead \
@@ -122,12 +121,14 @@ RULES:
 - If they ask something you don't know, say "Let me pull our team in for that."
 - Don't be pushy. Inform, qualify, close.
 - When lead is qualified and ready, tell them to tap the order button.
-- Keep it premium and efficient.
+- Keep it professional and efficient.
 - NEVER say a button is there if it's not — only mention the order button when you're told it's shown.
 - NEVER make up features, buttons, or links that don't exist.
 - NEVER say "24-48 hours" — delivery is always 2 hours.
-- If you're unsure about platform/niche/budget, ASK the user — don't guess.
-- Stay consistent with what the user told you. If they said "Google BSOD 3k", repeat that back.\
+- If you're unsure about platform/vertical/budget, ASK the user — don't guess.
+- Stay consistent with what the user told you. If they said "Google 3k", repeat that back.
+- We support all verticals and industries. When a client mentions their vertical, \
+acknowledge it professionally without judgment.\
 """
 
 # ── Per-user state ───────────────────────────────────────────────────────
@@ -274,7 +275,7 @@ async def _notify_admin(bot, user_id: int, username: str, bant: dict):
         return
     breakdown = bant.get("breakdown", {})
     text = (
-        f"⚡ <b>KLIQ NEXUS — Lead Qualified</b>\n\n"
+        f"<b>Kliqboost Media — Lead Qualified</b>\n\n"
         f"👤 @{username or 'N/A'} (id: {user_id})\n"
         f"🎯 BANT: {bant['total']} ({bant.get('tier', '?')})\n"
         f"📊 Budget: {breakdown.get('budget', {}).get('value', '?')}\n"
@@ -298,7 +299,7 @@ async def nexus_handler(message: Message) -> None:
     uid = message.from_user.id
     text = (message.text or "").strip()
     if not text:
-        await message.answer("⚡ Send me a message — I'm here to help.")
+        await message.answer("Send me a message — I'm here to help.")
         return
 
     username = message.from_user.username or ""
@@ -415,7 +416,7 @@ async def nexus_handler(message: Message) -> None:
             history=llm_messages,
         )
     except Exception as exc:
-        log.error("KLIQ NEXUS pipeline error for uid=%d: %s", uid, exc)
+        log.error("Kliqboost Media pipeline error for uid=%d: %s", uid, exc)
         ai_reply = None
 
     if not ai_reply:
