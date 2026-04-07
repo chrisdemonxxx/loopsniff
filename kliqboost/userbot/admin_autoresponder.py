@@ -848,10 +848,10 @@ async def main(test: bool = False) -> None:
             return ""
         user_msgs = [m["content"] for m in history if m["role"] == "user"]
         bot_msgs = [m["content"] for m in history if m["role"] == "assistant"]
-        parts = ["[BOT CONVERSATION HISTORY — the client already talked to our bot KLIQ NEXUS. "
+        parts = ["[BOT CONVERSATION HISTORY — the client already talked to our Kliqboost Media bot. "
                  "Continue naturally from where the bot left off. Don't re-ask things they already answered.]"]
         for m in history[-16:]:
-            tag = "Client" if m["role"] == "user" else "KLIQ NEXUS"
+            tag = "Client" if m["role"] == "user" else "Kliqboost Media"
             parts.append(f"{tag}: {m['content'][:300]}")
         return "\n".join(parts)
 
