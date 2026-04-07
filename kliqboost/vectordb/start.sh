@@ -4,11 +4,12 @@ set -e
 DATA_DIR="/data/chroma"
 mkdir -p "$DATA_DIR"
 
-echo "🔄 Starting ChromaDB server on port ${PORT:-8000}..."
+PORT="${PORT:-8000}"
+echo "🔄 Starting ChromaDB server on port ${PORT}..."
 echo "   Data path: $DATA_DIR"
 
-exec chroma run \
+exec python -m chromadb.cli.cli run \
   --host 0.0.0.0 \
-  --port "${PORT:-8000}" \
+  --port "$PORT" \
   --path "$DATA_DIR" \
   --log-path /dev/stdout
