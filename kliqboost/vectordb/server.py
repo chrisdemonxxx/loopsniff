@@ -11,13 +11,16 @@ os.makedirs(data_dir, exist_ok=True)
 # Seed data on first boot (persistent disk keeps it across deploys)
 marker = os.path.join(data_dir, ".seeded")
 if not os.path.exists(marker):
-    url = os.environ.get(
-        "CHROMA_SEED_URL",
-        "https://github.com/chrisdemonxxx/loopsniff/releases/download/rag-data-v1/chroma_data.tar.gz",
+    gh_token = os.environ.get("GITHUB_TOKEN", "")
+    asset_url = (
+        "https://api.github.com/repos/chrisdemonxxx/loopsniff"
+        "/releases/assets/390684164"
     )
-    print(f"📥 First boot — downloading seed data from {url}")
+    print(f"📥 First boot — downloading seed data...")
+    auth_header = f"-H 'Authorization: token {gh_token}'" if gh_token else ""
     subprocess.run(
-        f"curl -fSL '{url}' | tar xz -C '{data_dir}'",
+        f"curl -fSL {auth_header} -H 'Accept: application/octet-stream' "
+        f"'{asset_url}' | tar xz -C '{data_dir}'",
         shell=True, check=True,
     )
     open(marker, "w").write("ok")
