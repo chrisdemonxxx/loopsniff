@@ -1,0 +1,22 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# AI Funnel Dependencies
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Telegram
+python-telegram-bot>=21.0        # Bot API (qualification bot)
+telethon>=1.36.0                 # MTProto userbot (AI responder)
+
+# LLM / AI
+aiohttp>=3.9.0                   # Async HTTP for Ollama Cloud API
+
+# Database
+aiosqlite>=0.19.0                # Async SQLite (lead DB, conversation history)
+
+# RAG (uses existing kliqboost/rag system)
+chromadb>=0.4.0                  # Vector store
+sentence-transformers>=2.2.0     # Embeddings (all-MiniLM-L6-v2)
+
+# Utilities
+python-dotenv>=1.0.0             # .env config loader
+cryptography>=41.0               # Telethon dependency
+PySocks>=1.7.1                   # SOCKS proxy support (optional)

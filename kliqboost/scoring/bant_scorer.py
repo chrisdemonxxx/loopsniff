@@ -41,6 +41,7 @@ PLATFORM_SCORES: Dict[str, int] = {
 
 NICHE_SCORES: Dict[str, int] = {
     "crypto": 15,
+    "blackhat": 15,
     "finance": 15,
     "gambling": 15,
     "nutra": 12,
@@ -138,6 +139,21 @@ _PLATFORM_KEYWORDS: dict[str, list[str]] = {
 }
 
 _NICHE_KEYWORDS: dict[str, list[str]] = {
+    "blackhat": [
+        # EN — generic blackhat/greyhat
+        "blackhat", "black hat", "black-hat",
+        "greyhat", "grey hat", "gray hat", "grayhat",
+        "phishing", "phish",
+        "cloaking", "cloak", "cloaker",
+        "fraud", "fraudulent",
+        "drainer", "crypto drainer", "wallet drainer",
+        "scam", "scammer",
+        "money mule", "carding", "cc fraud",
+        # RU
+        "блэкхэт", "чёрная шляпа", "серая шляпа",
+        "фишинг", "фрод", "мошенничество", "дрейнер",
+        "кардинг", "скам",
+    ],
     "crypto": [
         "crypto", "bitcoin", "btc", "defi", "web3", "nft",
         "крипто", "биткоин", "криптовалют",

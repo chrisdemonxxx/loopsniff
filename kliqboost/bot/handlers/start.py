@@ -8,10 +8,10 @@ from db.persistence import record_user_visit
 router = Router()
 
 WELCOME = (
-    "<b>Kliqboost Media</b>\n\n"
-    "Agency ad accounts for Google, Meta, TikTok, Taboola and more.\n\n"
-    "Tell me what you need — platform, budget, timeline — "
-    "and I'll get you sorted. Ready when you are."
+    "<b>Kliqboost Media — Advertising Solutions</b>\n\n"
+    "We partner with media buyers to provide verified advertising "
+    "infrastructure across Google, Meta, TikTok, and Taboola.\n\n"
+    "Tell us your platform and goals — we'll find the right solution for you."
 )
 
 

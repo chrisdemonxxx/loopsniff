@@ -1,0 +1,227 @@
+import logging
+
+import aiohttp
+
+from aiogram import Router, F
+from aiogram.types import CallbackQuery, Message
+from aiogram.fsm.context import FSMContext
+from aiogram.enums import ParseMode
+
+from config import ADMIN_USERNAME
+from middlewares.i18n import t
+from keyboards.inline import (
+    order_platform_kb,
+    order_niche_kb,
+    order_budget_kb,
+    order_timing_kb,
+    main_menu_kb,
+)
+from states.order import OrderStates
+from utils.notifications import notify_admin
+from utils.api_client import api_client, APIError
+from db.persistence import save_lead
+
+logger = logging.getLogger(__name__)
+
+router = Router()
+
+
+def _record_lead(data: dict) -> None:
+    save_lead(data.get("user_id", 0), data)
+
+
+@router.callback_query(F.data == "menu:order")
+async def cb_order_start(callback: CallbackQuery, state: FSMContext) -> None:
+    uid = callback.from_user.id
+    _t = lambda k, **kw: t(uid, k, **kw)
+    await state.set_state(OrderStates.platform)
+    await callback.message.edit_text(
+        _t("order_step1"),
+        parse_mode=ParseMode.HTML,
+        reply_markup=order_platform_kb(_t),
+    )
+    await callback.answer()
+
+
+@router.callback_query(OrderStates.platform, F.data.startswith("order:plat:"))
+async def cb_order_platform(callback: CallbackQuery, state: FSMContext) -> None:
+    uid = callback.from_user.id
+    value = callback.data.split(":", 2)[2]
+    await state.update_data(platform=value)
+    _t = lambda k, **kw: t(uid, k, **kw)
+    await state.set_state(OrderStates.niche)
+    await callback.message.edit_text(
+        _t("order_step2"),
+        parse_mode=ParseMode.HTML,
+        reply_markup=order_niche_kb(_t),
+    )
+    await callback.answer()
+
+
+@router.callback_query(OrderStates.niche, F.data.startswith("order:niche:"))
+async def cb_order_niche(callback: CallbackQuery, state: FSMContext) -> None:
+    uid = callback.from_user.id
+    value = callback.data.split(":", 2)[2]
+    await state.update_data(niche=value)
+    _t = lambda k, **kw: t(uid, k, **kw)
+    await state.set_state(OrderStates.budget)
+    await callback.message.edit_text(
+        _t("order_step3"),
+        parse_mode=ParseMode.HTML,
+        reply_markup=order_budget_kb(_t),
+    )
+    await callback.answer()
+
+
+@router.callback_query(OrderStates.budget, F.data.startswith("order:budget:"))
+async def cb_order_budget(callback: CallbackQuery, state: FSMContext) -> None:
+    uid = callback.from_user.id
+    value = callback.data.split(":", 2)[2]
+    await state.update_data(budget=value)
+    _t = lambda k, **kw: t(uid, k, **kw)
+    await state.set_state(OrderStates.timing)
+    await callback.message.edit_text(
+        _t("order_step4"),
+        parse_mode=ParseMode.HTML,
+        reply_markup=order_timing_kb(_t),
+    )
+    await callback.answer()
+
+
+@router.callback_query(OrderStates.timing, F.data.startswith("order:timing:"))
+async def cb_order_timing(callback: CallbackQuery, state: FSMContext) -> None:
+    uid = callback.from_user.id
+    value = callback.data.split(":", 2)[2]
+    await state.update_data(timing=value)
+    _t = lambda k, **kw: t(uid, k, **kw)
+    await state.set_state(OrderStates.contact)
+    await callback.message.edit_text(
+        _t("order_step5"),
+        parse_mode=ParseMode.HTML,
+    )
+    await callback.answer()
+
+
+@router.message(OrderStates.contact)
+async def msg_order_contact(message: Message, state: FSMContext) -> None:
+    uid = message.from_user.id
+    contact = message.text or ""
+    await state.update_data(contact=contact)
+    data = await state.get_data()
+    await state.clear()
+
+    _t = lambda k, **kw: t(uid, k, **kw)
+
+    lead_data = {
+        "user_id": uid,
+        "user_name": message.from_user.full_name,
+        "username": message.from_user.username or "N/A",
+        "platform": data.get("platform", ""),
+        "niche": data.get("niche", ""),
+        "budget": data.get("budget", ""),
+        "timing": data.get("timing", ""),
+        "contact": contact,
+    }
+    _record_lead(lead_data)
+
+    # Sync lead to Kliqboost API (best-effort, never blocks user flow)
+    await _sync_lead_to_api(lead_data)
+
+    # Confirm to user
+    await message.answer(
+        _t(
+            "order_confirm",
+            admin=ADMIN_USERNAME,
+            platform=lead_data["platform"],
+            niche=lead_data["niche"],
+            budget=lead_data["budget"],
+            timing=lead_data["timing"],
+            contact=lead_data["contact"],
+        ),
+        parse_mode=ParseMode.HTML,
+        reply_markup=main_menu_kb(_t),
+    )
+
+    # Notify admin
+    admin_text = t(
+        uid,
+        "admin_lead_card",
+        user_name=lead_data["user_name"],
+        user_id=lead_data["user_id"],
+        username=lead_data["username"],
+        platform=lead_data["platform"],
+        niche=lead_data["niche"],
+        budget=lead_data["budget"],
+        timing=lead_data["timing"],
+        contact=lead_data["contact"],
+    )
+    await notify_admin(message.bot, admin_text)
+
+
+async def _sync_lead_to_api(lead_data: dict) -> None:
+    """Push the lead to the Kliqboost API as an order.
+
+    This is best-effort: if the API is unreachable or returns an error
+    the user flow continues normally — the lead is already saved in-memory
+    and the admin is still notified via Telegram.
+    """
+    try:
+        # Look up or create client record
+        client = await api_client.get_client_by_telegram_id(lead_data["user_id"])
+
+        if not client:
+            try:
+                client = await api_client.create_client(
+                    {
+                        "name": lead_data["user_name"],
+                        "tg_username": lead_data["username"]
+                        if lead_data["username"] != "N/A"
+                        else None,
+                        "tg_user_id": lead_data["user_id"],
+                        "niche": lead_data["niche"],
+                        "plan": "starter",
+                    }
+                )
+            except (APIError, aiohttp.ClientError, TimeoutError) as exc:
+                logger.warning("API: failed to create client for tg_id=%s: %s", lead_data["user_id"], exc)
+                return
+
+        client_id = client.get("id") if client else None
+        if not client_id:
+            return
+
+        # Parse budget string to a float amount (e.g. "$500" -> 500.0)
+        amount = _parse_budget(lead_data.get("budget", ""))
+
+        order_payload = {
+            "client_id": str(client_id),
+            "order_type": lead_data.get("platform", "general"),
+            "amount": amount,
+            "currency": "USD",
+            "details": {
+                "platform": lead_data.get("platform", ""),
+                "niche": lead_data.get("niche", ""),
+                "timing": lead_data.get("timing", ""),
+                "contact": lead_data.get("contact", ""),
+                "source": "telegram_bot",
+            },
+            "notes": f"Lead from Telegram bot — @{lead_data.get('username', 'N/A')}",
+        }
+
+        await api_client.create_order(order_payload)
+        logger.info("API: order synced for tg_id=%s", lead_data["user_id"])
+
+    except (APIError, aiohttp.ClientError, TimeoutError) as exc:
+        logger.warning("API: failed to sync lead for tg_id=%s: %s", lead_data["user_id"], exc)
+    except Exception as exc:
+        logger.error("API: unexpected error syncing lead: %s", exc, exc_info=True)
+
+
+def _parse_budget(budget_str: str) -> float:
+    """Best-effort extraction of a numeric amount from a budget string."""
+    import re
+
+    nums = re.findall(r"[\d]+(?:\.[\d]+)?", budget_str.replace(",", ""))
+    if nums:
+        return float(nums[0])
+    return 0.0

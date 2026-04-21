@@ -13,7 +13,6 @@ from db.conversations import init_db
 
 from handlers.start import router as start_router
 from handlers.admin import router as admin_router
-from handlers.checkout import router as checkout_router
 from handlers.ai_chat import router as ai_chat_router
 
 
@@ -30,10 +29,9 @@ async def main() -> None:
     dp.message.middleware(I18nMiddleware())
     dp.callback_query.middleware(I18nMiddleware())
 
-    # Register routers (checkout before ai_chat; ai_chat is the catch-all, must be last)
+    # Register routers (ai_chat is the catch-all, must be last)
     dp.include_router(start_router)
     dp.include_router(admin_router)
-    dp.include_router(checkout_router)
     dp.include_router(ai_chat_router)
 
     logging.info("Bot starting...")

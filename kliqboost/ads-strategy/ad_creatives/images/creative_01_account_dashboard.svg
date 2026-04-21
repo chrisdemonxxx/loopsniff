@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 512" width="1280" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f0f23;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1a1a3e;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="card" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#2a2a4a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e1e3a;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="green" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#00d26a" />
+      <stop offset="100%" style="stop-color:#00f080" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1280" height="512" fill="url(#bg)"/>
+  
+  <!-- Title -->
+  <text x="640" y="60" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#ffffff" text-anchor="middle">Agency Dashboard — All Accounts Active</text>
+  
+  <!-- Card 1: Google Ads -->
+  <rect x="60" y="100" width="360" height="180" rx="16" fill="url(#card)" stroke="#3a3a5a" stroke-width="1"/>
+  <text x="120" y="145" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#ffffff">Google Ads</text>
+  <circle cx="85" cy="138" r="12" fill="#4285F4"/>
+  <text x="85" y="143" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">G</text>
+  <rect x="280" y="125" width="120" height="30" rx="15" fill="url(#green)" opacity="0.2"/>
+  <text x="340" y="145" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#00d26a" text-anchor="middle">✓ Active</text>
+  <text x="80" y="195" font-family="Arial, sans-serif" font-size="36" font-weight="bold" fill="#ffffff">$45,200</text>
+  <text x="80" y="225" font-family="Arial, sans-serif" font-size="14" fill="#8888aa">Monthly Ad Spend</text>
+  <text x="80" y="260" font-family="Arial, sans-serif" font-size="14" fill="#00d26a">▲ 23% vs last month</text>
+  
+  <!-- Card 2: Meta Ads -->
+  <rect x="460" y="100" width="360" height="180" rx="16" fill="url(#card)" stroke="#3a3a5a" stroke-width="1"/>
+  <text x="520" y="145" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#ffffff">Meta Ads</text>
+  <circle cx="485" cy="138" r="12" fill="#1877F2"/>
+  <text x="485" y="143" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">M</text>
+  <rect x="680" y="125" width="120" height="30" rx="15" fill="url(#green)" opacity="0.2"/>
+  <text x="740" y="145" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#00d26a" text-anchor="middle">✓ Active</text>
+  <text x="480" y="195" font-family="Arial, sans-serif" font-size="36" font-weight="bold" fill="#ffffff">$32,800</text>
+  <text x="480" y="225" font-family="Arial, sans-serif" font-size="14" fill="#8888aa">Monthly Ad Spend</text>
+  <text x="480" y="260" font-family="Arial, sans-serif" font-size="14" fill="#00d26a">▲ 18% vs last month</text>
+  
+  <!-- Card 3: TikTok Ads -->
+  <rect x="860" y="100" width="360" height="180" rx="16" fill="url(#card)" stroke="#3a3a5a" stroke-width="1"/>
+  <text x="920" y="145" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#ffffff">TikTok Ads</text>
+  <circle cx="885" cy="138" r="12" fill="#FF0050"/>
+  <text x="885" y="143" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">T</text>
+  <rect x="1080" y="125" width="120" height="30" rx="15" fill="url(#green)" opacity="0.2"/>
+  <text x="1140" y="145" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#00d26a" text-anchor="middle">✓ Active</text>
+  <text x="880" y="195" font-family="Arial, sans-serif" font-size="36" font-weight="bold" fill="#ffffff">$18,500</text>
+  <text x="880" y="225" font-family="Arial, sans-serif" font-size="14" fill="#8888aa">Monthly Ad Spend</text>
+  <text x="880" y="260" font-family="Arial, sans-serif" font-size="14" fill="#00d26a">▲ 45% vs last month</text>
+  
+  <!-- Stats Bar -->
+  <rect x="60" y="320" width="1160" height="80" rx="16" fill="url(#card)" stroke="#3a3a5a" stroke-width="1"/>
+  <text x="200" y="355" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#ffffff" text-anchor="middle">500+</text>
+  <text x="200" y="385" font-family="Arial, sans-serif" font-size="13" fill="#8888aa" text-anchor="middle">Agencies Served</text>
+  <line x1="350" y1="335" x2="350" y2="390" stroke="#3a3a5a" stroke-width="1"/>
+  <text x="500" y="355" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#ffffff" text-anchor="middle">$50M+</text>
+  <text x="500" y="385" font-family="Arial, sans-serif" font-size="13" fill="#8888aa" text-anchor="middle">Ad Spend Managed</text>
+  <line x1="650" y1="335" x2="650" y2="390" stroke="#3a3a5a" stroke-width="1"/>
+  <text x="800" y="355" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#00d26a" text-anchor="middle">98%</text>
+  <text x="800" y="385" font-family="Arial, sans-serif" font-size="13" fill="#8888aa" text-anchor="middle">Client Retention</text>
+  <line x1="950" y1="335" x2="950" y2="390" stroke="#3a3a5a" stroke-width="1"/>
+  <text x="1080" y="355" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#ffffff" text-anchor="middle">24h</text>
+  <text x="1080" y="385" font-family="Arial, sans-serif" font-size="13" fill="#8888aa" text-anchor="middle">Setup Time</text>
+  
+  <!-- Bottom CTA -->
+  <rect x="440" y="430" width="400" height="50" rx="25" fill="url(#green)"/>
+  <text x="640" y="462" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#0f0f23" text-anchor="middle">Get Your Agency Accounts →</text>
+</svg>

@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 512" width="1280" height="512">
+  <defs>
+    <linearGradient id="bg4" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#16213e;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="accent4" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#00d26a" />
+      <stop offset="100%" style="stop-color:#00f080" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1280" height="512" fill="url(#bg4)"/>
+  
+  <!-- Title -->
+  <text x="640" y="65" font-family="Arial, sans-serif" font-size="30" font-weight="bold" fill="white" text-anchor="middle">Our Numbers Speak For Themselves</text>
+  
+  <!-- Stat 1: Agencies -->
+  <rect x="50" y="100" width="270" height="200" rx="20" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  <text x="185" y="175" font-family="Arial, sans-serif" font-size="60" font-weight="bold" fill="url(#accent4)" text-anchor="middle">500+</text>
+  <text x="185" y="215" font-family="Arial, sans-serif" font-size="18" fill="#8888aa" text-anchor="middle">Agencies</text>
+  <text x="185" y="240" font-family="Arial, sans-serif" font-size="18" fill="#8888aa" text-anchor="middle">Served</text>
+  
+  <!-- Stat 2: Ad Spend -->
+  <rect x="360" y="100" width="270" height="200" rx="20" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  <text x="495" y="175" font-family="Arial, sans-serif" font-size="60" font-weight="bold" fill="white" text-anchor="middle">$50M+</text>
+  <text x="495" y="215" font-family="Arial, sans-serif" font-size="18" fill="#8888aa" text-anchor="middle">Ad Spend</text>
+  <text x="495" y="240" font-family="Arial, sans-serif" font-size="18" fill="#8888aa" text-anchor="middle">Managed</text>
+  
+  <!-- Stat 3: Accounts -->
+  <rect x="670" y="100" width="270" height="200" rx="20" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  <text x="805" y="175" font-family="Arial, sans-serif" font-size="60" font-weight="bold" fill="white" text-anchor="middle">4,000+</text>
+  <text x="805" y="215" font-family="Arial, sans-serif" font-size="18" fill="#8888aa" text-anchor="middle">Accounts</text>
+  <text x="805" y="240" font-family="Arial, sans-serif" font-size="18" fill="#8888aa" text-anchor="middle">Delivered</text>
+  
+  <!-- Stat 4: Retention -->
+  <rect x="980" y="100" width="250" height="200" rx="20" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  <text x="1105" y="175" font-family="Arial, sans-serif" font-size="60" font-weight="bold" fill="url(#accent4)" text-anchor="middle">98%</text>
+  <text x="1105" y="215" font-family="Arial, sans-serif" font-size="18" fill="#8888aa" text-anchor="middle">Client</text>
+  <text x="1105" y="240" font-family="Arial, sans-serif" font-size="18" fill="#8888aa" text-anchor="middle">Retention</text>
+  
+  <!-- Platforms bar -->
+  <text x="640" y="370" font-family="Arial, sans-serif" font-size="16" fill="#6666aa" text-anchor="middle" letter-spacing="6">GOOGLE ADS  •  META ADS  •  TIKTOK  •  TABOOLA  •  BING</text>
+  
+  <!-- CTA Button -->
+  <rect x="440" y="400" width="400" height="60" rx="30" fill="url(#accent4)"/>
+  <text x="640" y="438" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#1a1a2e" text-anchor="middle">Get Your Accounts Today →</text>
+  
+  <!-- Bottom subtle text -->
+  <text x="640" y="495" font-family="Arial, sans-serif" font-size="14" fill="#555577" text-anchor="middle">Premium Agency Ad Accounts • Unlimited Budgets • 24h Setup</text>
+</svg>
