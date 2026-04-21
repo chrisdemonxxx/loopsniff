@@ -83,7 +83,7 @@ def _load_bot_conversation(user_id: int) -> list[dict]:
 # ── Configuration ───────────────────────────────────────────────────────────
 
 from dotenv import load_dotenv
-load_dotenv(Path(__file__).resolve().parent / ".env", override=True)
+load_dotenv(Path(__file__).resolve().parent / ".env", override=False)
 
 PHONE = os.getenv("TG_PHONE", "")
 SESSION_DIR = Path(__file__).resolve().parent / "sessions"
@@ -114,6 +114,8 @@ PROXY = {
 OLLAMA_URL = os.getenv("OLLAMA_CLOUD_URL", "https://ollama.com/v1/chat/completions")
 OLLAMA_API_KEY = os.getenv("OLLAMA_CLOUD_API_KEY", "")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "kimi-k2:1t")
+API_BASE_URL = os.getenv("API_BASE_URL", "").rstrip("/")
+SYNC_KEY = os.getenv("STATS_SYNC_KEY", "kliq-stats-2026-xK9m")
 
 # Crypto wallet addresses
 BTC_ADDRESS = os.getenv("BTC_ADDRESS", "")
@@ -138,6 +140,54 @@ def _require_env() -> None:
         missing.append("OLLAMA_CLOUD_API_KEY")
     if missing:
         raise RuntimeError(f"Missing required environment variables: {', '.join(missing)}")
+
+
+async def _send_heartbeat(status: str, last_error: str | None = None) -> None:
+    if not API_BASE_URL:
+        return
+    conversations = 0
+    hot = 0
+    try:
+        async with aiosqlite.connect(DB_PATH) as conn:
+            cur = await conn.execute("SELECT COUNT(*) FROM conversations")
+            row = await cur.fetchone()
+            conversations = int(row[0] if row else 0)
+            cur = await conn.execute(
+                "SELECT COUNT(DISTINCT username) FROM conversations WHERE bant_score >= ?",
+                (HOT_LEAD_THRESHOLD,),
+            )
+            row = await cur.fetchone()
+            hot = int(row[0] if row else 0)
+    except Exception:
+        pass
+
+    payload = {
+        "worker": "autoresponder",
+        "authorized": True,
+        "telegram_connected": status == "online",
+        "status": status,
+        "last_error": last_error,
+        "conversations": conversations,
+        "hot_leads": hot,
+    }
+    headers = {"Content-Type": "application/json", "X-Sync-Key": SYNC_KEY}
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                f"{API_BASE_URL}/internal/worker-heartbeat",
+                json=payload,
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=8),
+            ):
+                pass
+    except Exception as exc:
+        log.warning("Heartbeat post failed: %s", exc)
+
+
+async def _heartbeat_loop() -> None:
+    while True:
+        await _send_heartbeat("online")
+        await asyncio.sleep(30)
 
 # ── Limits ──────────────────────────────────────────────────────────────────
 
@@ -1094,14 +1144,14 @@ async def main(test: bool = False) -> None:
 
     await client.connect()
     if not await client.is_user_authorized():
-        log.error(
-            "Session not authorised. Run with --auth first to authenticate."
-        )
+        log.error("Session not authorised. Run with --auth first to authenticate.")
+        await _send_heartbeat("offline", "session_not_authorized")
         await client.disconnect()
-        return
+        raise RuntimeError("Session not authorised")
 
     me = await client.get_me()
     log.info("✅ Connected as %s (@%s, id=%s)", me.first_name, me.username, me.id)
+    await _send_heartbeat("online")
 
     # Pre-resolve admin entities for group creation
     global _resolved_admin_entities
@@ -1753,11 +1803,13 @@ async def main(test: bool = False) -> None:
 
     watcher_task = asyncio.create_task(_deal_room_watcher())
     log.info("🔗 Deal-room bridge watcher started (polling %s)", BRIDGE_DB_PATH)
+    heartbeat_task = asyncio.create_task(_heartbeat_loop())
 
     def _signal_handler():
         log.info("Shutdown signal received")
         stop_event.set()
         watcher_task.cancel()
+        heartbeat_task.cancel()
 
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGTERM, signal.SIGINT):
@@ -1767,6 +1819,7 @@ async def main(test: bool = False) -> None:
 
     log.info("Disconnecting...")
     await client.disconnect()
+    await _send_heartbeat("offline")
     log.info("Admin autoresponder stopped")
 
 
@@ -1776,12 +1829,33 @@ if __name__ == "__main__":
     parser.add_argument("--test", action="store_true", help="Connect, verify, then exit")
     args = parser.parse_args()
 
-    try:
+    async def _runner() -> None:
         _require_env()
         if args.auth:
-            asyncio.run(authenticate())
-        else:
-            asyncio.run(main(test=args.test))
+            await authenticate()
+            return
+        if args.test:
+            await main(test=True)
+            return
+
+        delay = 5
+        while True:
+            try:
+                await main(test=False)
+                return
+            except RuntimeError as exc:
+                # Fatal auth/env errors should fail fast and surface in Render.
+                log.error("Fatal startup/runtime error: %s", exc)
+                await _send_heartbeat("offline", str(exc)[:400])
+                raise
+            except Exception as exc:
+                log.exception("Transient crash; restarting in %ss: %s", delay, exc)
+                await _send_heartbeat("degraded", str(exc)[:400])
+                await asyncio.sleep(delay)
+                delay = min(delay * 2, 60)
+
+    try:
+        asyncio.run(_runner())
     except RuntimeError as exc:
         log.error(str(exc))
         raise SystemExit(1)
