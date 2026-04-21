@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: kliqboost-vectordb
+    runtime: python
+    plan: professional
+    buildCommand: pip install -r requirements.txt
+    startCommand: python server.py
+    envVars:
+      - key: CHROMA_SERVER_HOST
+        value: "0.0.0.0"
+      - key: CHROMA_SERVER_HTTP_PORT
+        value: "8000"
+      - key: CHROMA_SEED_URL
+        sync: false
+      - key: ALLOW_RESET
+        value: "TRUE"
+      - key: ANONYMIZED_TELEMETRY
+        value: "FALSE"
