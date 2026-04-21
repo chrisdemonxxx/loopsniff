@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: kliqboost-bot
+    runtime: docker
+    plan: professional
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: ADMIN_ID
+        sync: false
+      - key: API_BASE_URL
+        value: https://kliqboost-api.onrender.com
+      - key: WEBHOOK_URL
+        sync: false
