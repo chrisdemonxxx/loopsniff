@@ -4,9 +4,17 @@ services:
     runtime: python
     plan: professional
     buildCommand: pip install -r requirements.txt
-    startCommand: python admin_autoresponder.py
+    startCommand: bash start.sh
     envVars:
       - key: TG_SESSION_B64
+        sync: false
+      - key: TG_API_ID
+        sync: false
+      - key: TG_API_HASH
+        sync: false
+      - key: TG_PHONE
+        sync: false
+      - key: TG_CLOUD_PASSWORD
         sync: false
       - key: ADMIN_BOT_TOKEN
         sync: false
@@ -16,3 +24,7 @@ services:
         value: https://kliqboost-api.onrender.com
       - key: OLLAMA_CLOUD_API_KEY
         sync: false
+      - key: OLLAMA_MODEL
+        sync: false
+      - key: PYTHON_VERSION
+        value: "3.12.0"

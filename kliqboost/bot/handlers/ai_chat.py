@@ -59,8 +59,63 @@ def _get_retriever_class():
     return _RetrieverCls
 
 # ── BANT scorer import ──────────────────────────────────────────────────
-sys.path.insert(0, "/home/cjs/kliqboost")
-from scoring.bant_scorer import BANTScorer
+class _FallbackBANTScorer:
+    """Minimal BANT scorer used when shared scoring module isn't available."""
+
+    @staticmethod
+    def _tier(score: int) -> str:
+        if score >= 75:
+            return "hot"
+        if score >= 50:
+            return "warm"
+        if score >= 25:
+            return "cool"
+        return "cold"
+
+    def score_from_conversation(self, messages: list[str]) -> dict:
+        text = " ".join(messages).lower()
+        score = 10
+        platform = None
+        budget = None
+        niche = None
+        timeline = None
+
+        if any(k in text for k in ("google", "meta", "tiktok", "bing", "taboola")):
+            platform = "known"
+            score += 20
+        if re.search(r"\$?\s*(1000|2000|3000|5000|10k|20k|50k)", text):
+            budget = "known"
+            score += 25
+        if any(k in text for k in ("crypto", "blackhat", "gambling", "finance", "nutra", "dating")):
+            niche = "known"
+            score += 20
+        if any(k in text for k in ("asap", "today", "this week", "urgent", "ready")):
+            timeline = "known"
+            score += 20
+        buying_intent = bool(re.search(r"\b(ready|buy|price|cost|order|checkout)\b", text))
+        if buying_intent:
+            score += 10
+        score = min(score, 100)
+        return {
+            "total": score,
+            "tier": self._tier(score),
+            "buying_intent": buying_intent,
+            "negative": False,
+            "breakdown": {},
+            "extracted": {
+                "platform": platform,
+                "budget": budget,
+                "niche": niche,
+                "timeline": timeline,
+            },
+        }
+
+
+try:
+    sys.path.insert(0, "/home/cjs/kliqboost")
+    from scoring.bant_scorer import BANTScorer  # type: ignore
+except Exception:
+    BANTScorer = _FallbackBANTScorer
 
 log = logging.getLogger(__name__)
 router = Router()
