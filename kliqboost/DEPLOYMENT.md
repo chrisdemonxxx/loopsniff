@@ -42,15 +42,15 @@ Go to [Render Dashboard](https://dashboard.render.com) and watch each service re
 ### 3. Create Admin User
 
 ```bash
-curl -X POST "https://kliqboost-api.onrender.com/bot-stats/bootstrap-admin?email=admin@kliqboost.store&password=SecureAdmin2026!&name=Kliqboost%20Admin" \
-  -H "X-Sync-Key: kliq-stats-2026-xK9m"
+curl -X POST "https://kliqboost-api.onrender.com/bot-stats/bootstrap-admin?email=<admin-email>&password=<strong-password>&name=Kliqboost%20Admin" \
+  -H "X-Sync-Key: <STATS_SYNC_KEY>"
 ```
 
 ### 4. Test Login
 
 - **Admin Panel:** https://kliqboost-admin.onrender.com
 - **Client Portal:** https://kliqboost-portal.onrender.com
-- **Credentials:** `admin@kliqboost.store` / `SecureAdmin2026!`
+- **Credentials:** use the admin account and password configured in your secret manager.
 
 ## ⚙️ Configuration Details
 

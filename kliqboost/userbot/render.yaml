@@ -1,5 +1,5 @@
 services:
-  - type: web
+  - type: worker
     name: kliqboost-autoresponder
     runtime: python
     plan: professional

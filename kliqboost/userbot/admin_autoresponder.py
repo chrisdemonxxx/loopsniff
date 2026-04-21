@@ -85,14 +85,14 @@ def _load_bot_conversation(user_id: int) -> list[dict]:
 from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parent / ".env", override=True)
 
-PHONE = os.getenv("TG_PHONE", "+15642618554")
+PHONE = os.getenv("TG_PHONE", "")
 SESSION_DIR = Path(__file__).resolve().parent / "sessions"
 SESSION_PATH = str(SESSION_DIR / f"tg_{PHONE.replace('+', '')}")
 DB_PATH = SESSION_DIR / "conversations.db"
 
 DEVICE = {
-    "api_id": int(os.getenv("TG_API_ID", "33454441")),
-    "api_hash": os.getenv("TG_API_HASH", "10ade2b7e270023f3e1debb7e25dab45"),
+    "api_id": int(os.getenv("TG_API_ID", "0")),
+    "api_hash": os.getenv("TG_API_HASH", ""),
     "device_model": "iPhone 15 Pro Max",
     "system_version": "iOS 17.4",
     "app_version": "11.8.2",
@@ -115,15 +115,29 @@ OLLAMA_URL = os.getenv("OLLAMA_CLOUD_URL", "https://ollama.com/v1/chat/completio
 OLLAMA_API_KEY = os.getenv("OLLAMA_CLOUD_API_KEY", "")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "kimi-k2:1t")
 
-# Crypto wallet addresses (hardcoded — env vars override if set)
-BTC_ADDRESS = os.getenv("BTC_ADDRESS", "bc1qakgfhqtm5c803xspzyawg0veg3g2eae885uu99")
-ETH_ADDRESS = os.getenv("ETH_ADDRESS", "0xd6ae83AaBcB4DC048Eb6A479b901e8ebDB9A8709")
+# Crypto wallet addresses
+BTC_ADDRESS = os.getenv("BTC_ADDRESS", "")
+ETH_ADDRESS = os.getenv("ETH_ADDRESS", "")
 USDT_TRC20_ADDRESS = ""  # NOT ACCEPTED — do not use
-USDT_ERC20_ADDRESS = os.getenv("USDT_ERC20_ADDRESS", "0xd6ae83AaBcB4DC048Eb6A479b901e8ebDB9A8709")
+USDT_ERC20_ADDRESS = os.getenv("USDT_ERC20_ADDRESS", "")
 
 # Admin notifications (via Kliqboost bot)
 ADMIN_BOT_TOKEN = os.getenv("ADMIN_BOT_TOKEN", "")
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID", "")
+
+
+def _require_env() -> None:
+    missing: list[str] = []
+    if not PHONE:
+        missing.append("TG_PHONE")
+    if DEVICE["api_id"] <= 0:
+        missing.append("TG_API_ID")
+    if not DEVICE["api_hash"]:
+        missing.append("TG_API_HASH")
+    if not OLLAMA_API_KEY:
+        missing.append("OLLAMA_CLOUD_API_KEY")
+    if missing:
+        raise RuntimeError(f"Missing required environment variables: {', '.join(missing)}")
 
 # ── Limits ──────────────────────────────────────────────────────────────────
 
@@ -1072,6 +1086,7 @@ async def authenticate() -> None:
 
 
 async def main(test: bool = False) -> None:
+    _require_env()
     await _init_db()
 
     client = _build_client()
@@ -1761,7 +1776,12 @@ if __name__ == "__main__":
     parser.add_argument("--test", action="store_true", help="Connect, verify, then exit")
     args = parser.parse_args()
 
-    if args.auth:
-        asyncio.run(authenticate())
-    else:
-        asyncio.run(main(test=args.test))
+    try:
+        _require_env()
+        if args.auth:
+            asyncio.run(authenticate())
+        else:
+            asyncio.run(main(test=args.test))
+    except RuntimeError as exc:
+        log.error(str(exc))
+        raise SystemExit(1)
