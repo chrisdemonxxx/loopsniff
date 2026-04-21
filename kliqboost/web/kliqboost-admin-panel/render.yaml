@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: kliqboost-admin
+    runtime: node
+    plan: professional
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: NEXT_PUBLIC_API_URL
+        value: https://kliqboost-api.onrender.com
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: NEXTAUTH_URL
+        value: https://kliqboost-admin.onrender.com

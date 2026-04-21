@@ -10,6 +10,7 @@ import {
   ArrowUpRight, ArrowDownRight, Loader2, BarChart3, Bot, Brain,
   Radio, Shield, CheckCircle2, XCircle,
 } from "lucide-react"
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import { useApi } from "@/lib/api"
 import { formatCurrency, formatDateTime } from "@/lib/utils"
 import { FadeIn, StaggerChildren, StaggerItem, AnimatedCounter } from "@/components/motion"
@@ -59,6 +60,20 @@ interface Transaction {
   status: string
   created_at: string
   client?: string
+  [key: string]: any
+}
+
+interface RevenuePoint {
+  date: string
+  revenue: number
+}
+
+interface Deposit {
+  id: string
+  amount: number
+  net_amount: number
+  status: string
+  created_at: string
   [key: string]: any
 }
 
@@ -126,9 +141,30 @@ export default function DashboardPage() {
   const { data: recentTxns, loading: txnLoading } = useApi<Transaction[]>("/payments/transactions?limit=10")
   const { data: systemStatus } = useApi<SystemStatus>("/admin/system-status")
   const { data: botStats } = useApi<BotDashboard>("/bot-stats/dashboard")
+  const { data: revenueTimeseries, error: tsError } = useApi<RevenuePoint[]>("/finance/revenue-timeseries?days=30")
+  const { data: depositsForChart } = useApi<Deposit[]>("/finance/deposits?limit=100")
 
   const isLoading = dashLoading || revLoading
   const greeting = getGreeting()
+
+  // Build chart data: prefer timeseries endpoint; fall back to deposit aggregation
+  const chartData: RevenuePoint[] = (() => {
+    if (revenueTimeseries && revenueTimeseries.length > 0) return revenueTimeseries
+    if (depositsForChart && depositsForChart.length > 0) {
+      const byDate: Record<string, number> = {}
+      depositsForChart.forEach((d) => {
+        if (d.status === "completed") {
+          const day = d.created_at.slice(0, 10)
+          byDate[day] = (byDate[day] ?? 0) + (d.net_amount ?? d.amount ?? 0)
+        }
+      })
+      return Object.entries(byDate)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .slice(-30)
+        .map(([date, revenue]) => ({ date, revenue }))
+    }
+    return []
+  })()
 
   if (isLoading) {
     return (
@@ -474,11 +510,47 @@ export default function DashboardPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="relative flex items-center justify-center gap-2 rounded-xl border border-dashed border-emerald-500/20 bg-gradient-to-br from-emerald-500/[0.03] to-cyan-500/[0.03] py-8 text-muted-foreground overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-500/5 to-transparent" />
-                    <BarChart3 className="h-5 w-5 text-emerald-500/40" />
-                    <span className="text-xs font-medium text-zinc-500">Revenue chart coming soon</span>
-                  </div>
+                  {chartData.length > 0 ? (
+                    <div className="h-48 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={chartData} margin={{ top: 4, right: 8, bottom: 4, left: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                          <XAxis
+                            dataKey="date"
+                            tick={{ fontSize: 10, fill: "#71717a" }}
+                            tickFormatter={(v: string) => v.slice(5)}
+                            tickLine={false}
+                            axisLine={false}
+                          />
+                          <YAxis
+                            tick={{ fontSize: 10, fill: "#71717a" }}
+                            tickFormatter={(v: number) => `$${v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v}`}
+                            tickLine={false}
+                            axisLine={false}
+                            width={52}
+                          />
+                          <Tooltip
+                            contentStyle={{ background: "#18181b", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, fontSize: 12 }}
+                            formatter={(value) => [`$${Number(value).toFixed(2)}`, "Revenue"]}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="revenue"
+                            stroke="#10b981"
+                            strokeWidth={2}
+                            dot={false}
+                            activeDot={{ r: 4, fill: "#10b981" }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <div className="relative flex items-center justify-center gap-2 rounded-xl border border-dashed border-emerald-500/20 bg-gradient-to-br from-emerald-500/[0.03] to-cyan-500/[0.03] py-8 text-muted-foreground overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-500/5 to-transparent" />
+                      <BarChart3 className="h-5 w-5 text-emerald-500/40" />
+                      <span className="text-xs font-medium text-zinc-500">No revenue data available yet</span>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">No revenue data available.</p>

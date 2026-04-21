@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 512" width="1280" height="512">
+  <defs>
+    <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0066ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00aaff;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1280" height="512" fill="url(#bg2)"/>
+  
+  <!-- Central Badge -->
+  <circle cx="640" cy="200" r="120" fill="rgba(255,255,255,0.15)" stroke="white" stroke-width="3"/>
+  <circle cx="640" cy="200" r="100" fill="rgba(255,255,255,0.1)" stroke="white" stroke-width="2"/>
+  <!-- Shield icon -->
+  <path d="M 620 155 L 640 145 L 660 155 L 660 200 Q 660 225 640 235 Q 620 225 620 200 Z" fill="white" opacity="0.9"/>
+  <text x="640" y="195" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#0066ff" text-anchor="middle">✓</text>
+  <text x="640" y="270" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="white" text-anchor="middle">VERIFIED AGENCY SUPPLIER</text>
+  
+  <!-- Left Badge: 500+ Agencies -->
+  <rect x="80" y="150" width="250" height="100" rx="20" fill="rgba(255,255,255,0.2)" stroke="white" stroke-width="2"/>
+  <text x="205" y="195" font-family="Arial, sans-serif" font-size="36" font-weight="bold" fill="white" text-anchor="middle">500+</text>
+  <text x="205" y="225" font-family="Arial, sans-serif" font-size="16" fill="rgba(255,255,255,0.9)" text-anchor="middle">Agencies Trust Us</text>
+  
+  <!-- Right Badge: 24h Setup -->
+  <rect x="950" y="150" width="250" height="100" rx="20" fill="rgba(255,255,255,0.2)" stroke="white" stroke-width="2"/>
+  <text x="1075" y="195" font-family="Arial, sans-serif" font-size="36" font-weight="bold" fill="white" text-anchor="middle">24h</text>
+  <text x="1075" y="225" font-family="Arial, sans-serif" font-size="16" fill="rgba(255,255,255,0.9)" text-anchor="middle">Instant Setup</text>
+  
+  <!-- Platform logos text -->
+  <text x="640" y="360" font-family="Arial, sans-serif" font-size="18" fill="rgba(255,255,255,0.8)" text-anchor="middle" letter-spacing="4">GOOGLE  •  META  •  TIKTOK  •  TABOOLA  •  BING</text>
+  
+  <!-- Bottom tagline -->
+  <text x="640" y="420" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="white" text-anchor="middle">Premium Agency Ad Accounts</text>
+  <text x="640" y="455" font-family="Arial, sans-serif" font-size="16" fill="rgba(255,255,255,0.8)" text-anchor="middle">Unlimited Budgets • No Restrictions • Zero Bans</text>
+</svg>
