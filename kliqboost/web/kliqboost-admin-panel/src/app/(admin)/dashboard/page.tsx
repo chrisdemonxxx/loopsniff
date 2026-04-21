@@ -261,7 +261,8 @@ export default function DashboardPage() {
   ]
 
   return (
-    <div className="space-y-8">
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="space-y-8">
       <FadeIn direction="down" distance={12}>
         <h1 className="text-3xl font-bold tracking-tight">
           <span className="mr-2">{greeting.emoji}</span>
@@ -665,6 +666,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </FadeIn>
+    </div>
     </div>
   )
 }
