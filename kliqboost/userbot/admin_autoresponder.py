@@ -169,6 +169,8 @@ async def _send_heartbeat(status: str, last_error: str | None = None) -> None:
         "last_error": last_error,
         "conversations": conversations,
         "hot_leads": hot,
+        "model": OLLAMA_MODEL or None,
+        "ollama_endpoint": OLLAMA_URL or None,
     }
     headers = {"Content-Type": "application/json", "X-Sync-Key": SYNC_KEY}
     try:
