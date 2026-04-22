@@ -141,6 +141,24 @@ def _require_env() -> None:
     if missing:
         raise RuntimeError(f"Missing required environment variables: {', '.join(missing)}")
 
+    # Guard: on Render, API_BASE_URL must be a public URL. A blank value or
+    # localhost means heartbeats silently fail and the dashboard reports
+    # "unknown"; fail fast so the deploy surfaces the misconfig.
+    _render_signal = any(
+        os.getenv(k) for k in ("RENDER", "RENDER_SERVICE_ID", "RENDER_SERVICE_NAME")
+    )
+    if _render_signal:
+        if not API_BASE_URL:
+            raise RuntimeError(
+                "API_BASE_URL is required in production "
+                "(set to https://kliqboost-api.onrender.com)"
+            )
+        if "localhost" in API_BASE_URL or "127.0.0.1" in API_BASE_URL:
+            raise RuntimeError(
+                "API_BASE_URL must be a public URL in production "
+                f"(got {API_BASE_URL})"
+            )
+
 
 async def _send_heartbeat(status: str, last_error: str | None = None) -> None:
     if not API_BASE_URL:
