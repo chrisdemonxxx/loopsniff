@@ -1,0 +1,7 @@
+# OpenCode CLI configuration for abliteration model
+model: Qwen3.6-35B-A3B-abliterated
+max_context_tokens: 252000
+streaming: true
+api_key_env: ABLITERATION_API_KEY
+base_url: https://model-3yd5xv43.api.baseten.co/environments/production/sync/v1
+# Use env var ABLITERATION_API_KEY to provide credentials.
