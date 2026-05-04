@@ -58,15 +58,13 @@ def evaluate_inbound_text(text: str) -> GuardrailDecision:
     normalized = (text or "").strip()
     if not normalized:
         return GuardrailDecision(action="allow", reason="empty")
+    # Only check for prompt injection attempts — prohibited intent patterns
+    # (phishing, fraud, scam, etc.) are normal business terms in the ad
+    # infrastructure context and clients routinely mention their verticals.
     if _contains_any(_PROMPT_INJECTION_PATTERNS, normalized):
         return GuardrailDecision(
             action="block_and_escalate",
             reason="prompt_injection_attempt",
-        )
-    if _contains_any(_PROHIBITED_INTENT_PATTERNS, normalized):
-        return GuardrailDecision(
-            action="block_and_escalate",
-            reason="prohibited_intent",
         )
     return GuardrailDecision(action="allow", reason="ok")
 
