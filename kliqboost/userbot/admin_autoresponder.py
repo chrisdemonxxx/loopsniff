@@ -22,25 +22,27 @@ import random
 import re
 import signal
 import sys
+import importlib
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+import sqlite3
 
 import aiohttp
 import aiosqlite
 
-# ── RAG + BANT imports ──────────────────────────────────────────────────────
+# ── RAG + BANT path bootstrap (lazy imports in AdminResponder) ─────────────
 _base = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_base / "rag"))
 sys.path.insert(0, str(_base))
-
-from retrieval.retriever import Retriever
-from scoring.bant_scorer import BANTScorer
+from bridge.guardrails import evaluate_inbound_text, evaluate_outbound_text, validate_invite_urls
+from bridge.workflow import init_workflow_db, log_policy_decision, transition_state
 
 _BOT_DATA_DB = str(_base / "bot" / "bot_data.db")
 
 from telethon import TelegramClient, events
+from telethon.sessions import StringSession
 from telethon.tl.functions.messages import AddChatUserRequest, ExportChatInviteRequest
 from telethon.tl.functions.channels import (
     CreateChannelRequest, InviteToChannelRequest, EditBannedRequest,
@@ -63,6 +65,82 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 log = logging.getLogger("admin_autoresponder")
+
+
+class _FallbackRetriever:
+    def get_knowledge(self, query: str, n_results: int = 3) -> list[dict]:
+        return []
+
+    def get_lead_context(self, username: str, n_results: int = 2) -> list[dict]:
+        return []
+
+    def get_full_context(self, username: str, query: str, n_lead: int = 3, n_kb: int = 3) -> dict:
+        return {"lead_context": [], "knowledge_context": []}
+
+    def stats(self) -> dict:
+        return {"lead_profiles": 0, "knowledge_base": 0}
+
+
+_RAG_ROOT = os.getenv("RAG_PATH", str((Path(__file__).resolve().parents[1] / "rag")))
+
+def _import_retriever_class():
+    saved = sys.path[:]
+    try:
+        sys.path.insert(0, _RAG_ROOT)
+        rag_cfg_spec = importlib.util.spec_from_file_location(
+            "rag_config", f"{_RAG_ROOT}/config.py"
+        )
+        rag_cfg = importlib.util.module_from_spec(rag_cfg_spec)
+        sys.modules["config"] = rag_cfg
+        rag_cfg_spec.loader.exec_module(rag_cfg)
+        from retrieval.retriever import Retriever as _Ret
+        return _Ret
+    finally:
+        sys.path[:] = saved
+        from importlib import import_module
+        bot_cfg = import_module("config")
+        sys.modules["config"] = bot_cfg
+
+_RetrieverCls = None
+
+def _get_retriever_class():
+    global _RetrieverCls
+    if _RetrieverCls is None:
+        try:
+            _RetrieverCls = _import_retriever_class()
+        except Exception:
+            pass
+    return _RetrieverCls
+
+_retriever_instance = None
+
+def _get_retriever():
+    global _retriever_instance
+    if _retriever_instance is None:
+        cls = _get_retriever_class()
+        if cls:
+            try:
+                _retriever_instance = cls()
+            except Exception:
+                pass
+    return _retriever_instance
+
+
+class _FallbackBANTScorer:
+    @staticmethod
+    def score_from_conversation(messages: list[str]) -> dict:
+        text = " ".join(messages).lower()
+        buying = any(k in text for k in ("buy", "ready", "proceed", "yes", "deal"))
+        score = 70 if buying else 40
+        tier = "hot" if score >= 70 else "warm"
+        return {
+            "total": score,
+            "tier": tier,
+            "buying_intent": buying,
+            "negative": False,
+            "breakdown": {},
+            "extracted": {},
+        }
 
 
 def _load_bot_conversation(user_id: int) -> list[dict]:
@@ -88,6 +166,10 @@ load_dotenv(Path(__file__).resolve().parent / ".env", override=False)
 PHONE = os.getenv("TG_PHONE", "")
 SESSION_DIR = Path(__file__).resolve().parent / "sessions"
 SESSION_PATH = str(SESSION_DIR / f"tg_{PHONE.replace('+', '')}")
+STRING_SESSION = (
+    os.getenv("TG_STRING_SESSION", "").strip()
+    or os.getenv("TELEGRAM_STRING_SESSION", "").strip()
+)
 DB_PATH = SESSION_DIR / "conversations.db"
 
 DEVICE = {
@@ -116,6 +198,7 @@ OLLAMA_API_KEY = os.getenv("OLLAMA_CLOUD_API_KEY", "")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "kimi-k2:1t")
 API_BASE_URL = os.getenv("API_BASE_URL", "").rstrip("/")
 SYNC_KEY = os.getenv("STATS_SYNC_KEY", "kliq-stats-2026-xK9m")
+GUARDRAIL_MODE = os.getenv("SECURITY_GUARDRAIL_MODE", "disabled").lower()
 
 # Crypto wallet addresses
 BTC_ADDRESS = os.getenv("BTC_ADDRESS", "")
@@ -126,6 +209,18 @@ USDT_ERC20_ADDRESS = os.getenv("USDT_ERC20_ADDRESS", "")
 # Admin notifications (via Kliqboost bot)
 ADMIN_BOT_TOKEN = os.getenv("ADMIN_BOT_TOKEN", "")
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID", "")
+def _fallback_invite_urls() -> list[str]:
+    """Unique non-empty fallback group invite URLs (primary + Deal room 2/3 backups)."""
+    out: list[str] = []
+    for key in (
+        "DEAL_ROOM_FALLBACK_INVITE",
+        "DEAL_ROOM_FALLBACK_INVITE_2",
+        "DEAL_ROOM_FALLBACK_INVITE_3",
+    ):
+        v = os.getenv(key, "").strip()
+        if v and v not in out:
+            out.append(v)
+    return out
 
 
 def _require_env() -> None:
@@ -138,6 +233,9 @@ def _require_env() -> None:
         missing.append("TG_API_HASH")
     if not OLLAMA_API_KEY:
         missing.append("OLLAMA_CLOUD_API_KEY")
+    # STRING_SESSION is optional for --auth flow (fresh login)
+    # if not STRING_SESSION:
+    #     missing.append("TG_STRING_SESSION or TELEGRAM_STRING_SESSION")
     if missing:
         raise RuntimeError(f"Missing required environment variables: {', '.join(missing)}")
 
@@ -147,16 +245,23 @@ def _require_env() -> None:
     _render_signal = any(
         os.getenv(k) for k in ("RENDER", "RENDER_SERVICE_ID", "RENDER_SERVICE_NAME")
     )
-    if _render_signal:
+    _cloud_run_signal = bool(os.getenv("K_SERVICE", "").strip())
+    if _render_signal or _cloud_run_signal:
         if not API_BASE_URL:
             raise RuntimeError(
                 "API_BASE_URL is required in production "
-                "(set to https://kliqboost-api.onrender.com)"
+                "(set to https://api.kliqboost.store)"
             )
         if "localhost" in API_BASE_URL or "127.0.0.1" in API_BASE_URL:
             raise RuntimeError(
                 "API_BASE_URL must be a public URL in production "
                 f"(got {API_BASE_URL})"
+            )
+        if "a.run.app" in API_BASE_URL:
+            raise RuntimeError(
+                "API_BASE_URL must not use default Cloud Run hostnames (*.a.run.app); "
+                "they are commonly blocked by Google Safe Browsing. Use your mapped API "
+                f"host (e.g. https://api.kliqboost.store). Got: {API_BASE_URL}"
             )
 
 
@@ -232,6 +337,19 @@ def _is_purchase_confirmation(text: str) -> bool:
     """Detect explicit purchase confirmation from the lead."""
     return bool(_CONFIRM_RE.search(text))
 
+
+_DEAL_ROOM_INTENT_RE = re.compile(
+    r"\b(deal\s*room|private\s*group|group\s*chat|create\s*(a\s*)?(group|room)"
+    r"|set\s*up\s*(a\s*)?(group|room)|add\s*me\s*to\s*(the\s*)?(group|room)"
+    r"|invite\s*me|drop\s*(the\s*)?link|send\s*(the\s*)?(group|room)\s*link)\b",
+    re.I,
+)
+
+
+def _is_deal_room_intent(text: str) -> bool:
+    """Detect explicit request to create/share the private deal room."""
+    return bool(_DEAL_ROOM_INTENT_RE.search(text or ""))
+
 # Human admins — auto-added to hot-lead groups (usernames for reliable entity resolution)
 HUMAN_ADMIN_USERNAMES = ["Bigbunnn", "David_Bazzana"]
 HUMAN_ADMIN_IDS = [6136131094, 8756787507]  # fallback
@@ -252,12 +370,15 @@ SALES_STAGES = [
 # ── System Prompt ───────────────────────────────────────────────────────────
 
 SYSTEM_PROMPT = """\
-You are a real person named George who works at Kliqboost Media. You're texting \
+You are a real person named George Katys who works at Kliqboost Media. You're texting \
 leads on Telegram — media buyers, affiliates, ad managers.
 
-GOAL: Build rapport, understand their needs, and close the sale yourself. \
-You handle everything end-to-end — from first message to payment. You ARE \
-the account manager. No handoffs.
+GOAL: Build rapport, understand their needs, qualify them, and move them into a \
+private deal room group where you and the team close the sale. You ARE the account \
+manager — @georgekatis. When a lead is qualified (BANT score hits threshold), a \
+private deal room group is automatically created with @Bigbunnn and @David_Bazzana as \
+admins, and the lead is invited directly. Your job in DM is to qualify and warm them \
+up; once they're in the group, you continue the sale there with the team.
 
 ABOUT KLIQBOOST MEDIA:
 Kliqboost Media is an advertising infrastructure provider. We partner with \
@@ -341,7 +462,9 @@ setups or want to compare, lmk. no pressure.
 - "can you handle [any niche]?" → "yeah we handle that, what platform you on?"
 
 CLOSING THE SALE:
-- When they're ready to buy, confirm: platform, plan tier, quantity
+- When a lead is qualified (BANT threshold hit), a private deal room is automatically \
+created. You'll continue the sale in the group with @Bigbunnn and @David_Bazzana.
+- In the deal room group: confirm platform, plan tier, quantity
 - Calculate total: top-up amount + commission% = total they pay
 - Then share the EXACT payment address. YOU MUST USE THESE EXACT ADDRESSES — DO NOT MODIFY OR INVENT:
 
@@ -414,6 +537,8 @@ STAGE_INSTRUCTIONS = {
 # ═══════════════════════════════════════════════════════════════════════════
 
 BRIDGE_DB_PATH = str(_base / "bridge" / "deal_rooms.db")
+WORKFLOW_DB_PATH = _base / "bridge" / "workflow_state.db"
+init_workflow_db(WORKFLOW_DB_PATH)
 
 import time as _time_mod
 
@@ -424,6 +549,13 @@ async def _create_deal_room(
     bant_score: int = 0,
 ) -> dict | None:
     """Create a private supergroup deal room for a lead.
+
+    Steps:
+      1. Create supergroup
+      2. Invite human admins into the group (InviteToChannelRequest)
+      3. Promote human admins (EditAdminRequest)
+      4. Invite the lead directly into the group (InviteToChannelRequest)
+      5. Generate invite link as backup
 
     Returns dict with group_id, invite_link, group_title on success, None on failure.
     """
@@ -441,7 +573,19 @@ async def _create_deal_room(
         group_id = group.id
         log.info("✅ Created deal room: %s (id=%d)", title, group_id)
 
-        # 2. Promote human admins
+        # 2. Invite human admins into the group FIRST (they must be members before promoting)
+        for admin_entity in _resolved_admin_entities:
+            try:
+                await client(InviteToChannelRequest(
+                    channel=group,
+                    users=[admin_entity],
+                ))
+                log.info("✅ Invited admin into %s", title)
+            except Exception as e:
+                # Admin may already be in the group — that's fine
+                log.debug("Admin invite (may already be member) in %s: %s", title, e)
+
+        # 3. Promote human admins
         admin_rights = ChatAdminRights(
             invite_users=True,
             ban_users=True,
@@ -462,12 +606,33 @@ async def _create_deal_room(
             except Exception as e:
                 log.warning("⚠️ Could not promote admin in %s: %s", title, e)
 
-        # 3. Generate invite link
+        # 4. Invite the lead directly into the group
+        lead_invited = False
+        try:
+            lead_entity = None
+            try:
+                lead_entity = await client.get_input_entity(lead_username)
+            except Exception:
+                try:
+                    lead_entity = await client.get_input_entity(lead_user_id)
+                except Exception:
+                    pass
+            if lead_entity:
+                await client(InviteToChannelRequest(
+                    channel=group,
+                    users=[lead_entity],
+                ))
+                lead_invited = True
+                log.info("✅ Invited lead @%s directly into deal room %s", lead_username, title)
+        except Exception as e:
+            log.warning("⚠️ Could not invite lead @%s directly into group: %s", lead_username, e)
+
+        # 5. Generate invite link as backup (in case direct invite failed)
         invite = await client(ExportChatInviteRequest(peer=group))
         invite_link = invite.link
         log.info("✅ Invite link for %s: %s", title, invite_link)
 
-        # 4. Track locally
+        # 6. Track locally
         room_info = {
             "group_id": group_id,
             "lead_username": lead_username,
@@ -475,6 +640,7 @@ async def _create_deal_room(
             "invite_link": invite_link,
             "group_title": title,
             "created_at": _time_mod.time(),
+            "lead_invited_directly": lead_invited,
         }
         _group_lead_map[group_id] = lead_username.lower()
         _active_deal_rooms[group_id] = room_info
@@ -485,6 +651,70 @@ async def _create_deal_room(
     except Exception as e:
         log.error("Failed to create deal room for @%s: %s", lead_username, e)
         return None
+
+
+async def _bot_api_send_invite_buttons(chat_id: int, text: str, urls: list[str]) -> bool:
+    """Send deal-room links via the Telegram Bot API (URL buttons), not George's account."""
+    urls = validate_invite_urls(urls, allowed_domains=["t.me"])
+    if not ADMIN_BOT_TOKEN or not urls:
+        return False
+    labels = (
+        "🔥 Join deal room",
+        "🏠 Deal room 2",
+        "🏠 Deal room 3",
+        "🏠 Deal room 4",
+        "🏠 Deal room 5",
+        "🏠 Deal room 6",
+        "🏠 Deal room 7",
+        "🏠 Deal room 8",
+    )
+    keyboard: list[list[dict[str, str]]] = []
+    for i, raw in enumerate(urls[:8]):
+        u = (raw or "").strip()
+        if not u:
+            continue
+        label = labels[i] if i < len(labels) else f"Room {i + 1}"
+        if len(label) > 64:
+            label = label[:61] + "…"
+        keyboard.append([{"text": label, "url": u}])
+    if not keyboard:
+        return False
+    payload = {
+        "chat_id": int(chat_id),
+        "text": (text or "Your private deal room — tap a button below to join.").strip(),
+        "disable_web_page_preview": True,
+        "reply_markup": {"inline_keyboard": keyboard},
+    }
+    api = f"https://api.telegram.org/bot{ADMIN_BOT_TOKEN}/sendMessage"
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                api,
+                json=payload,
+                timeout=aiohttp.ClientTimeout(total=25),
+            ) as resp:
+                data = await resp.json()
+                if not resp.ok or not data.get("ok"):
+                    log.error("Bot API sendMessage failed: %s %s", resp.status, data)
+                    return False
+                log.info("✅ Bot sent invite buttons to chat_id=%s", chat_id)
+                return True
+    except Exception as exc:
+        log.error("Bot API sendMessage exception: %s", exc)
+        return False
+
+
+async def _send_fallback_room_link_via_bot(chat_id: int) -> bool:
+    """Send pre-created room invite(s) via bot + URL buttons (not George DM)."""
+    urls = _fallback_invite_urls()
+    if not urls:
+        return False
+    caption = (
+        "Your private deal room is ready — tap a button below to join the team chat."
+        if len(urls) == 1
+        else "Your private deal room links — tap a button below (try another if one is blocked)."
+    )
+    return await _bot_api_send_invite_buttons(chat_id, caption, urls)
 
 
 async def _load_active_deal_rooms_from_db():
@@ -657,8 +887,184 @@ async def _save_lead_memory(username: str, data: dict) -> None:
         await conn.commit()
 
 
+async def _load_lead_memory(username: str) -> dict | None:
+    """Load lead memory from DB for a given username."""
+    try:
+        async with aiosqlite.connect(str(DB_PATH), timeout=30) as conn:
+            conn.row_factory = aiosqlite.Row
+            cur = await conn.execute(
+                "SELECT * FROM lead_memory WHERE username = ? LIMIT 1",
+                (username,),
+            )
+            row = await cur.fetchone()
+            if row:
+                return dict(row)
+    except Exception as e:
+        log.warning("Could not load lead memory for @%s: %s", username, e)
+    return None
 # ═══════════════════════════════════════════════════════════════════════════
-# Ollama Cloud LLM client
+
+GEMINI_PROJECT = os.getenv("GOOGLE_CLOUD_PROJECT", "kliqboost")
+GEMINI_LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+USE_GEMINI = os.getenv("USE_GEMINI", "1").lower() in ("1", "true", "yes")
+
+_gemini_client = None
+
+
+def _get_gemini_client():
+    global _gemini_client
+    if _gemini_client is not None:
+        return _gemini_client
+    creds_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
+    if creds_path:
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = creds_path
+    try:
+        from google import genai
+        _gemini_client = genai.Client(
+            vertexai=True,
+            project=GEMINI_PROJECT,
+            location=GEMINI_LOCATION,
+        )
+        log.info("Gemini client initialized: project=%s location=%s model=%s",
+                 GEMINI_PROJECT, GEMINI_LOCATION, GEMINI_MODEL)
+        return _gemini_client
+    except Exception as exc:
+        log.warning("Gemini client init failed: %s", exc)
+        return None
+
+
+async def _gemini_chat(
+    messages: list[dict],
+    system_prompt: str = "",
+    temperature: float = 0.7,
+    max_tokens: int = 300,
+) -> str:
+    client = _get_gemini_client()
+    if client is None:
+        return ""
+    try:
+        from google.genai import types
+        contents = []
+        if system_prompt:
+            contents.append(types.Content(
+                role="user",
+                parts=[types.Part(text=system_prompt)]
+            ))
+            contents.append(types.Content(
+                role="model",
+                parts=[types.Part(text="Understood. I will follow these instructions.")]
+            ))
+        for msg in messages[-20:]:
+            role = "user" if msg.get("role") == "user" else "model"
+            content = msg.get("content", "")
+            if content:
+                contents.append(types.Content(
+                    role=role,
+                    parts=[types.Part(text=str(content)[:4000])]
+                ))
+        
+        safety_settings = [
+            types.SafetySetting(
+                category=types.HarmCategory.HARM_CATEGORY_HARASSMENT,
+                threshold=types.HarmBlockThreshold.BLOCK_NONE,
+            ),
+            types.SafetySetting(
+                category=types.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                threshold=types.HarmBlockThreshold.BLOCK_NONE,
+            ),
+            types.SafetySetting(
+                category=types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                threshold=types.HarmBlockThreshold.BLOCK_NONE,
+            ),
+            types.SafetySetting(
+                category=types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                threshold=types.HarmBlockThreshold.BLOCK_NONE,
+            ),
+            types.SafetySetting(
+                category=types.HarmCategory.HARM_CATEGORY_CIVIC_INTEGRITY,
+                threshold=types.HarmBlockThreshold.BLOCK_NONE,
+            ),
+            types.SafetySetting(
+                category=types.HarmCategory.HARM_CATEGORY_JAILBREAK,
+                threshold=types.HarmBlockThreshold.BLOCK_NONE,
+            ),
+        ]
+        
+        config = types.GenerateContentConfig(
+            temperature=temperature,
+            max_output_tokens=max_tokens,
+            safety_settings=safety_settings,
+        )
+        response = await client.aio.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=contents,
+            config=config,
+        )
+        return response.text if response else ""
+    except Exception as exc:
+        log.error("Gemini chat failed: %s", exc)
+        return ""
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# NVIDIA NIM LLM client (primary)
+# ═══════════════════════════════════════════════════════════════════════════
+
+NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "")
+NVIDIA_MODEL = os.getenv("NVIDIA_MODEL", "meta/llama-3.1-70b-instruct")
+NVIDIA_API_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
+
+
+async def _nvidia_chat(
+    messages: list[dict],
+    system_prompt: str = "",
+    temperature: float = 0.7,
+    max_tokens: int = 300,
+) -> str:
+    if not NVIDIA_API_KEY:
+        return ""
+    
+    full_messages = []
+    if system_prompt:
+        full_messages.append({"role": "system", "content": system_prompt})
+    full_messages.extend(messages[-20:])
+    
+    payload = {
+        "model": NVIDIA_MODEL,
+        "messages": full_messages,
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+    }
+    headers = {
+        "Authorization": f"Bearer {NVIDIA_API_KEY}",
+        "Content-Type": "application/json",
+    }
+    
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                NVIDIA_API_URL,
+                headers=headers,
+                json=payload,
+                timeout=aiohttp.ClientTimeout(total=120),
+            ) as resp:
+                if resp.status != 200:
+                    body = await resp.text()
+                    log.error("NVIDIA NIM error (%d): %s", resp.status, body[:500])
+                    return ""
+                data = await resp.json()
+                choices = data.get("choices", [])
+                if choices:
+                    return choices[0].get("message", {}).get("content", "")
+                return ""
+    except Exception as exc:
+        log.error("NVIDIA NIM request failed: %s", exc)
+        return ""
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Ollama Cloud LLM client (fallback)
 # ═══════════════════════════════════════════════════════════════════════════
 
 async def _ollama_chat(
@@ -681,23 +1087,66 @@ async def _ollama_chat(
         "Content-Type": "application/json",
     }
 
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                OLLAMA_URL,
-                headers=headers,
-                json=payload,
-                timeout=aiohttp.ClientTimeout(total=30),
-            ) as resp:
-                if resp.status != 200:
-                    body = await resp.text()
-                    log.error("Ollama Cloud error (%d): %s", resp.status, body)
+    for attempt in range(1, 4):
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    OLLAMA_URL,
+                    headers=headers,
+                    json=payload,
+                    timeout=aiohttp.ClientTimeout(total=30),
+                ) as resp:
+                    if resp.status != 200:
+                        body = await resp.text()
+                        log.error(
+                            "Ollama Cloud error (%d) attempt=%d/3: %s",
+                            resp.status,
+                            attempt,
+                            body,
+                        )
+                        if resp.status >= 500 and attempt < 3:
+                            await asyncio.sleep(1.2 * attempt)
+                            continue
+                        return ""
+                    data = await resp.json()
+                    content = (
+                        data.get("choices", [{}])[0]
+                        .get("message", {})
+                        .get("content", "")
+                    )
+                    if isinstance(content, str) and content.strip():
+                        return content.strip()
+                    log.error("Ollama Cloud malformed response attempt=%d/3: %s", attempt, data)
+                    if attempt < 3:
+                        await asyncio.sleep(1.0 * attempt)
+                        continue
                     return ""
-                data = await resp.json()
-                return data["choices"][0]["message"]["content"]
-    except Exception as exc:
-        log.error("Ollama Cloud request failed: %s", exc)
-        return ""
+        except Exception as exc:
+            log.error("Ollama Cloud request failed attempt=%d/3: %s", attempt, exc)
+            if attempt < 3:
+                await asyncio.sleep(1.2 * attempt)
+                continue
+            return ""
+    return ""
+
+
+def _deterministic_fallback_reply(text: str, stage: str) -> str:
+    """Non-generic backup reply when LLM temporarily fails."""
+    low = (text or "").strip().lower()
+    if low in {"hi", "hello", "hey", "yo", "sup", "holaaa", "hola", "hiiiiii"}:
+        return (
+            "yo - got you. what are you trying to run right now "
+            "(google, meta, tiktok, etc)?"
+        )
+    if stage == "qualify":
+        return "quick one - what platform are you focused on right now?"
+    if stage == "present":
+        return "got it. if we set you up with stable accounts, are you looking to scale this week?"
+    if stage == "close":
+        return "sounds good - want me to lock this in and set up your private deal room now?"
+    if stage == "payment":
+        return "perfect - send the tx hash once paid and I'll verify it right away."
+    return "got you - what platform are you running right now?"
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -741,14 +1190,16 @@ def _infer_stage(bant: dict, message_count: int, current_stage: str) -> str:
 class AdminResponder:
     """AI auto-responder — handles DMs and group messages with LLM brain."""
 
-    def __init__(self) -> None:
-        self.retriever = Retriever()
-        self.scorer = BANTScorer()
+    def __init__(self, adk_runner=None, adk_channel: str = "telethon") -> None:
+        self._adk_runner = adk_runner
+        self._adk_channel = adk_channel
+        self.retriever = _get_retriever() or _FallbackRetriever()
+        self.scorer = _FallbackBANTScorer()
         self._history: Dict[str, List[dict]] = defaultdict(list)
         self._stages: Dict[str, str] = defaultdict(lambda: "opener")
         self._groups_created: set[str] = set()
-        self._purchase_prompted: set[str] = set()   # leads asked "ready to proceed?"
-        self._purchase_confirmed: set[str] = set()  # leads who confirmed
+        self._purchase_prompted: set[str] = set()
+        self._purchase_confirmed: set[str] = set()
 
     async def handle_message(
         self, username: str, message_text: str,
@@ -853,43 +1304,43 @@ class AdminResponder:
                 "stage": new_stage,
             }
 
-        # Hot lead logging + group creation (2-step: prompt → confirm) — DM only
+        # Hot lead logging + IMMEDIATE group creation — DM only
         has_buying_intent = bant.get("buying_intent", False)
-        if bant["total"] >= HOT_LEAD_THRESHOLD and not is_group:
+        explicit_room_intent = _is_deal_room_intent(message_text)
+        qualifies_for_room_flow = bant["total"] >= HOT_LEAD_THRESHOLD or explicit_room_intent
+        if qualifies_for_room_flow and not is_group:
             log.info("🔥 HOT LEAD @%s (score=%d)", username, bant["total"])
             await self._notify_admin(username, message_text, bant)
 
             if username not in self._groups_created:
-                if username not in self._purchase_prompted:
-                    # Step 1: Mark as prompted — LLM will ask for confirmation
-                    self._purchase_prompted.add(username)
-                    log.info("🎯 Lead @%s prompted for purchase confirmation", username)
-                    # Fall through to normal AI response with confirmation hint
-                elif has_buying_intent or _is_purchase_confirmation(message_text):
-                    # Step 2: Lead confirmed — create deal room
-                    self._purchase_confirmed.add(username)
-                    log.info("✅ Lead @%s confirmed purchase — creating deal room", username)
-                    # Persist confirmed state NOW (early return skips the normal save below)
-                    await _save_lead_memory(username, {
-                        "user_id": user_id,
-                        "sales_stage": new_stage,
-                        "bant_score": bant["total"],
-                        "purchase_prompted": True,
-                        "purchase_confirmed": True,
-                        "group_created": False,
-                    })
-                    return {
-                        "response": "",
-                        "auto_respond": True,
-                        "bant": bant,
-                        "stage": new_stage,
-                        "create_group": True,
-                        "username": username,
-                    }
-                # else: lead was prompted but hasn't confirmed yet — fall through to AI
+                # HOT LEAD — create deal room IMMEDIATELY when BANT hits threshold.
+                # No 2-step confirmation wait; the group invite goes out right away.
+                self._purchase_prompted.add(username)
+                self._purchase_confirmed.add(username)
+                log.info("🔥 HOT LEAD @%s (score=%d) — creating deal room immediately", username, bant["total"])
+                await _save_lead_memory(username, {
+                    "user_id": user_id,
+                    "sales_stage": new_stage,
+                    "bant_score": bant["total"],
+                    "purchase_prompted": True,
+                    "purchase_confirmed": True,
+                    "group_created": False,
+                })
+                return {
+                    "response": "",
+                    "auto_respond": True,
+                    "bant": bant,
+                    "stage": new_stage,
+                    "create_group": True,
+                    "username": username,
+                }
 
         # RAG context
-        rag_context = self._build_rag_context(username, message_text)
+        # Cloud-only runtime: when ADK is enabled, knowledge retrieval is
+        # delegated to ADK tools and we skip local retriever usage here.
+        rag_context = ""
+        if not self._adk_runner:
+            rag_context = self._build_rag_context(username, message_text)
 
         # System prompt with stage + wallet addresses
         stage_instruction = STAGE_INSTRUCTIONS.get(new_stage, "")
@@ -902,19 +1353,6 @@ class AdminResponder:
             btc=BTC_ADDRESS or "(not configured)",
             eth=ETH_ADDRESS or "(not configured)",
         )
-
-
-        # Inject purchase confirmation hint when lead is hot but hasn't confirmed (DM only)
-        if (not is_group
-                and username in self._purchase_prompted
-                and username not in self._purchase_confirmed
-                and username not in self._groups_created):
-            rendered_prompt += (
-                "\n\n[IMPORTANT: This lead is fully qualified. You MUST now confirm they're ready "
-                "to purchase. Summarize what they need and ask: 'Ready to move forward? "
-                "I'll set up a private deal room with the team to finalize everything.' "
-                "Wait for their explicit confirmation before proceeding.]"
-            )
 
         # Inject deal-room redirect context when client keeps DMing after group was created
         if not is_group and username in self._groups_created:
@@ -941,10 +1379,54 @@ class AdminResponder:
         # Build LLM messages
         llm_messages = self._build_llm_messages(username, rag_context)
 
-        # Generate response
-        ai_reply = await _ollama_chat(llm_messages, system_prompt=rendered_prompt)
+        # Generate response (NVIDIA NIM primary, then Gemini, then Ollama)
+        if self._adk_runner:
+            try:
+                from transport.adk_helper import run_message_text
+            except ImportError:
+                run_message_text = None  # type: ignore
+            if run_message_text:
+                uid = int(user_id or 0)
+                meta = (
+                    f"[kliqboost_autoresponder]\nusername={username} is_group={is_group}\n"
+                    f"stage={new_stage} bant_score={bant['total']} bant_tier={bant.get('tier', '')}\n"
+                    f"purchase_prompted={username in self._purchase_prompted} "
+                    f"purchase_confirmed={username in self._purchase_confirmed} "
+                    f"group_created={username in self._groups_created}\n\n"
+                    f"[system_prompt_for_downstream]\n{rendered_prompt[:8000]}\n\n"
+                    f"[conversation]\n"
+                )
+                brief = "\n".join(
+                    f"{m.get('role', '?')}: {str(m.get('content', ''))[:800]}"
+                    for m in self._history.get(username, [])[-16:]
+                )
+                payload = meta + brief + "\n\n[inbound_message]\n" + message_text
+                ai_reply = await run_message_text(
+                    self._adk_runner,
+                    user_id=uid,
+                    channel=self._adk_channel,
+                    text=payload,
+                )
+            else:
+                # NVIDIA NIM primary
+                ai_reply = await _nvidia_chat(llm_messages, system_prompt=rendered_prompt)
+                if not ai_reply:
+                    log.warning("NVIDIA NIM failed, falling back to Gemini")
+                    ai_reply = await _gemini_chat(llm_messages, system_prompt=rendered_prompt)
+                if not ai_reply:
+                    log.warning("Gemini failed, falling back to Ollama")
+                    ai_reply = await _ollama_chat(llm_messages, system_prompt=rendered_prompt)
+        else:
+            # NVIDIA NIM primary
+            ai_reply = await _nvidia_chat(llm_messages, system_prompt=rendered_prompt)
+            if not ai_reply:
+                log.warning("NVIDIA NIM failed, falling back to Gemini")
+                ai_reply = await _gemini_chat(llm_messages, system_prompt=rendered_prompt)
+            if not ai_reply:
+                log.warning("Gemini failed, falling back to Ollama")
+                ai_reply = await _ollama_chat(llm_messages, system_prompt=rendered_prompt)
         if not ai_reply:
-            ai_reply = "hey sorry was afk for a sec! what were you saying?"
+            ai_reply = _deterministic_fallback_reply(message_text, new_stage)
 
         # Record outbound
         self._history[username].append({"role": "assistant", "content": ai_reply})
@@ -1112,20 +1594,66 @@ def _build_client() -> TelegramClient:
         app_version=DEVICE["app_version"],
         lang_code=DEVICE["lang_code"],
         system_lang_code=DEVICE["system_lang_code"],
+        connection_retries=8,
+        retry_delay=2,
+        auto_reconnect=True,
     )
     if PROXY:
         kwargs["proxy"] = PROXY
+    session_obj: StringSession | str
+    if STRING_SESSION:
+        session_obj = StringSession(STRING_SESSION)
+    else:
+        # Emergency fallback only.
+        session_obj = SESSION_PATH
     return TelegramClient(
-        SESSION_PATH,
+        session_obj,
         DEVICE["api_id"],
         DEVICE["api_hash"],
         **kwargs,
     )
 
 
+def _ensure_telethon_session_schema() -> None:
+    """Ensure Telethon session DB has tmp_auth_key column (6-column schema).
+
+    We keep this in-process (not only shell startup) so all execution modes
+    including Cloud Run jobs and direct python invocations self-heal.
+    """
+    if STRING_SESSION:
+        return
+    session_file = Path(f"{SESSION_PATH}.session")
+    if not session_file.exists():
+        return
+    try:
+        conn = sqlite3.connect(str(session_file), timeout=15)
+        conn.execute("PRAGMA busy_timeout = 15000")
+        cols = [r[1] for r in conn.execute("PRAGMA table_info(sessions)").fetchall()]
+        if cols and "tmp_auth_key" not in cols:
+            conn.execute("ALTER TABLE sessions ADD COLUMN tmp_auth_key BLOB")
+            conn.commit()
+            log.info("✅ Patched Telethon session schema in-process: added tmp_auth_key")
+        # Telethon session schema that includes tmp_auth_key corresponds to a
+        # newer migration level. If we force version=7, Telethon will try to
+        # add tmp_auth_key again and crash with "duplicate column name".
+        if cols and "tmp_auth_key" in cols:
+            conn.execute("DELETE FROM version")
+            conn.execute("INSERT INTO version VALUES (8)")
+            conn.commit()
+    except Exception as exc:
+        log.warning("Could not patch Telethon session schema: %s", exc)
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+
 async def authenticate() -> None:
     """Interactive authentication — sends OTP to phone, handles 2FA."""
     client = _build_client()
+    me = None
+    me_id = 0
     try:
         await client.connect()
         if await client.is_user_authorized():
@@ -1157,21 +1685,72 @@ async def authenticate() -> None:
 
 async def main(test: bool = False) -> None:
     _require_env()
+    SESSION_DIR.mkdir(parents=True, exist_ok=True)
     await _init_db()
+    _ensure_telethon_session_schema()
 
     client = _build_client()
-    responder = AdminResponder()
+    log.info("Connecting Telethon client for @%s ...", PHONE)
+    try:
+        await asyncio.wait_for(client.connect(), timeout=45)
+    except asyncio.TimeoutError:
+        await _send_heartbeat("degraded", "telethon_connect_timeout")
+        raise RuntimeError("Telethon connect timed out after 45s")
+    except Exception as exc:
+        await _send_heartbeat("degraded", f"telethon_connect_error:{exc}")
+        raise
 
-    await client.connect()
-    if not await client.is_user_authorized():
+    _adk_runner = None
+    if os.getenv("USE_ADK", "").lower() in ("1", "true", "yes"):
+        adk_root = (_base / "agents" / "kliqboost").resolve()
+        ap = str(adk_root)
+        if ap not in sys.path:
+            sys.path.insert(0, ap)
+        try:
+            from kliq_agent.runner_factory import build_runner
+
+            _adk_runner = build_runner()
+            log.info("USE_ADK=1 — Google ADK runner initialised")
+        except Exception as exc:
+            log.error("ADK runner init failed, using legacy Ollama path: %s", exc)
+            _adk_runner = None
+
+    responder = AdminResponder(adk_runner=_adk_runner) if _adk_runner else AdminResponder()
+    log.info("Checking session authorization...")
+    try:
+        authorized = await asyncio.wait_for(client.is_user_authorized(), timeout=20)
+    except asyncio.TimeoutError:
+        await _send_heartbeat("degraded", "telethon_auth_check_timeout")
+        raise RuntimeError("Telethon authorization check timed out")
+    except Exception as exc:
+        await _send_heartbeat("degraded", f"telethon_auth_check_error:{exc}")
+        raise
+    if not authorized:
         log.error("Session not authorised. Run with --auth first to authenticate.")
         await _send_heartbeat("offline", "session_not_authorized")
-        await client.disconnect()
         raise RuntimeError("Session not authorised")
 
-    me = await client.get_me()
-    log.info("✅ Connected as %s (@%s, id=%s)", me.first_name, me.username, me.id)
+    log.info("Fetching self profile (get_me)...")
+    try:
+        me = await asyncio.wait_for(client.get_me(), timeout=25)
+        me_id = int(getattr(me, "id", 0) or 0)
+    except asyncio.TimeoutError:
+        await _send_heartbeat("degraded", "telethon_get_me_timeout")
+        raise RuntimeError("Telethon get_me timed out")
+    except Exception as exc:
+        await _send_heartbeat("degraded", f"telethon_get_me_error:{exc}")
+        raise
+    log.info("✅ Connected as %s (@%s, id=%s)", me.first_name, me.username, me_id)
     await _send_heartbeat("online")
+
+    if _adk_runner:
+        try:
+            from mcp_telegram import bridge as _tg_bridge
+
+            _tg_bridge.set_client(client, me_id)
+            log.info("Telethon client bound for ADK tg_* tools")
+        except Exception as exc:
+            log.warning("Could not bind Telethon bridge for ADK: %s", exc)
 
     # Pre-resolve admin entities for group creation
     global _resolved_admin_entities
@@ -1193,7 +1772,13 @@ async def main(test: bool = False) -> None:
              len(_active_deal_rooms), len(_silenced_groups))
 
     # Force Telethon to catch up on missed updates and start receiving new ones
-    await client.catch_up()
+    log.info("Running Telethon catch_up...")
+    try:
+        await asyncio.wait_for(client.catch_up(), timeout=30)
+    except asyncio.TimeoutError:
+        log.warning("Telethon catch_up timed out; continuing without blocking startup")
+    except Exception as exc:
+        log.warning("Telethon catch_up failed; continuing: %s", exc)
 
     # ── Admin command: /done — close sale, kick lead, archive group ──
     @client.on(events.NewMessage(pattern=r"(?i)/done(?:\s+@?(\w+))?$"))
@@ -1203,7 +1788,7 @@ async def main(test: bool = False) -> None:
         sender = await event.get_sender()
         sender_uname = getattr(sender, "username", "")
         if sender_uname.lower() not in [u.lower() for u in HUMAN_ADMIN_USERNAMES] \
-           and sender.id not in HUMAN_ADMIN_IDS and sender.id != me.id:
+           and sender.id not in HUMAN_ADMIN_IDS and (not me_id or sender.id != me_id):
             return
 
         chat = await event.get_chat()
@@ -1221,7 +1806,7 @@ async def main(test: bool = False) -> None:
                     channel=chat, filter=ChannelParticipantsRecent(),
                     offset=0, limit=100, hash=0,
                 ))
-                admin_ids = set(HUMAN_ADMIN_IDS + [me.id])
+                admin_ids = set(HUMAN_ADMIN_IDS + ([me_id] if me_id else []))
                 for p in participants.users:
                     if p.id not in admin_ids and not getattr(p, "bot", False):
                         try:
@@ -1368,7 +1953,7 @@ async def main(test: bool = False) -> None:
             return
 
         # Skip messages from ourselves
-        if sender.id == me.id:
+        if me_id and sender.id == me_id:
             return
 
         # Deduplication — skip already-processed message IDs to prevent double responses
@@ -1391,6 +1976,28 @@ async def main(test: bool = False) -> None:
 
         text = event.message.text or ""
         if not text.strip():
+            return
+        inbound_guard = evaluate_inbound_text(text)
+        log_policy_decision(
+            WORKFLOW_DB_PATH,
+            user_id=getattr(sender, "id", None),
+            channel="autoresponder",
+            direction="inbound",
+            action=inbound_guard.action,
+            reason=inbound_guard.reason,
+        )
+        if inbound_guard.action == "block_and_escalate" and GUARDRAIL_MODE != "monitor":
+            transition_state(
+                WORKFLOW_DB_PATH,
+                user_id=sender.id,
+                to_state="human_review_required",
+                event="inbound_guardrail_block",
+                reason=inbound_guard.reason,
+            )
+            await event.reply(
+                "I cannot assist with that request here. "
+                "I am routing this to a team member for manual review."
+            )
             return
 
         # Skip slash commands
@@ -1428,6 +2035,23 @@ async def main(test: bool = False) -> None:
                 return
         else:
             log.info("📩 DM from @%s: %s", username, text[:120])
+            # Deterministic fast-path for greeting health checks.
+            # Guarantees a reply even if the full AI stack is temporarily slow.
+            if text.strip().lower() in {"hi", "hello", "hey", "yo", "sup"}:
+                await asyncio.sleep(random.uniform(1, 2))
+                await event.reply(
+                    "yo - got you. what are you trying to run right now "
+                    "(google, meta, tiktok, etc)?"
+                )
+                transition_state(
+                    WORKFLOW_DB_PATH,
+                    user_id=sender.id,
+                    to_state="qualified",
+                    event="greeting_qualification_start",
+                    reason="initial_contact",
+                )
+                log.info("✅ Replied to @%s in DM (fast-path greeting)", username)
+                return
 
         # ── TX hash detection & on-chain verification ───────────────
         tx_detected = detect_tx_hash(text)
@@ -1472,6 +2096,14 @@ async def main(test: bool = False) -> None:
 
                     if result_tx.matches_wallet:
                         confirm_payment(order_code, crypto_amount=result_tx.amount)
+                        transition_state(
+                            WORKFLOW_DB_PATH,
+                            user_id=lead_uid,
+                            to_state="payment_confirmed",
+                            event="tx_verified",
+                            reason="wallet_match",
+                            idempotency_key=f"tx-{tx_hash}",
+                        )
 
                         await asyncio.sleep(random.uniform(2, 5))
                         await event.reply(
@@ -1551,51 +2183,110 @@ async def main(test: bool = False) -> None:
                         client, username, sender.id,
                         bant_score=bant_data.get("total", 0),
                     )
-                    if room:
-                        # DM the invite link
-                        await client.send_message(
-                            sender.id,
-                            f"hey! just set up a private deal room for you with the team — "
-                            f"hop in whenever you're ready 🔥\n\n{room['invite_link']}",
+                    room_created = bool(room)
+                    fallback_sent = False
+                    if room_created:
+                        transition_state(
+                            WORKFLOW_DB_PATH,
+                            user_id=sender.id,
+                            to_state="invite_ready",
+                            event="group_created",
+                            reason="deal_room_created",
                         )
-                        log.info("✅ Deal room created + link sent to @%s", username)
+                        # Invite link: send via Bot API (URL button) as backup if direct invite failed
+                        lead_invited_directly = room.get("lead_invited_directly", False)
+                        bot_ok = False
+                        if not lead_invited_directly:
+                            bot_ok = await _bot_api_send_invite_buttons(
+                                int(sender.id),
+                                "hey! just set up a private deal room for you with the team — "
+                                "tap below to join 🔥",
+                                [room["invite_link"]],
+                            )
+                            if not bot_ok:
+                                await client.send_message(
+                                    sender.id,
+                                    f"hey! just set up a private deal room for you with the team — "
+                                    f"hop in whenever you're ready 🔥\n\n{room['invite_link']}",
+                                )
+                        else:
+                            # Lead was directly invited — send a DM letting them know to check the group
+                            try:
+                                await client.send_message(
+                                    sender.id,
+                                    "hey! just added you to a private deal room with the team — "
+                                    "check your chats, you should see it 🔥",
+                                )
+                            except Exception:
+                                pass
+                        log.info("✅ Deal room created + invite sent (direct=%s, bot=%s) @%s",
+                                 lead_invited_directly, bot_ok, username)
+                        if bot_ok or lead_invited_directly:
+                            transition_state(
+                                WORKFLOW_DB_PATH,
+                                user_id=sender.id,
+                                to_state="invite_sent",
+                                event="invite_sent" if lead_invited_directly else "invite_button_sent",
+                                reason="direct_invite" if lead_invited_directly else "bot_api_send",
+                                idempotency_key=f"invite-{sender.id}",
+                            )
 
-                        # Send contextual opener in the deal room
+                        # Send comprehensive handoff message in the deal room from George Katys
                         await asyncio.sleep(random.uniform(2, 4))
                         try:
                             group_entity = await client.get_entity(room["group_id"])
                             platform = extracted.get("platform", "ad") or "ad"
                             budget = extracted.get("budget", "") or ""
                             niche = extracted.get("niche", "") or ""
+                            bant_total = bant_data.get("total", 0)
+                            bant_tier = bant_data.get("tier", "")
                             details = []
                             if platform and platform != "unknown":
-                                details.append(f"{platform} setup")
+                                details.append(f"Platform: {platform}")
                             else:
-                                details.append("advertising setup")
+                                details.append("Platform: TBD")
                             if budget and budget != "unknown":
-                                details.append(f"budget: {budget}")
+                                details.append(f"Budget: {budget}")
                             if niche and niche != "unknown":
-                                details.append(f"vertical: {niche}")
+                                details.append(f"Vertical: {niche}")
+                            details.append(f"BANT Score: {bant_total} ({bant_tier})")
+                            details.append(f"Sales Stage: {result.get('stage', 'present')}")
 
-                            opener_msg = (
-                                f"@{username} just confirmed they're ready to move forward — "
-                                f"{'they need ' + ', '.join(details) if details else 'looking for advertising solutions'}. "
-                                f"let's get them sorted 🔥\n\n"
-                                f"@bigbunnn @david_bazzana heads up"
+                            # Load lead memory for additional context
+                            lead_mem = await _load_lead_memory(username)
+                            if lead_mem:
+                                if lead_mem.get("timeline"):
+                                    details.append(f"Timeline: {lead_mem['timeline']}")
+
+                            handoff_msg = (
+                                f"📋 CLIENT HANDOFF — @{username}\n\n"
+                                f"{'  |  '.join(details)}\n\n"
+                                f"@{username} welcome to your private deal room! "
+                                f"I'm George Katys, your account manager at Kliqboost Media. "
+                                f"I'll be handling your setup personally from here.\n\n"
+                                f"@Bigbunnn @David_Bazzana — heads up, new client incoming. "
+                                f"Let's get them sorted 🔥"
                             )
-                            await client.send_message(group_entity, opener_msg)
-                        except Exception:
-                            pass
+                            await client.send_message(group_entity, handoff_msg)
+                        except Exception as handoff_exc:
+                            log.warning("⚠️ Could not send handoff message in deal room: %s", handoff_exc)
                     else:
-                        # Fallback: DM-only sales
-                        await client.send_message(
-                            sender.id,
-                            "hey! setting things up with the team — "
-                            "I'll handle everything right here for now 🔥",
-                        )
+                        # Fallback: bot sends backup room URL buttons (not George)
+                        fallback_sent = await _send_fallback_room_link_via_bot(int(sender.id))
+                        if not fallback_sent:
+                            await client.send_message(
+                                sender.id,
+                                "hey! setting things up with the team — "
+                                "I'll handle everything right here for now 🔥",
+                            )
 
-                    responder._groups_created.add(username)
-                    # Persist group_created to DB so state survives service restart
+                    if room_created or fallback_sent:
+                        responder._groups_created.add(username)
+                    else:
+                        # Ensure future messages can retry room creation.
+                        responder._groups_created.discard(username)
+
+                    # Persist group_created state so restarts preserve retry behavior.
                     try:
                         bant_data = result.get("bant", {})
                         await _save_lead_memory(username, {
@@ -1604,7 +2295,7 @@ async def main(test: bool = False) -> None:
                             "bant_score": bant_data.get("total", 75),
                             "purchase_prompted": True,
                             "purchase_confirmed": True,
-                            "group_created": True,
+                            "group_created": (room_created or fallback_sent),
                         })
                     except Exception as persist_exc:
                         log.warning("Could not persist group_created for @%s: %s", username, persist_exc)
@@ -1615,8 +2306,39 @@ async def main(test: bool = False) -> None:
                 delay = random.uniform(3, 15) if is_group else random.uniform(5, 25)
                 log.debug("Typing delay %.0fs before replying to @%s", delay, username)
                 await asyncio.sleep(delay)
+                # Allow wallets in DM when lead is in payment/close stage or group is created
+                allow_wallets_now = bool(
+                    is_group
+                    or username in responder._purchase_confirmed
+                    or username in responder._groups_created
+                )
+                outbound_guard = evaluate_outbound_text(
+                    result["response"],
+                    approved_wallets=[BTC_ADDRESS, ETH_ADDRESS, USDT_ERC20_ADDRESS],
+                    allow_wallets=allow_wallets_now,
+                )
+                log_policy_decision(
+                    WORKFLOW_DB_PATH,
+                    user_id=sender.id,
+                    channel="autoresponder",
+                    direction="outbound",
+                    action=outbound_guard.action,
+                    reason=outbound_guard.reason,
+                )
+                reply_text = result["response"]
+                if outbound_guard.action == "safe_rewrite" and outbound_guard.rewritten_text and GUARDRAIL_MODE != "monitor":
+                    reply_text = outbound_guard.rewritten_text
+                elif outbound_guard.action == "block_and_escalate" and GUARDRAIL_MODE != "monitor":
+                    transition_state(
+                        WORKFLOW_DB_PATH,
+                        user_id=sender.id,
+                        to_state="human_review_required",
+                        event="outbound_guardrail_block",
+                        reason=outbound_guard.reason,
+                    )
+                    reply_text = "I am routing this to a team member for manual handling."
 
-                await event.reply(result["response"])
+                await event.reply(reply_text)
                 log.info(
                     "✅ Replied to @%s in %s (stage=%s, bant=%d)",
                     username, chat_label,
@@ -1629,35 +2351,34 @@ async def main(test: bool = False) -> None:
         except Exception as exc:
             log.error("Error handling message from @%s: %s", username, exc)
 
-    if test:
-        log.info("Test mode — verifying RAG connection...")
-        stats = responder.retriever.stats()
-        log.info("RAG stats: %s", stats)
-        log.info("Test complete — disconnecting")
-        await client.disconnect()
-        return
+        if test:
+            log.info("Test mode — verifying RAG connection...")
+            stats = responder.retriever.stats()
+            log.info("RAG stats: %s", stats)
+            log.info("Test complete — disconnecting")
+            return
 
-    # Print status
-    proxy_info = f"{PROXY['addr']}:{PROXY['port']}" if PROXY else "direct (no proxy)"
-    try:
-        stats = responder.retriever.stats()
-        rag_leads = stats.get("lead_profiles", 0)
-        rag_docs = stats.get("knowledge_base", 0)
-    except Exception:
-        rag_leads, rag_docs = 0, 0
-    log.info(
-        "🤖 Kliqboost AI Responder LIVE — listening for DMs + groups\n"
-        "   Account: %s (@%s)\n"
-        "   RAG: %d leads, %d KB docs\n"
-        "   LLM: %s (%s)\n"
-        "   Proxy: %s",
-        me.first_name, me.username,
-        rag_leads, rag_docs,
-        OLLAMA_MODEL, OLLAMA_URL,
-        proxy_info,
-    )
+        # Print status
+        proxy_info = f"{PROXY['addr']}:{PROXY['port']}" if PROXY else "direct (no proxy)"
+        try:
+            stats = responder.retriever.stats()
+            rag_leads = stats.get("lead_profiles", 0)
+            rag_docs = stats.get("knowledge_base", 0)
+        except Exception:
+            rag_leads, rag_docs = 0, 0
+        log.info(
+            "🤖 Kliqboost AI Responder LIVE — listening for DMs + groups\n"
+            "   Account: %s (@%s)\n"
+            "   RAG: %d leads, %d KB docs\n"
+            "   LLM: %s (%s)\n"
+            "   Proxy: %s",
+            me.first_name, me.username,
+            rag_leads, rag_docs,
+            OLLAMA_MODEL, OLLAMA_URL,
+            proxy_info,
+        )
 
-    # ── Deal-room bridge watcher (polls bot's qualified leads) ──────────
+        # ── Deal-room bridge watcher (polls bot's qualified leads) ──────────
 
     def _summarize_bot_convo(history: list[dict]) -> str:
         """Create a concise summary of the bot conversation for George's context."""
@@ -1716,8 +2437,9 @@ async def main(test: bool = False) -> None:
                             invite_link = room["invite_link"]
                             group_id = room["group_id"]
 
-                            # Try to DM the invite link to the lead
+                            # Try to DM the invite link to the lead (backup if direct invite failed)
                             dm_sent = False
+                            lead_invited_directly = room.get("lead_invited_directly", False)
                             try:
                                 lead_entity = None
                                 try:
@@ -1730,48 +2452,81 @@ async def main(test: bool = False) -> None:
 
                                 if lead_entity:
                                     await asyncio.sleep(random.uniform(2, 5))
-                                    await client.send_message(
-                                        lead_entity,
-                                        f"hey! just set up a private deal room for you with the team — "
-                                        f"hop in whenever you're ready 🔥\n\n{invite_link}",
-                                    )
-                                    dm_sent = True
-                                    log.info("✅ DM'd deal room link to @%s", uname)
+                                    if not lead_invited_directly:
+                                        bot_ok = await _bot_api_send_invite_buttons(
+                                            int(user_id),
+                                            "hey! just set up a private deal room for you with the team — "
+                                            "tap below to join 🔥",
+                                            [invite_link],
+                                        )
+                                        if not bot_ok:
+                                            await client.send_message(
+                                                lead_entity,
+                                                f"hey! just set up a private deal room for you with the team — "
+                                                f"hop in whenever you're ready 🔥\n\n{invite_link}",
+                                            )
+                                        dm_sent = True
+                                    else:
+                                        # Lead was directly invited — send a DM letting them know
+                                        try:
+                                            await client.send_message(
+                                                lead_entity,
+                                                "hey! just added you to a private deal room with the team — "
+                                                "check your chats, you should see it 🔥",
+                                            )
+                                        except Exception:
+                                            pass
+                                        dm_sent = True
+                                    log.info("✅ Deal room invite sent (direct=%s) to @%s", lead_invited_directly, uname)
+                                    if dm_sent:
+                                        transition_state(
+                                            WORKFLOW_DB_PATH,
+                                            user_id=user_id,
+                                            to_state="invite_sent",
+                                            event="watcher_invite_sent",
+                                            reason="direct_invite" if lead_invited_directly else "bot_api_send",
+                                            idempotency_key=f"watcher-invite-{user_id}",
+                                        )
                             except Exception as dm_e:
                                 log.warning("DM failed for @%s: %s", uname, dm_e)
 
-                            # Send contextual opener in the deal room
+                            # Send comprehensive handoff message in the deal room from George Katys
                             await asyncio.sleep(random.uniform(2, 4))
                             try:
                                 group_entity = await client.get_entity(group_id)
-                                # Build context-rich opener from BANT data + convo
+                                # Build context-rich details from BANT data + convo
                                 platform = row["platform"] or "ad"
                                 budget = row["budget"] or ""
                                 niche = row["niche"] or ""
+                                bant_score = row["bant_score"] or 0
                                 convo_summary = ""
                                 try:
                                     convo_summary = row["convo_summary"] or ""
                                 except (IndexError, KeyError):
                                     pass
 
-                                # Build the opener
+                                # Build the handoff details
                                 details = []
                                 if platform and platform != "unknown":
-                                    details.append(f"{platform} setup")
+                                    details.append(f"Platform: {platform}")
                                 else:
-                                    details.append("advertising setup")
+                                    details.append("Platform: TBD")
                                 if budget and budget != "unknown":
-                                    details.append(f"budget range: {budget}")
+                                    details.append(f"Budget: {budget}")
                                 if niche and niche != "unknown":
-                                    details.append(f"vertical: {niche}")
+                                    details.append(f"Vertical: {niche}")
+                                details.append(f"BANT Score: {bant_score}")
 
-                                opener_msg = (
-                                    f"@{uname} just confirmed they're ready to move forward — "
-                                    f"{'they need ' + ', '.join(details) if details else 'looking for advertising solutions'}. "
-                                    f"let's get them sorted 🔥\n\n"
-                                    f"@bigbunnn @david_bazzana heads up"
+                                handoff_msg = (
+                                    f"📋 CLIENT HANDOFF — @{uname}\n\n"
+                                    f"{'  |  '.join(details)}\n\n"
+                                    f"@{uname} welcome to your private deal room! "
+                                    f"I'm George Katys, your account manager at Kliqboost Media. "
+                                    f"I'll be handling your setup personally from here.\n\n"
+                                    f"@Bigbunnn @David_Bazzana — heads up, new client incoming. "
+                                    f"Let's get them sorted 🔥"
                                 )
-                                await client.send_message(group_entity, opener_msg)
+                                await client.send_message(group_entity, handoff_msg)
 
                                 # Also inject bot conversation summary into George's memory
                                 if convo_summary and uname.lower() in responder._history:
@@ -1795,14 +2550,49 @@ async def main(test: bool = False) -> None:
                             log.info("✅ Bridge: @%s → deal room %d — status=%s",
                                      uname, group_id, status)
                         else:
-                            # Group creation failed — signal bot to send fallback
-                            conn.execute(
-                                "UPDATE pending_deal_rooms SET status = 'bot_invite', completed_at = ? WHERE id = ?",
-                                (_time_mod.time(), row["id"]),
-                            )
-                            conn.commit()
-                            responder._groups_created.add(uname.lower())
-                            log.warning("⚠️ Group creation failed for @%s — bot_invite fallback", uname)
+                            fallback_sent = False
+                            fb_urls = _fallback_invite_urls()
+                            try:
+                                fallback_sent = await _send_fallback_room_link_via_bot(int(user_id))
+                            except Exception as dm_fallback_err:
+                                log.warning("Fallback invite via bot failed for @%s: %s", uname, dm_fallback_err)
+
+                            if fallback_sent:
+                                primary = fb_urls[0] if fb_urls else ""
+                                conn.execute(
+                                    "UPDATE pending_deal_rooms SET status = 'done', invite_link = ?, "
+                                    "completed_at = ? WHERE id = ?",
+                                    (primary or None, _time_mod.time(), row["id"]),
+                                )
+                                conn.commit()
+                                responder._groups_created.add(uname.lower())
+                                log.warning("⚠️ Group creation failed for @%s — static fallback invites sent via bot", uname)
+                            else:
+                                # Bot could not send earlier — persist state; user may still get buttons on next bot reply
+                                primary = fb_urls[0] if fb_urls else None
+                                conn.execute(
+                                    "UPDATE pending_deal_rooms SET status = 'bot_invite', invite_link = ?, "
+                                    "completed_at = ? WHERE id = ?",
+                                    (primary, _time_mod.time(), row["id"]),
+                                )
+                                conn.commit()
+                                responder._groups_created.discard(uname.lower())
+                                log.warning("⚠️ Group creation failed for @%s — bot_invite fallback", uname)
+                                # One more attempt: full URL list as buttons (sometimes first call races cold start)
+                                if fb_urls:
+                                    await asyncio.sleep(1.0)
+                                    if await _bot_api_send_invite_buttons(
+                                        int(user_id),
+                                        "Your private deal room links — tap a button below to join.",
+                                        fb_urls,
+                                    ):
+                                        conn.execute(
+                                            "UPDATE pending_deal_rooms SET status = 'done', completed_at = ? "
+                                            "WHERE id = ?",
+                                            (_time_mod.time(), row["id"]),
+                                        )
+                                        conn.commit()
+                                        responder._groups_created.add(uname.lower())
 
                     except Exception as grp_exc:
                         log.error("Bridge: failed to create deal room for @%s: %s", uname, grp_exc)
@@ -1820,6 +2610,19 @@ async def main(test: bool = False) -> None:
 
     # Keep alive
     stop_event = asyncio.Event()
+
+    use_pubsub = os.getenv("USE_BRIDGE_PUBSUB", "").lower() in ("1", "true", "yes")
+    if use_pubsub:
+        try:
+            from transport.bridge_subscriber import start_bridge_subscriber
+
+            def _bridge_sync_cb(data: dict) -> None:
+                log.info("Pub/Sub bridge event (extend _bridge_sync_cb for deal-room): %s", data)
+
+            start_bridge_subscriber(_bridge_sync_cb)
+            log.info("🔗 Pub/Sub bridge subscriber started (USE_BRIDGE_PUBSUB=1)")
+        except Exception as exc:
+            log.warning("Pub/Sub subscriber not started: %s", exc)
 
     watcher_task = asyncio.create_task(_deal_room_watcher())
     log.info("🔗 Deal-room bridge watcher started (polling %s)", BRIDGE_DB_PATH)
