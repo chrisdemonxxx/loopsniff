@@ -1,0 +1,127 @@
+/* ============================================================================
+ * Kliqboost shared design tokens
+ * ----------------------------------------------------------------------------
+ * Single source of truth for visual identity across:
+ *   - web/kliqboost-website        (authoritative source)
+ *   - web/kliqboost-admin-panel
+ *   - web/kliqboost-client-portal
+ *
+ * Token values mirror the marketing website (Next.js 16, Tailwind v4).
+ * Brand palette: indigo (primary) → violet (accent) → cyan (tertiary),
+ * on a near-black surface with Inter typography.
+ *
+ * Imported AFTER `@import "tailwindcss";` so the @theme block registers
+ * Tailwind v4 utilities (`bg-background`, `text-primary`, `rounded-lg`, ...).
+ * The :root block exposes the same values as shadcn-style CSS variables
+ * (`--background`, `--primary`, ...) for components that read them directly.
+ * ============================================================================ */
+
+@theme inline {
+  /* Surfaces */
+  --color-background: #0A0A0F;
+  --color-foreground: #FAFAFA;
+  --color-surface: #12121A;
+  --color-surface-alt: #16161F;
+  --color-card: #12121A;
+  --color-card-foreground: #FAFAFA;
+  --color-popover: #12121A;
+  --color-popover-foreground: #FAFAFA;
+  --color-secondary: #12121A;
+  --color-secondary-foreground: #FAFAFA;
+
+  /* Brand */
+  --color-primary: #4F46E5;          /* indigo-600 */
+  --color-primary-light: #818CF8;
+  --color-primary-foreground: #FAFAFA;
+  --color-accent: #7C3AED;           /* violet-600 */
+  --color-accent-light: #A78BFA;
+  --color-accent-foreground: #FAFAFA;
+  --color-cyan: #06B6D4;
+  --color-amber: #F59E0B;
+
+  /* Lines & inputs */
+  --color-border: #1E1E2E;
+  --color-border-hover: #2E2E3E;
+  --color-input: #1E1E2E;
+  --color-ring: #4F46E5;
+
+  /* Muted / supporting */
+  --color-muted: #94A3B8;
+  --color-muted-foreground: #94A3B8;
+  --color-destructive: #f43f5e;
+
+  /* Charts */
+  --color-chart-1: #4F46E5;
+  --color-chart-2: #7C3AED;
+  --color-chart-3: #06B6D4;
+  --color-chart-4: #F59E0B;
+  --color-chart-5: #f43f5e;
+
+  /* Sidebar */
+  --color-sidebar: #0A0A0F;
+  --color-sidebar-foreground: #FAFAFA;
+  --color-sidebar-primary: #4F46E5;
+  --color-sidebar-primary-foreground: #FAFAFA;
+  --color-sidebar-accent: #12121A;
+  --color-sidebar-accent-foreground: #FAFAFA;
+  --color-sidebar-border: #1E1E2E;
+  --color-sidebar-ring: #4F46E5;
+
+  /* Typography */
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-heading: "Inter", system-ui, sans-serif;
+
+  /* Radius scale */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+}
+
+/* ---------------------------------------------------------------------------
+ * Legacy shadcn-style aliases (no `color-` prefix) so components that read
+ * CSS variables directly — e.g. `background: var(--primary)` — keep working.
+ * --------------------------------------------------------------------------- */
+:root {
+  --background: #0A0A0F;
+  --foreground: #FAFAFA;
+  --card: #12121A;
+  --card-foreground: #FAFAFA;
+  --popover: #12121A;
+  --popover-foreground: #FAFAFA;
+  --primary: #4F46E5;
+  --primary-foreground: #FAFAFA;
+  --secondary: #12121A;
+  --secondary-foreground: #FAFAFA;
+  --muted: #94A3B8;
+  --muted-foreground: #94A3B8;
+  --accent: #7C3AED;
+  --accent-foreground: #FAFAFA;
+  --destructive: #f43f5e;
+  --border: #1E1E2E;
+  --input: #1E1E2E;
+  --ring: #4F46E5;
+  --radius: 0.75rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+}
+
+/* Bisonclick co-brand override — kept here so it applies everywhere. */
+:root[data-brand="bisonclick"] {
+  --color-primary: #F59E0B;
+  --color-primary-light: #FBBF24;
+  --color-accent: #EA580C;
+  --color-accent-light: #FB923C;
+  --color-ring: #F59E0B;
+  --color-sidebar-primary: #F59E0B;
+  --color-sidebar-ring: #F59E0B;
+  --color-chart-1: #F59E0B;
+  --color-chart-2: #EA580C;
+  --primary: #F59E0B;
+  --accent: #EA580C;
+  --ring: #F59E0B;
+}

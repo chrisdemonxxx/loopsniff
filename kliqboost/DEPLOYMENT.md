@@ -17,7 +17,7 @@ This guide automates upgrading all Kliqboost services to Render Professional pla
 | Service | Description | URL |
 |---------|-------------|-----|
 | **kliqboost-api** | FastAPI backend with database | `https://kliqboost-api.onrender.com` |
-| **kliqboost-admin** | Admin dashboard (Next.js) | `https://kliqboost-admin.onrender.com` |
+| **kliqboost-admin** | Admin dashboard (Next.js) — **path-gated, host-optional** (see "Admin panel" below) | _no fixed URL_ |
 | **kliqboost-portal** | Client portal (Next.js) | `https://kliqboost-portal.onrender.com` |
 | **kliqboost-website** | Marketing website (Next.js) | `https://kliqboost-website.onrender.com` |
 | **kliqboost-vectordb** | ChromaDB vector database | `https://kliqboost-vectordb.onrender.com` |
@@ -48,9 +48,44 @@ curl -X POST "https://kliqboost-api.onrender.com/bot-stats/bootstrap-admin?email
 
 ### 4. Test Login
 
-- **Admin Panel:** https://kliqboost-admin.onrender.com
+- **Admin Panel:** path-gated — see "Admin panel (path-gated, host-optional)" below.
 - **Client Portal:** https://kliqboost-portal.onrender.com
 - **Credentials:** use the admin account and password configured in your secret manager.
+
+## 🛡️ Admin panel (path-gated, host-optional)
+
+The admin panel is intentionally **not** published on a guessable subdomain such as
+`admin.*` or `kb-admin.*`. Two layers of obfuscation apply:
+
+1. **Path gate (always on in prod).** The admin Next.js middleware reads
+   `ADMIN_REQUIRED_PATH_PREFIX` and returns a flat `404 Not Found` for any request
+   whose pathname does not start with that prefix. Login lives at
+   `${ADMIN_REQUIRED_PATH_PREFIX}/login`, dashboard at
+   `${ADMIN_REQUIRED_PATH_PREFIX}/dashboard`. Ops **must** set this to a random
+   unguessable segment in production, e.g.:
+
+   ```bash
+   ADMIN_REQUIRED_PATH_PREFIX=/_internal/console-$(openssl rand -hex 4)
+   ```
+
+   Without the correct prefix, both the Cloud Run service URL and any mapped host
+   return 404 with no hint that an admin app is hosted there.
+
+2. **Host gate (optional).** By default `infra/gcp/map-cloud-run-domains.sh` does
+   **not** map a custom domain to `kliqboost-admin`; the service is reachable only
+   via its internal Cloud Run URL. To expose it publicly, export **both**:
+
+   ```bash
+   export ADMIN_PUBLIC_HOST=console-7f3a.kliqboost.store     # pick a non-obvious name
+   export ADMIN_PUBLIC_PATH=/_internal/console-7f3a          # MUST match ADMIN_REQUIRED_PATH_PREFIX
+   bash infra/gcp/deploy-cloud-run.sh
+   bash infra/gcp/map-cloud-run-domains.sh
+   ```
+
+   When unset, no domain mapping is created and `NEXTAUTH_URL` / `CANONICAL_SITE_ORIGIN`
+   are left unset on the admin service. The `*.a.run.app` → canonical 301 redirect on
+   user-facing services (website, portal) is unchanged — only admin opts out of having
+   its own public hostname.
 
 ## ⚙️ Configuration Details
 
