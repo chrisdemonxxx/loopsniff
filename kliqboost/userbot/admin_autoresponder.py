@@ -2041,14 +2041,11 @@ async def main(test: bool = False) -> None:
                 return
         else:
             log.info("📩 DM from @%s: %s", username, text[:120])
-            # Deterministic fast-path for greeting health checks.
-            # Guarantees a reply even if the full AI stack is temporarily slow.
+            # Greetings flow through the LLM (Kimi K2.6 + RAG) so each opener is
+            # personalised against the lead's profile. The previous canned
+            # "yo - got you" short-circuit has been removed; the LLM call below
+            # has its own timeout/error fallback for resilience.
             if text.strip().lower() in {"hi", "hello", "hey", "yo", "sup"}:
-                await asyncio.sleep(random.uniform(1, 2))
-                await event.reply(
-                    "yo - got you. what are you trying to run right now "
-                    "(google, meta, tiktok, etc)?"
-                )
                 transition_state(
                     WORKFLOW_DB_PATH,
                     user_id=sender.id,
@@ -2056,8 +2053,6 @@ async def main(test: bool = False) -> None:
                     event="greeting_qualification_start",
                     reason="initial_contact",
                 )
-                log.info("✅ Replied to @%s in DM (fast-path greeting)", username)
-                return
 
         # ── TX hash detection & on-chain verification ───────────────
         tx_detected = detect_tx_hash(text)

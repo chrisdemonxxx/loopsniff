@@ -672,15 +672,10 @@ async def nexus_handler(message: Message) -> None:
     if not text:
         await _safe_reply("Send me a message — I'm here to help.")
         return
-    # Deterministic fast-path for health checks and first-contact greetings.
-    # This bypasses the heavier RAG/LLM path so users always get a response.
+    # Greetings flow through the LLM (Kimi K2.6) so each opener is personalised.
+    # The previous canned "Hey - got your message" short-circuit has been removed;
+    # the LLM call below has its own timeout/error fallback for resilience.
     if text.lower() in {"hi", "hello", "hey", "yo", "sup"}:
-        quick = (
-            "Hey - got your message. What platform are you running right now "
-            "(Google, Meta, TikTok, or something else)?"
-        )
-        save_message(uid, "user", text)
-        save_message(uid, "assistant", quick)
         transition_state(
             WORKFLOW_DB,
             user_id=uid,
@@ -688,8 +683,6 @@ async def nexus_handler(message: Message) -> None:
             event="greeting_qualification_start",
             reason="initial_contact",
         )
-        await _safe_reply(quick)
-        return
 
     username = message.from_user.username or ""
     full_name = message.from_user.full_name or ""
