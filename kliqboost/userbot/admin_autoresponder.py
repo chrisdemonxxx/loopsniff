@@ -23,6 +23,7 @@ import re
 import signal
 import sys
 import importlib
+import importlib.util
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
@@ -1099,7 +1100,7 @@ async def _ollama_chat(
                     OLLAMA_URL,
                     headers=headers,
                     json=payload,
-                    timeout=aiohttp.ClientTimeout(total=30),
+                    timeout=aiohttp.ClientTimeout(total=int(os.getenv("LLM_TIMEOUT_SECS", "90"))),
                 ) as resp:
                     if resp.status != 200:
                         body = await resp.text()
