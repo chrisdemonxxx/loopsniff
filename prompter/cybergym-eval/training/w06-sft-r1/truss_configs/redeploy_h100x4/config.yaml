@@ -1,0 +1,115 @@
+apply_library_patches: true
+base_image:
+  docker_auth: null
+  image: vllm/vllm-openai:v0.11.0
+  python_executable_path: ''
+build:
+  arguments: {}
+  model_server: TrussServer
+  no_cache: false
+  secret_to_path_mapping: {}
+build_commands: []
+bundled_packages_dir: packages
+cache_internal: []
+data_dir: data
+description: SFT'd Qwen3-Next-80B-A3B-Abliterated (LoRA r=16, ckpt-210) on H100:4. Replaces failed MIG-40GB deploy q415dj1.
+docker_server:
+  liveness_endpoint: /health
+  no_build: null
+  predict_endpoint: /v1/chat/completions
+  readiness_endpoint: /health
+  run_as_user_id: null
+  server_port: 8000
+  start_command: '%(ENV_BT_DOCKER_SERVER_START_CMD)s'
+environment_variables:
+  BT_DOCKER_SERVER_START_CMD: >-
+    sh -c "export HF_TOKEN=$(cat /secrets/hf_access_token);
+    if [ -f /app/models/huihui-ai/Huihui-Qwen3-Next-80B-A3B-Instruct-abliterated/chat_template.jinja ]; then
+      vllm serve /app/models/huihui-ai/Huihui-Qwen3-Next-80B-A3B-Instruct-abliterated
+        --served-model-name baseten-model
+        --chat-template /app/models/huihui-ai/Huihui-Qwen3-Next-80B-A3B-Instruct-abliterated/chat_template.jinja
+        --port 8000
+        --tensor-parallel-size 4
+        --dtype bfloat16
+        --gpu-memory-utilization 0.92
+        --max-model-len 131072
+        --enable-lora
+        --max-lora-rank 16
+        --enable-auto-tool-choice
+        --tool-call-parser hermes
+        --trust-remote-code
+        --disable-log-requests
+        --lora-modules checkpoint-210=/tmp/training_checkpoints/wldrkeq/rank-0/checkpoint-210;
+    else
+      vllm serve /app/models/huihui-ai/Huihui-Qwen3-Next-80B-A3B-Instruct-abliterated
+        --served-model-name baseten-model
+        --port 8000
+        --tensor-parallel-size 4
+        --dtype bfloat16
+        --gpu-memory-utilization 0.92
+        --max-model-len 131072
+        --enable-lora
+        --max-lora-rank 16
+        --enable-auto-tool-choice
+        --tool-call-parser hermes
+        --trust-remote-code
+        --disable-log-requests
+        --lora-modules checkpoint-210=/tmp/training_checkpoints/wldrkeq/rank-0/checkpoint-210;
+    fi"
+  HF_HUB_ENABLE_HF_TRANSFER: '1'
+  VLLM_LOGGING_LEVEL: WARNING
+examples_filename: examples.yaml
+external_data: null
+external_package_dirs: []
+input_type: Any
+live_reload: false
+model_cache: []
+model_class_filename: model.py
+model_class_name: Model
+model_framework: custom
+model_metadata: {}
+model_module_dir: model
+model_name: qwen3-80b-cybergym-sft-r1-h100x4
+model_type: Model
+python_version: py39
+requirements: []
+requirements_file: null
+resources:
+  accelerator: H100:4
+  cpu: '4'
+  memory: 16Gi
+  node_count: 1
+  use_gpu: true
+runtime:
+  enable_debug_logs: false
+  enable_tracing_data: false
+  health_checks:
+    restart_check_delay_seconds: null
+    restart_threshold_seconds: 1800
+    startup_threshold_seconds: 1800
+    stop_traffic_threshold_seconds: 600
+  is_websocket_endpoint: false
+  predict_concurrency: 8
+  streaming_read_timeout: 60
+  transport:
+    kind: http
+  truss_server_version_override: null
+secrets:
+  hf_access_token: set token in baseten workspace
+spec_version: '2.0'
+system_packages: []
+training_checkpoints:
+  artifact_references:
+  - paths:
+    - rank-0/checkpoint-210/
+    training_job_id: wldrkeq
+  download_folder: /tmp/training_checkpoints
+trt_llm: null
+use_local_src: false
+weights:
+- allow_patterns: null
+  auth: null
+  auth_secret_name: null
+  ignore_patterns: null
+  mount_location: /app/models/huihui-ai/Huihui-Qwen3-Next-80B-A3B-Instruct-abliterated
+  source: hf://huihui-ai/Huihui-Qwen3-Next-80B-A3B-Instruct-abliterated
