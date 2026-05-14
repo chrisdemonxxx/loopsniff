@@ -1,14 +1,18 @@
 #!/bin/bash
 set -eux
 
-# Pinned versions: peft 0.17.0 introduced transformers_weight_conversion.py which
-# calls WeightConverter(distributed_operation=...) — incompatible with transformers
-# < 4.57 (see prior failed job qj7d9pq). Pin to the pair used at SFT training time
-# (peft 0.16.x + transformers 4.55.x) which uses the legacy direct adapter load
-# path and is known to round-trip the wldrkeq adapter without the converter.
+# Pinned versions chosen to satisfy two constraints simultaneously:
+#   1. transformers must know `qwen3_next` model_type (added in 4.57+).
+#   2. peft must NOT call WeightConverter(distributed_operation=...) which is
+#      what peft >= 0.17 does and breaks adapter loading on currently-released
+#      transformers (failed jobs qj7d9pq with peft 0.17, then 32zpox3 with
+#      transformers 4.55.2 not knowing qwen3_next).
+# Adapter target_modules are q/k/v/o_proj only (standard attention, no MoE FFN),
+# so peft 0.16's architecture-agnostic LoRA injection round-trips it cleanly
+# even though 0.16 predates Qwen3-Next.
 pip install --no-cache-dir \
     "peft==0.16.0" \
-    "transformers==4.55.2" \
+    "transformers==4.57.0" \
     "accelerate==1.3.0" \
     "safetensors>=0.4.5" \
     "huggingface_hub>=0.24.0"
