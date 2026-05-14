@@ -35,8 +35,8 @@ def main() -> None:
         print(f"  {p.name:50s}  {p.stat().st_size / 1024**3:6.2f} GiB")
 
     api = HfApi(token=HF_TOKEN)
-    print(f"[upload] Creating repo {HF_REPO_ID} (private=True, exist_ok=True)...")
-    create_repo(HF_REPO_ID, token=HF_TOKEN, private=True, exist_ok=True, repo_type="model")
+    print(f"[upload] Creating repo {HF_REPO_ID} (private=False, exist_ok=True)...")
+    create_repo(HF_REPO_ID, token=HF_TOKEN, private=False, exist_ok=True, repo_type="model")
 
     print(f"[upload] Starting upload_folder ({total_gib:.1f} GiB)...")
     t0 = time.time()
