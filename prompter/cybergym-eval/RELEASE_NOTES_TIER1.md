@@ -107,7 +107,30 @@ This is intentionally documented for Tier-2 planning.
 
 - **Offline CI:** `MockLLMClient` returns subagent and verifier schemas correctly; full pipeline runs with no Baseten / no clang and produces reports.
 - **Cost guard:** every subagent + verifier check honours `budget_usd`.
-- **Outstanding infra:** SFT deployment `q415dj1` is `DEPLOY_FAILED`; subagents currently use base abliterated model `qrj8djv3` on H100:4. Redeploying the SFT model is the single highest-leverage post-release improvement.
+- **Outstanding infra (known-issue, not a regression):** SFT model `wx42gg6q`
+  cannot currently be served via vLLM `--enable-lora` on Qwen3-Next (MoE)
+  weights. Three deployments attempted on H100:4 with TP=4:
+    - `wd1vxgg` — OOM with `--max-model-len 131072` + LoRA buffers (TP=4 + LoRA reserves additional KV cache headroom).
+    - `wgljkzg` — `AttributeError: 'NoneType' object has no attribute 'shape'` in vLLM's LoRA slice loader (`punica_wrapper`) at `--max-model-len 32768`.
+    - `qklmj48` — same shape-None error even with `--enforce-eager` (cudagraph disabled).
+  Root cause: vLLM's LoRA path does not yet correctly map LoRA target_modules
+  (q_proj/k_proj/v_proj/o_proj as trained) onto Qwen3-Next's MoE expert
+  layer layout — the LoRA loader hits a `None` weight tensor for some
+  expert-projection mappings.
+  **Subagents currently use the base abliterated model `qrj8djv3`** on H100:4
+  (also TP=4, BF16) — pipeline is fully operational, just without the SFT
+  precision uplift.
+  **Path to recover SFT in production (Tier-1.1 follow-up):**
+    1. Pull LoRA adapter from training job `wldrkeq` (rank-0/checkpoint-210/).
+    2. On a GPU host with ≥160 GiB VRAM (H100:2 BF16 or H200:1), load base
+       Qwen3-Next-80B + apply LoRA + `peft.merge_and_unload()` + save merged
+       BF16 weights.
+    3. Push merged model to a private HF repo (or BDN-hosted location).
+    4. Redeploy via the existing `baseten-qwen3next-abliterated/config.yaml`
+       template, swapping the `weights.source` to the merged repo and
+       removing all `--enable-lora` / `--lora-modules` flags.
+   Estimated effort: 2–3 hours, ~$30–50 of GPU time.
+   This is the single highest-leverage post-release improvement.
 
 ---
 

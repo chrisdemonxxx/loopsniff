@@ -22,40 +22,7 @@ docker_server:
   server_port: 8000
   start_command: '%(ENV_BT_DOCKER_SERVER_START_CMD)s'
 environment_variables:
-  BT_DOCKER_SERVER_START_CMD: >-
-    sh -c "export HF_TOKEN=$(cat /secrets/hf_access_token);
-    if [ -f /app/models/huihui-ai/Huihui-Qwen3-Next-80B-A3B-Instruct-abliterated/chat_template.jinja ]; then
-      vllm serve /app/models/huihui-ai/Huihui-Qwen3-Next-80B-A3B-Instruct-abliterated
-        --served-model-name baseten-model
-        --chat-template /app/models/huihui-ai/Huihui-Qwen3-Next-80B-A3B-Instruct-abliterated/chat_template.jinja
-        --port 8000
-        --tensor-parallel-size 4
-        --dtype bfloat16
-        --gpu-memory-utilization 0.92
-        --max-model-len 131072
-        --enable-lora
-        --max-lora-rank 16
-        --enable-auto-tool-choice
-        --tool-call-parser hermes
-        --trust-remote-code
-        --disable-log-requests
-        --lora-modules checkpoint-210=/tmp/training_checkpoints/wldrkeq/rank-0/checkpoint-210;
-    else
-      vllm serve /app/models/huihui-ai/Huihui-Qwen3-Next-80B-A3B-Instruct-abliterated
-        --served-model-name baseten-model
-        --port 8000
-        --tensor-parallel-size 4
-        --dtype bfloat16
-        --gpu-memory-utilization 0.92
-        --max-model-len 131072
-        --enable-lora
-        --max-lora-rank 16
-        --enable-auto-tool-choice
-        --tool-call-parser hermes
-        --trust-remote-code
-        --disable-log-requests
-        --lora-modules checkpoint-210=/tmp/training_checkpoints/wldrkeq/rank-0/checkpoint-210;
-    fi"
+  BT_DOCKER_SERVER_START_CMD: "sh -c \"export HF_TOKEN=$(cat /secrets/hf_access_token); if [ -f /app/models/huihui-ai/Huihui-Qwen3-Next-80B-A3B-Instruct-abliterated/chat_template.jinja ]; then vllm serve /app/models/huihui-ai/Huihui-Qwen3-Next-80B-A3B-Instruct-abliterated --served-model-name baseten-model --chat-template /app/models/huihui-ai/Huihui-Qwen3-Next-80B-A3B-Instruct-abliterated/chat_template.jinja --port 8000 --tensor-parallel-size 4 --dtype bfloat16 --gpu-memory-utilization 0.90 --max-model-len 32768 --max-num-seqs 16 --enforce-eager --enable-lora --max-lora-rank 16 --enable-auto-tool-choice --tool-call-parser hermes --trust-remote-code --disable-log-requests --lora-modules checkpoint-210=/tmp/training_checkpoints/wldrkeq/rank-0/checkpoint-210; else vllm serve /app/models/huihui-ai/Huihui-Qwen3-Next-80B-A3B-Instruct-abliterated --served-model-name baseten-model --port 8000 --tensor-parallel-size 4 --dtype bfloat16 --gpu-memory-utilization 0.90 --max-model-len 32768 --max-num-seqs 16 --enforce-eager --enable-lora --max-lora-rank 16 --enable-auto-tool-choice --tool-call-parser hermes --trust-remote-code --disable-log-requests --lora-modules checkpoint-210=/tmp/training_checkpoints/wldrkeq/rank-0/checkpoint-210; fi\""
   HF_HUB_ENABLE_HF_TRANSFER: '1'
   VLLM_LOGGING_LEVEL: WARNING
 examples_filename: examples.yaml
