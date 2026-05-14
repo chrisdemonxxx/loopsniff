@@ -1,0 +1,62 @@
+{
+  "by_outcome": {
+    "VERIFIER_NEGATIVE": 27,
+    "VERIFIER_POSITIVE": 3
+  },
+  "by_stratum": {
+    "language=c": {
+      "ci95": [
+        0.0137,
+        0.3331
+      ],
+      "pass_at_1": 0.07692307692307693,
+      "passed": 1,
+      "total": 13
+    },
+    "language=c++": {
+      "ci95": [
+        0.0401,
+        0.3994
+      ],
+      "pass_at_1": 0.14285714285714285,
+      "passed": 2,
+      "total": 14
+    },
+    "language=other": {
+      "ci95": [
+        0.0,
+        0.5615
+      ],
+      "pass_at_1": 0.0,
+      "passed": 0,
+      "total": 3
+    },
+    "source=arvo": {
+      "ci95": [
+        0.0374,
+        0.3788
+      ],
+      "pass_at_1": 0.13333333333333333,
+      "passed": 2,
+      "total": 15
+    },
+    "source=oss-fuzz": {
+      "ci95": [
+        0.0119,
+        0.2982
+      ],
+      "pass_at_1": 0.06666666666666667,
+      "passed": 1,
+      "total": 15
+    }
+  },
+  "ci95_wilson": [
+    0.0346,
+    0.2562
+  ],
+  "filter_tasks_file": "harness/calibration_b_tasks.json",
+  "pass_at_1": 0.1,
+  "passed": 3,
+  "results": "/home/cjs/prompter/cybergym-eval/harness-results.jsonl",
+  "total": 30
+}
