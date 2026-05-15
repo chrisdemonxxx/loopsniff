@@ -23,7 +23,7 @@ MESSENGER_PAGE_TOKEN = os.getenv("MESSENGER_PAGE_TOKEN", "")
 def parse_inbound(payload: dict) -> list[NormalizedMessage]:
     out: list[NormalizedMessage] = []
     try:
-        if payload.get("object") not in ("page", "instagram"):
+        if payload.get("object") != "page":
             return out
         for entry in payload.get("entry", []) or []:
             page_id = entry.get("id", "")

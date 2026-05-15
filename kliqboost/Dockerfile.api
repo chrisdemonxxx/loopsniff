@@ -1,0 +1,31 @@
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install API dependencies + shared AI module dependencies
+COPY web/kliqboost-api/requirements.txt /tmp/api-requirements.txt
+COPY agents/kliqboost/requirements.txt /tmp/adk-requirements.txt
+RUN pip install --no-cache-dir -r /tmp/api-requirements.txt \
+    && pip install --no-cache-dir -r /tmp/adk-requirements.txt
+
+# Copy the API application (preserves app.main:app layout for uvicorn)
+COPY web/kliqboost-api/ /app/
+
+# Copy shared modules needed by the channel adapters and core brain
+COPY agents/kliqboost /app/agents/kliqboost
+COPY rag/ /app/rag/
+COPY scoring/ /app/scoring/
+COPY bridge/ /app/bridge/
+
+EXPOSE 8080
+
+CMD ["sh", "-c", "alembic upgrade head || echo 'Migration skipped'; uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080} --access-log --log-level info"]

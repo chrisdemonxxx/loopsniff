@@ -123,7 +123,15 @@ class _FallbackBANTScorer:
 
 
 try:
-    sys.path.insert(0, "/home/cjs/kliqboost")
+    # In Docker: /app/handlers/ai_chat.py → parents[1] = /app/ (scoring at /app/scoring/)
+    # Local dev: bot/handlers/ai_chat.py → parents[2] = repo root (scoring at repo/scoring/)
+    _bot_handlers_path = Path(__file__).resolve()
+    for _level in (1, 2):
+        _candidate = str(_bot_handlers_path.parents[_level])
+        if (_bot_handlers_path.parents[_level] / "scoring").is_dir():
+            if _candidate not in sys.path:
+                sys.path.insert(0, _candidate)
+            break
     from scoring.bant_scorer import BANTScorer  # type: ignore
 except Exception:
     BANTScorer = _FallbackBANTScorer

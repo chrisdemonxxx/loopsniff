@@ -103,9 +103,17 @@ WEB_SA="${KLIQBOOST_WEB_SA:-${WEB_SA}}"
 build_image() {
   local name="$1"
   local context="$2"
+  local config="${3:-}"
   local image="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/${name}:${TAG}"
   >&2 echo "▶ Building ${name} from ${context}"
-  gcloud builds submit "${context}" --tag "${image}" --project "${PROJECT_ID}" >/dev/null
+  if [ -n "${config}" ]; then
+    gcloud builds submit "${context}" \
+      --config "${config}" \
+      --substitutions "_IMAGE=${image}" \
+      --project "${PROJECT_ID}" >/dev/null
+  else
+    gcloud builds submit "${context}" --tag "${image}" --project "${PROJECT_ID}" >/dev/null
+  fi
   echo "${image}"
 }
 
@@ -138,9 +146,9 @@ deploy_service() {
   echo "✅ Deployed ${service}"
 }
 
-API_IMAGE="$(build_image kliqboost-api "${ROOT_DIR}/web/kliqboost-api")"
-BOT_IMAGE="$(REGION="${REGION}" PROJECT_ID="${PROJECT_ID}" REPO="${BOT_REPO}" build_image kliqboost-bot "${ROOT_DIR}/bot")"
-USERBOT_IMAGE="$(REGION="${REGION}" PROJECT_ID="${PROJECT_ID}" REPO="${BOT_REPO}" build_image kliqboost-autoresponder "${ROOT_DIR}/userbot")"
+API_IMAGE="$(build_image kliqboost-api "${ROOT_DIR}" "${ROOT_DIR}/cloudbuild.api.yaml")"
+BOT_IMAGE="$(build_image kliqboost-bot "${ROOT_DIR}" "${ROOT_DIR}/cloudbuild.bot.yaml")"
+USERBOT_IMAGE="$(build_image kliqboost-autoresponder "${ROOT_DIR}" "${ROOT_DIR}/cloudbuild.userbot.yaml")"
 WEB_IMAGE="$(build_image kliqboost-website "${ROOT_DIR}/web/kliqboost-website")"
 ADMIN_IMAGE="$(build_image kliqboost-admin "${ROOT_DIR}/web/kliqboost-admin-panel")"
 CLIENT_IMAGE="$(build_image kliqboost-client "${ROOT_DIR}/web/kliqboost-client-portal")"
@@ -148,7 +156,7 @@ CLIENT_IMAGE="$(build_image kliqboost-client "${ROOT_DIR}/web/kliqboost-client-p
 # JWT must be env JWT_SECRET (see web/kliqboost-api/app/config.py), not JWT_SECRET_KEY.
 deploy_service "kliqboost-api" "${API_IMAGE}" "${API_SA}" 1 \
   --set-env-vars APP_ENV=production \
-  --set-secrets DATABASE_URL=DATABASE_URL:latest,JWT_SECRET=API_JWT_SECRET:latest,STATS_SYNC_KEY=SYNC_KEY:latest,REDIS_URL=REDIS_URL:latest
+  --set-secrets DATABASE_URL=DATABASE_URL:latest,JWT_SECRET=API_JWT_SECRET:latest,STATS_SYNC_KEY=SYNC_KEY:latest,REDIS_URL=REDIS_URL:latest,BASETEN_API_KEY=BASETEN_API_KEY:latest,WA_VERIFY_TOKEN=WA_VERIFY_TOKEN:latest,WA_APP_SECRET=WA_APP_SECRET:latest,WA_PHONE_NUMBER_ID=WA_PHONE_NUMBER_ID:latest,WA_ACCESS_TOKEN=WA_ACCESS_TOKEN:latest,MESSENGER_VERIFY_TOKEN=MESSENGER_VERIFY_TOKEN:latest,MESSENGER_PAGE_TOKEN=MESSENGER_PAGE_TOKEN:latest,META_APP_SECRET=META_APP_SECRET:latest,IG_PAGE_TOKEN=IG_PAGE_TOKEN:latest
 
 API_URL="$(gcloud run services describe kliqboost-api --region "${REGION}" --format='value(status.url)')"
 
