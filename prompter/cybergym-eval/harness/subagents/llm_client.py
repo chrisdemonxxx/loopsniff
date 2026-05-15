@@ -50,15 +50,18 @@ def estimate_cost_usd(tokens_in: int, tokens_out: int,
 class LLMClient:
     """Real Baseten client for the deployed SFT model."""
 
-    # NOTE: As of 2026-05-14, the SFT-tuned deployment (wx42gg6q/q415dj1) is in
-    # DEPLOY_FAILED state because it was provisioned on a 40 GB H100 MIG slice
-    # which cannot fit the 80B model. The base abliterated model qrj8djv3 is
-    # deployable on H100:4 (currently SCALED_TO_ZERO; first call cold-starts).
-    # Re-deploy the SFT model on H100:4 to recover SFT gains.
-    DEFAULT_ENDPOINT = "https://model-qrj8djv3.api.baseten.co/environments/production/sync/v1/chat/completions"
+    # Tier-1.1 (2026-05-14): SFT-merged deployment is live on H100:4.
+    # Model womje0gq / deployment 31do2p1 serves the merged base+LoRA from
+    # hf://chrisdemonxxx/qwen3-next-80b-abliterated-cybergym-sft-r1-merged
+    # (148 GiB BF16, 16 sharded safetensors). Source LoRA: training job
+    # wldrkeq/checkpoint-210, merged offline by job qj7dg2q (peft 0.16 +
+    # transformers 4.57), uploaded by job wn4p123. vLLM serves the flat
+    # merged model — no --enable-lora — sidestepping the vLLM+LoRA+
+    # Qwen3-Next-MoE loader incompatibility from the original wx42gg6q path.
+    DEFAULT_ENDPOINT = "https://model-womje0gq.api.baseten.co/environments/production/sync/v1/chat/completions"
 
     def __init__(self, endpoint: Optional[str] = None, api_key: Optional[str] = None,
-                 timeout: int = 600, default_model: str = "Qwen3-Next-80B-A3B-Abliterated"):
+                 timeout: int = 600, default_model: str = "Qwen3-Next-80B-A3B-Abliterated-CyberGym-SFT"):
         self.endpoint = endpoint or os.environ.get("BASETEN_ENDPOINT") or self.DEFAULT_ENDPOINT
         self.api_key = api_key or _load_baseten_api_key()
         if not self.api_key:
