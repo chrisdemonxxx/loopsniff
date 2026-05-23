@@ -34,6 +34,7 @@ import {
 } from "lucide-react"
 import { useApi, useApiToken, apiFetch } from "@/lib/api"
 import { useToast } from "@/components/ui/toast"
+import { useConfirm } from "@/components/ui/confirm-dialog"
 import { formatDate, cn } from "@/lib/utils"
 
 type TicketStatus = "open" | "in_progress" | "awaiting_client" | "resolved" | "closed"
@@ -95,6 +96,7 @@ export default function TicketsPage() {
   const router = useRouter()
   const token = useApiToken()
   const { toast } = useToast()
+  const { confirm, dialog: confirmDialog } = useConfirm()
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [priorityFilter, setPriorityFilter] = useState<string>("all")
   const [categoryFilter, setCategoryFilter] = useState<string>("all")
@@ -123,7 +125,13 @@ export default function TicketsPage() {
   const handleDelete = async (e: React.MouseEvent, ticketId: string, subject: string) => {
     e.stopPropagation()
     if (!token) return
-    if (!confirm(`Delete ticket "${subject}"? This cannot be undone.`)) return
+    const ok = await confirm({
+      title: "Delete ticket?",
+      description: `"${subject}" will be permanently removed.`,
+      confirmLabel: "Delete",
+      destructive: true,
+    })
+    if (!ok) return
     setDeletingId(ticketId)
     try {
       await apiFetch(`/tickets/${ticketId}`, token, { method: "DELETE" })
@@ -155,6 +163,7 @@ export default function TicketsPage() {
   }
 
   return (
+    <>
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Support Tickets</h1>
 
@@ -355,5 +364,7 @@ export default function TicketsPage() {
         </CardContent>
       </Card>
     </div>
+    {confirmDialog}
+    </>
   )
 }

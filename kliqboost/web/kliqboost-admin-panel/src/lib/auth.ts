@@ -1,14 +1,6 @@
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.kliqboost.store"
-
-const ADMIN_ROLES = ["super_admin", "admin", "staff", "support"] as const
-type AdminRole = (typeof ADMIN_ROLES)[number]
-
-function isAdminRole(role: string | undefined): role is AdminRole {
-  return ADMIN_ROLES.includes(role as AdminRole)
-}
+import { API_URL, USE_NGROK_HEADER, isAdminRole, LOGIN_PATH } from "./config"
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -21,7 +13,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async authorize(credentials) {
         try {
           const headers: Record<string, string> = { "Content-Type": "application/json" }
-          if (process.env.NODE_ENV !== "production") {
+          if (USE_NGROK_HEADER) {
             headers["ngrok-skip-browser-warning"] = "1"
           }
           const res = await fetch(`${API_URL}/auth/login`, {
@@ -32,10 +24,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               password: credentials?.password,
             }),
           })
-          if (!res.ok) return null
+          if (!res.ok) {
+            console.error(`[authorize] POST /auth/login → ${res.status}`)
+            return null
+          }
           const data = await res.json()
           const role: string | undefined = data.admin?.role ?? data.role
-          if (!isAdminRole(role)) return null
+          if (!isAdminRole(role)) {
+            console.error(`[authorize] Role not admin: ${role}`)
+            return null
+          }
           return {
             id: data.admin?.id ?? data.user_id,
             name: data.admin?.name ?? data.name,
@@ -44,7 +42,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             accessToken: data.access_token,
             userType: "admin",
           }
-        } catch {
+        } catch (err) {
+          console.error("[authorize] Unexpected error:", err)
           return null
         }
       },
@@ -69,6 +68,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
   },
   pages: {
-    signIn: "/login",
+    signIn: LOGIN_PATH,
   },
+  trustHost: true,
 })

@@ -1,3 +1,4 @@
+# DEPRECATED — use `infra/gcp/deploy-cloud-run.sh` for production.
 services:
   - type: web
     name: kliqboost-admin
@@ -9,8 +10,8 @@ services:
       - key: NODE_VERSION
         value: "20"
       - key: NEXT_PUBLIC_API_URL
-        value: https://kliqboost-api.onrender.com
+        value: https://api.kliqboost.online
       - key: AUTH_SECRET
         generateValue: true
       - key: NEXTAUTH_URL
-        value: https://kliqboost-admin.onrender.com
+        value: https://admin.kliqboost.online

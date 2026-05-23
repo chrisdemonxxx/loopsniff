@@ -17,7 +17,25 @@ import {
 import { useApi, useApiToken, apiFetch } from "@/lib/api"
 import { useToast } from "@/components/ui/toast"
 import { formatCurrency, formatDateTime } from "@/lib/utils"
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts"
+import dynamic from "next/dynamic"
+
+// Lazy-load recharts so the ~150KB chart bundle only ships on this route
+const RevenueBarChart = dynamic(
+  () => import("@/components/charts/finance-charts").then((m) => m.RevenueBarChart),
+  { ssr: false, loading: () => <ChartLoading /> }
+)
+const CommissionPieChart = dynamic(
+  () => import("@/components/charts/finance-charts").then((m) => m.CommissionPieChart),
+  { ssr: false, loading: () => <ChartLoading /> }
+)
+
+function ChartLoading() {
+  return (
+    <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+      Loading chart…
+    </div>
+  )
+}
 
 // ── Types ──
 
@@ -329,18 +347,7 @@ export default function FinancePage() {
                   <p className="text-center py-8 text-muted-foreground">No revenue data yet</p>
                 ) : (
                   <div className="h-[300px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={barData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                        <XAxis dataKey="name" tick={{ fill: "#94a3b8", fontSize: 12 }} />
-                        <YAxis tick={{ fill: "#94a3b8", fontSize: 12 }} />
-                        <Tooltip
-                          contentStyle={{ backgroundColor: "#0f172a", border: "1px solid #334155", borderRadius: "8px", color: "#f8fafc" }}
-                          formatter={(value) => formatCurrency(Number(value))}
-                        />
-                        <Bar dataKey="amount" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    <RevenueBarChart data={barData} />
                   </div>
                 )}
               </CardContent>
@@ -357,16 +364,7 @@ export default function FinancePage() {
                 ) : (
                   <>
                     <div className="h-[250px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={4} dataKey="value">
-                            {pieData.map((_, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                            ))}
-                          </Pie>
-                          <Tooltip contentStyle={{ backgroundColor: "#0f172a", border: "1px solid #334155", borderRadius: "8px", color: "#f8fafc" }} />
-                        </PieChart>
-                      </ResponsiveContainer>
+                      <CommissionPieChart data={pieData} colors={COLORS} />
                     </div>
                     <div className="space-y-2 mt-2">
                       {pieData.map((item, i) => (

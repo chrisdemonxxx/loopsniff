@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { Modal } from "@/components/ui/modal"
 import { useToast } from "@/components/ui/toast"
+import { useConfirm } from "@/components/ui/confirm-dialog"
 import {
   Table,
   TableHeader,
@@ -58,6 +59,7 @@ const emptyForm: FormState = {
 export default function DepositConfigPage() {
   const token = useApiToken()
   const { toast } = useToast()
+  const { confirm, dialog: confirmDialog } = useConfirm()
   const { data: configs, loading, error, refetch } = useApi<DepositConfig[]>("/wallet/deposit-config")
 
   const [modalOpen, setModalOpen] = useState(false)
@@ -127,7 +129,13 @@ export default function DepositConfigPage() {
 
   const remove = async (c: DepositConfig) => {
     if (!token) return
-    if (!confirm(`Delete deposit address for ${c.network} ${c.currency}?`)) return
+    const ok = await confirm({
+      title: "Delete deposit address?",
+      description: `${c.network} ${c.currency} address will be removed.`,
+      confirmLabel: "Delete",
+      destructive: true,
+    })
+    if (!ok) return
     setBusyId(c.id)
     try {
       await apiFetch(`/admin/deposit-config/${c.id}`, token, { method: "DELETE" })
@@ -161,6 +169,7 @@ export default function DepositConfigPage() {
   const enabledCount = list.filter((c) => c.active).length
 
   return (
+    <>
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -355,5 +364,7 @@ export default function DepositConfigPage() {
         </form>
       </Modal>
     </div>
+    {confirmDialog}
+    </>
   )
 }

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Shield } from "lucide-react"
 import { useToast } from "@/components/ui/toast"
+import { DASHBOARD_PATH } from "@/lib/config"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -21,19 +22,26 @@ export default function LoginPage() {
     setLoading(true)
     setError("")
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    })
+    try {
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      })
 
-    if (result?.error) {
-      setError("Invalid email or password")
-      toast("Invalid email or password", "error")
-      setLoading(false)
-    } else {
+      if (result?.error) {
+        setError("Invalid email or password")
+        toast("Invalid email or password", "error")
+        setLoading(false)
+        return
+      }
+
       toast("Signed in successfully", "success")
-      router.push("/dashboard")
+      router.push(DASHBOARD_PATH)
+    } catch (err: any) {
+      setError(err?.message || "Login failed. Please try again.")
+      toast(err?.message || "Login failed. Please try again.", "error")
+      setLoading(false)
     }
   }
 
@@ -82,7 +90,7 @@ export default function LoginPage() {
         </form>
 
         <p className="text-center text-xs text-muted-foreground mt-6">
-          admin.kliqboost.store
+          admin.kliqboost.online
         </p>
       </div>
     </div>

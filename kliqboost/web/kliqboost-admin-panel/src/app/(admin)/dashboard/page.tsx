@@ -10,10 +10,19 @@ import {
   ArrowUpRight, ArrowDownRight, Loader2, BarChart3, Bot, Brain,
   Radio, Shield, CheckCircle2, XCircle,
 } from "lucide-react"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
+import dynamic from "next/dynamic"
+const RevenueChart = dynamic(() => import("@/components/charts/revenue-chart"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+      Loading chart…
+    </div>
+  ),
+})
 import { useApi } from "@/lib/api"
 import { formatCurrency, formatDateTime } from "@/lib/utils"
 import { FadeIn, StaggerChildren, StaggerItem, AnimatedCounter } from "@/components/motion"
+import { useSession } from "next-auth/react"
 
 // ── API response types ──────────────────────────────────────────────
 
@@ -146,6 +155,11 @@ export default function DashboardPage() {
 
   const isLoading = dashLoading || revLoading
   const greeting = getGreeting()
+  const { data: session } = useSession()
+  const adminName =
+    (session?.user?.name?.trim().split(/\s+/)[0]) ||
+    (session?.user?.email?.split("@")[0]) ||
+    "Admin"
 
   // Build chart data: prefer timeseries endpoint; fall back to deposit aggregation
   const chartData: RevenuePoint[] = (() => {
@@ -170,7 +184,7 @@ export default function DashboardPage() {
     return (
       <div className="space-y-6">
         <h1 className="text-2xl font-bold">
-          {greeting.emoji} {greeting.text}, <span className="text-gradient">Admin</span>
+          {greeting.emoji} {greeting.text}, <span className="text-gradient">{adminName}</span>
         </h1>
         <Spinner />
       </div>
@@ -181,7 +195,7 @@ export default function DashboardPage() {
     return (
       <div className="space-y-6">
         <h1 className="text-2xl font-bold">
-          {greeting.emoji} {greeting.text}, <span className="text-gradient">Admin</span>
+          {greeting.emoji} {greeting.text}, <span className="text-gradient">{adminName}</span>
         </h1>
         <ErrorBanner message={dashError || revError || "Failed to load dashboard data"} />
       </div>
@@ -267,7 +281,7 @@ export default function DashboardPage() {
         <h1 className="text-3xl font-bold tracking-tight">
           <span className="mr-2">{greeting.emoji}</span>
           {greeting.text},{" "}
-          <span className="text-gradient">Admin</span>
+          <span className="text-gradient">{adminName}</span>
         </h1>
         <p className="mt-1 text-sm text-zinc-500">Here&apos;s what&apos;s happening across your platform today.</p>
       </FadeIn>
@@ -513,37 +527,7 @@ export default function DashboardPage() {
                   </div>
                   {chartData.length > 0 ? (
                     <div className="h-48 w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={chartData} margin={{ top: 4, right: 8, bottom: 4, left: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                          <XAxis
-                            dataKey="date"
-                            tick={{ fontSize: 10, fill: "#71717a" }}
-                            tickFormatter={(v: string) => v.slice(5)}
-                            tickLine={false}
-                            axisLine={false}
-                          />
-                          <YAxis
-                            tick={{ fontSize: 10, fill: "#71717a" }}
-                            tickFormatter={(v: number) => `$${v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v}`}
-                            tickLine={false}
-                            axisLine={false}
-                            width={52}
-                          />
-                          <Tooltip
-                            contentStyle={{ background: "#18181b", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, fontSize: 12 }}
-                            formatter={(value) => [`$${Number(value).toFixed(2)}`, "Revenue"]}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="revenue"
-                            stroke="#10b981"
-                            strokeWidth={2}
-                            dot={false}
-                            activeDot={{ r: 4, fill: "#10b981" }}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
+                      <RevenueChart data={chartData} />
                     </div>
                   ) : (
                     <div className="relative flex items-center justify-center gap-2 rounded-xl border border-dashed border-emerald-500/20 bg-gradient-to-br from-emerald-500/[0.03] to-cyan-500/[0.03] py-8 text-muted-foreground overflow-hidden">

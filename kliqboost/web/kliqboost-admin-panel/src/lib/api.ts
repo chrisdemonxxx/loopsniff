@@ -1,9 +1,8 @@
 "use client"
 
 import { useSession, signOut } from "next-auth/react"
-import { useState, useEffect, useCallback } from "react"
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://kliqboost-api.onrender.com"
+import { useState, useEffect, useCallback, useRef } from "react"
+import { API_URL, USE_NGROK_HEADER, LOGIN_PATH } from "./config"
 
 export class ApiError extends Error {
   status: number
@@ -24,8 +23,8 @@ function handleGlobal401() {
   if (typeof window === "undefined" || signingOut) return
   signingOut = true
   // Mirror client-portal: redirect to login with reason indicator
-  signOut({ callbackUrl: "/login?reason=expired" }).catch(() => {
-    window.location.href = "/login?reason=expired"
+  signOut({ callbackUrl: `${LOGIN_PATH}?reason=expired` }).catch(() => {
+    window.location.href = `${LOGIN_PATH}?reason=expired`
   })
 }
 
@@ -37,7 +36,7 @@ export async function apiFetch<T = any>(
   const method = (options?.method || "GET").toUpperCase()
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    ...(process.env.NODE_ENV !== "production" ? { "ngrok-skip-browser-warning": "1" } : {}),
+    ...(USE_NGROK_HEADER ? { "ngrok-skip-browser-warning": "1" } : {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   }
 
@@ -59,7 +58,9 @@ export async function apiFetch<T = any>(
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({ detail: res.statusText }))
-    throw new ApiError(body.detail || `API error ${res.status}`, res.status)
+    const detail = (body && typeof body === "object" ? (body as any).detail : undefined) || `API error ${res.status}`
+    console.error(`[apiFetch] ${method} ${path} → ${res.status}:`, detail)
+    throw new ApiError(detail, res.status)
   }
 
   if (res.status === 204) return undefined as T
@@ -72,23 +73,40 @@ export function useApi<T = any>(path: string | null) {
   const [data, setData] = useState<T | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const abortRef = useRef<AbortController | null>(null)
 
   const fetchData = useCallback(async () => {
-    if (!token || !path) return
+    if (!path) {
+      setLoading(false)
+      return
+    }
+    if (!token) {
+      // Session not yet hydrated; keep loading=true so consumer can show skeleton
+      return
+    }
+    abortRef.current?.abort()
+    const ctrl = new AbortController()
+    abortRef.current = ctrl
     setLoading(true)
     setError(null)
     try {
-      const result = await apiFetch<T>(path, token)
-      setData(result)
+      const result = await apiFetch<T>(path, token, { signal: ctrl.signal })
+      if (!ctrl.signal.aborted) setData(result)
     } catch (e: any) {
-      setError(e.message)
+      if (e?.name !== "AbortError" && !ctrl.signal.aborted) {
+        setError(e.message)
+        console.error(`[useApi] ${path}:`, e)
+      }
     } finally {
-      setLoading(false)
+      if (!ctrl.signal.aborted) setLoading(false)
     }
   }, [path, token])
 
   useEffect(() => {
     fetchData()
+    return () => {
+      abortRef.current?.abort()
+    }
   }, [fetchData])
 
   return { data, loading, error, refetch: fetchData }

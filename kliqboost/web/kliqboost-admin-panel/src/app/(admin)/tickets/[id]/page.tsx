@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Select } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/components/ui/toast"
+import { useConfirm } from "@/components/ui/confirm-dialog"
 import {
   ArrowLeft,
   Loader2,
@@ -102,6 +103,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
   const router = useRouter()
   const token = useApiToken()
   const { toast } = useToast()
+  const { confirm, dialog: confirmDialog } = useConfirm()
   const { data: ticket, loading, error, refetch } = useApi<TicketDetail>(`/tickets/${id}`)
 
   const [replyText, setReplyText] = useState("")
@@ -155,7 +157,13 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
 
   const handleDelete = async () => {
     if (!token || !ticket) return
-    if (!confirm(`Delete ticket "${ticket.subject}"? This cannot be undone.`)) return
+    const ok = await confirm({
+      title: "Delete ticket?",
+      description: `"${ticket.subject}" will be permanently removed.`,
+      confirmLabel: "Delete",
+      destructive: true,
+    })
+    if (!ok) return
     setDeleting(true)
     setActionError(null)
     try {
@@ -190,6 +198,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
   }
 
   return (
+    <>
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3 flex-wrap">
@@ -399,6 +408,8 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         </div>
       </div>
     </div>
+    {confirmDialog}
+    </>
   )
 }
 
