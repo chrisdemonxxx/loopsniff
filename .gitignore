@@ -51,3 +51,4 @@ Public/
 tgacc/ecommerce-url-collector/data/crux-2023-12-top17m.csv
 tgacc/ecommerce-url-collector/data/crux-17m.7z
 tgacc/ecommerce-url-collector/data/majestic_million.csv
+.env

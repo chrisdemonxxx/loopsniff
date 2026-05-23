@@ -6,7 +6,7 @@ import os
 
 logger = logging.getLogger(__name__)
 
-OLLAMA_URL = os.getenv("OLLAMA_CLOUD_URL", "https://ollama.com/v1/chat/completions")
+OLLAMA_URL = os.getenv("OLLAMA_CLOUD_URL", "https://api.ollama.com/v1")
 OLLAMA_KEY = os.getenv("OLLAMA_CLOUD_API_KEY", "")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "kimi-k2:1t")
 
@@ -58,7 +58,9 @@ async def call_llm(
                         body = await resp.text()
                         logger.error(
                             "LLM API returned %d (attempt %d/3): %s",
-                            resp.status, attempt + 1, body[:200],
+                            resp.status,
+                            attempt + 1,
+                            body[:200],
                         )
                         if attempt < 2:
                             await asyncio.sleep(1.5 * (attempt + 1))

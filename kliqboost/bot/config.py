@@ -16,7 +16,7 @@ API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8099")
 API_TOKEN = os.getenv("API_TOKEN", "")
 
 # Ollama Cloud LLM — canonical host, matches userbot + api defaults.
-OLLAMA_CLOUD_URL = os.getenv("OLLAMA_CLOUD_URL", "https://ollama.com/v1/chat/completions")
+OLLAMA_CLOUD_URL = os.getenv("OLLAMA_CLOUD_URL", "https://api.ollama.com/v1")
 OLLAMA_CLOUD_API_KEY = os.getenv("OLLAMA_CLOUD_API_KEY", "")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "kimi-k2:1t")
 

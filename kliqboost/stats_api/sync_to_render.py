@@ -3,26 +3,30 @@
 Sync local bot SQLite data → Render API (PostgreSQL).
 Runs every 60s via systemd timer or cron.
 """
+
 import os, sys, time, sqlite3, json, logging
 from pathlib import Path
 
 import httpx
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+)
 log = logging.getLogger("sync")
 
 BASE = Path(__file__).resolve().parent.parent
-BOT_DATA_DB    = str(BASE / "bot" / "bot_data.db")
-BOT_MSGS_DB    = str(BASE / "bot" / "data" / "conversations.db")
-BRIDGE_DB      = str(BASE / "bridge" / "deal_rooms.db")
-AR_DB          = str(BASE / "userbot" / "sessions" / "conversations.db")
+BOT_DATA_DB = str(BASE / "bot" / "bot_data.db")
+BOT_MSGS_DB = str(BASE / "bot" / "data" / "conversations.db")
+BRIDGE_DB = str(BASE / "bridge" / "deal_rooms.db")
+AR_DB = str(BASE / "userbot" / "sessions" / "conversations.db")
 
 API_URL = os.getenv("KLIQBOOST_API_URL", "https://kliqboost-api.onrender.com")
-SYNC_KEY = os.getenv("STATS_SYNC_KEY", "kliq-stats-2026-xK9m")
+SYNC_KEY = os.getenv("STATS_SYNC_KEY", "")
 
 HEADERS = {"X-Sync-Key": SYNC_KEY, "Content-Type": "application/json"}
 
 _csrf_token: str | None = None
+
 
 def _get_headers():
     """Get headers with CSRF token if needed."""
@@ -31,6 +35,7 @@ def _get_headers():
     if _csrf_token:
         h["X-CSRF-Token"] = _csrf_token
     return h
+
 
 def _refresh_csrf():
     """Fetch a CSRF token from the API."""
@@ -69,16 +74,18 @@ def sync_conversations():
             FROM users u
         """).fetchall()
         for r in rows:
-            items.append({
-                "user_id": r["user_id"],
-                "username": r["username"],
-                "first_name": r["first_name"],
-                "message_count": r["msg_count"],
-                "last_message": (r["last_message"] or "")[:500],
-                "source": "bot",
-                "first_seen": r["first_seen"],
-                "last_seen": r["last_seen"],
-            })
+            items.append(
+                {
+                    "user_id": r["user_id"],
+                    "username": r["username"],
+                    "first_name": r["first_name"],
+                    "message_count": r["msg_count"],
+                    "last_message": (r["last_message"] or "")[:500],
+                    "source": "bot",
+                    "first_seen": r["first_seen"],
+                    "last_seen": r["last_seen"],
+                }
+            )
         conn.close()
 
     # Autoresponder conversations with BANT
@@ -96,34 +103,54 @@ def sync_conversations():
         """).fetchall()
         for r in rows:
             score = r["bant_score"] or 0
-            tier = "hot" if score >= 75 else "warm" if score >= 50 else "cool" if score >= 25 else "cold"
+            tier = (
+                "hot"
+                if score >= 75
+                else "warm"
+                if score >= 50
+                else "cool"
+                if score >= 25
+                else "cold"
+            )
             # Convert text timestamps to epoch floats
             first_ts = r["first_ts"]
             last_ts = r["last_ts"]
             if isinstance(first_ts, str):
                 from datetime import datetime as _dt
-                try: first_ts = _dt.fromisoformat(first_ts).timestamp()
-                except Exception: first_ts = None
+
+                try:
+                    first_ts = _dt.fromisoformat(first_ts).timestamp()
+                except Exception:
+                    first_ts = None
             if isinstance(last_ts, str):
                 from datetime import datetime as _dt
-                try: last_ts = _dt.fromisoformat(last_ts).timestamp()
-                except Exception: last_ts = None
-            items.append({
-                "user_id": hash(r["username"]) & 0x7FFFFFFFFFFFFFFF,
-                "username": r["username"],
-                "message_count": r["msg_count"],
-                "bant_score": score,
-                "bant_tier": tier,
-                "stage": r["stage"] or "intro",
-                "source": "autoresponder",
-                "first_seen": first_ts,
-                "last_seen": last_ts,
-            })
+
+                try:
+                    last_ts = _dt.fromisoformat(last_ts).timestamp()
+                except Exception:
+                    last_ts = None
+            items.append(
+                {
+                    "user_id": hash(r["username"]) & 0x7FFFFFFFFFFFFFFF,
+                    "username": r["username"],
+                    "message_count": r["msg_count"],
+                    "bant_score": score,
+                    "bant_tier": tier,
+                    "stage": r["stage"] or "intro",
+                    "source": "autoresponder",
+                    "first_seen": first_ts,
+                    "last_seen": last_ts,
+                }
+            )
         conn.close()
 
     if items:
-        resp = httpx.post(f"{API_URL}/bot-stats/sync/conversations", json=items,
-                          headers=_get_headers(), timeout=30)
+        resp = httpx.post(
+            f"{API_URL}/bot-stats/sync/conversations",
+            json=items,
+            headers=_get_headers(),
+            timeout=30,
+        )
         log.info("Conversations sync: %d items → %s", len(items), resp.status_code)
     return len(items)
 
@@ -135,24 +162,30 @@ def sync_deal_rooms():
     rows = conn.execute("SELECT * FROM pending_deal_rooms").fetchall()
     items = []
     for r in rows:
-        items.append({
-            "user_id": r["user_id"],
-            "username": r["username"],
-            "full_name": r["full_name"],
-            "bant_score": r["bant_score"],
-            "platform": r["platform"],
-            "niche": r["niche"],
-            "budget": r["budget"],
-            "timeline": r["timeline"],
-            "status": r["status"],
-            "invite_link": r["invite_link"],
-            "created_at": r["created_at"],
-            "completed_at": r["completed_at"],
-        })
+        items.append(
+            {
+                "user_id": r["user_id"],
+                "username": r["username"],
+                "full_name": r["full_name"],
+                "bant_score": r["bant_score"],
+                "platform": r["platform"],
+                "niche": r["niche"],
+                "budget": r["budget"],
+                "timeline": r["timeline"],
+                "status": r["status"],
+                "invite_link": r["invite_link"],
+                "created_at": r["created_at"],
+                "completed_at": r["completed_at"],
+            }
+        )
     conn.close()
     if items:
-        resp = httpx.post(f"{API_URL}/bot-stats/sync/deal-rooms", json=items,
-                          headers=_get_headers(), timeout=30)
+        resp = httpx.post(
+            f"{API_URL}/bot-stats/sync/deal-rooms",
+            json=items,
+            headers=_get_headers(),
+            timeout=30,
+        )
         log.info("Deal rooms sync: %d items → %s", len(items), resp.status_code)
     return len(items)
 
@@ -163,8 +196,12 @@ def sync_stats_snapshot():
 
     conn = _db(BOT_MSGS_DB)
     if conn:
-        stats["bot_total_messages"] = conn.execute("SELECT COUNT(*) FROM messages").fetchone()[0]
-        stats["bot_unique_users"] = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+        stats["bot_total_messages"] = conn.execute(
+            "SELECT COUNT(*) FROM messages"
+        ).fetchone()[0]
+        stats["bot_unique_users"] = conn.execute(
+            "SELECT COUNT(*) FROM users"
+        ).fetchone()[0]
         stats["bot_messages_today"] = conn.execute(
             "SELECT COUNT(*) FROM messages WHERE ts >= ?", (time.time() - 86400,)
         ).fetchone()[0]
@@ -176,7 +213,9 @@ def sync_stats_snapshot():
 
     conn = _db(AR_DB)
     if conn:
-        stats["autoresponder_total"] = conn.execute("SELECT COUNT(*) FROM conversations").fetchone()[0]
+        stats["autoresponder_total"] = conn.execute(
+            "SELECT COUNT(*) FROM conversations"
+        ).fetchone()[0]
         stats["autoresponder_unique_users"] = conn.execute(
             "SELECT COUNT(DISTINCT username) FROM conversations"
         ).fetchone()[0]
@@ -187,7 +226,9 @@ def sync_stats_snapshot():
 
     conn = _db(BRIDGE_DB)
     if conn:
-        stats["deal_rooms_total"] = conn.execute("SELECT COUNT(*) FROM pending_deal_rooms").fetchone()[0]
+        stats["deal_rooms_total"] = conn.execute(
+            "SELECT COUNT(*) FROM pending_deal_rooms"
+        ).fetchone()[0]
         stats["deal_rooms_done"] = conn.execute(
             "SELECT COUNT(*) FROM pending_deal_rooms WHERE status='done'"
         ).fetchone()[0]
@@ -200,12 +241,18 @@ def sync_stats_snapshot():
         stats["deal_rooms_done"] = 0
         stats["deal_rooms_pending"] = 0
 
-    stats["leads_total"] = stats["bot_unique_users"] + stats["autoresponder_unique_users"]
+    stats["leads_total"] = (
+        stats["bot_unique_users"] + stats["autoresponder_unique_users"]
+    )
     stats["leads_hot"] = stats["deal_rooms_total"]
     stats["leads_warm"] = 0
 
-    resp = httpx.post(f"{API_URL}/bot-stats/sync/stats", json=stats,
-                      headers=_get_headers(), timeout=30)
+    resp = httpx.post(
+        f"{API_URL}/bot-stats/sync/stats",
+        json=stats,
+        headers=_get_headers(),
+        timeout=30,
+    )
     log.info("Stats snapshot → %s", resp.status_code)
 
 

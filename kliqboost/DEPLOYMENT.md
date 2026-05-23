@@ -92,7 +92,10 @@ The admin panel is intentionally **not** published on a guessable subdomain such
 ### Environment Variables to Set in Render Dashboard
 
 #### API Service (`kliqboost-api`)
-- `JWT_SECRET` (auto-generated)
+- `APP_ENV` — set to `production` for production deployments
+- `DATABASE_URL` (postgresql://...)
+- `JWT_SECRET` (auto-generated, must not be a placeholder in production)
+- `STATS_SYNC_KEY` (auto-generated, must not be a placeholder in production)
 - `STRIPE_SECRET_KEY`
 - `STRIPE_PUBLISHABLE_KEY`
 - `STRIPE_WEBHOOK_SECRET`
@@ -100,8 +103,20 @@ The admin panel is intentionally **not** published on a guessable subdomain such
 - `NOWPAY_IPN_SECRET`
 - `SENDGRID_API_KEY`
 - `OLLAMA_CLOUD_KEY`
+- `OLLAMA_CLOUD_URL`
+- `OLLAMA_MODEL`
+- `BASETEN_API_KEY`
+- `BASETEN_QWEN_API_KEY`
+- `BASETEN_CONTROLNET_KEY`
+- `BASETEN_TXT2IMG_KEY`
 - `TG_BOT_TOKEN`
 - `TG_ALERT_CHAT_ID`
+- `TWILIO_SID`
+- `TWILIO_TOKEN`
+- `FACEBOOK_APP_ID`
+- `FACEBOOK_APP_SECRET`
+- `BOT_STATUS_URL` — URL of the bot health endpoint
+- `USERBOT_STATUS_URL` — URL of the userbot health endpoint
 
 #### Autoresponder (`kliqboost-autoresponder`)
 - `TG_SESSION_B64` (base64 encoded session file)

@@ -1,4 +1,6 @@
 *.sqlite3
+*.db-shm
+*.db-wal
 chroma_db/
 __pycache__/
 *.pyc
@@ -13,3 +15,15 @@ dist/
 *.log
 .vscode/
 .idea/
+# Quarantined non-compliant materials (see archive/quarantine-*/README.md)
+archive/quarantine-*/bison-creatives/
+secrets/
+*.pem
+*.key
+credentials.json
+service-account*.json
+terraform.tfstate*
+*.tfstate
+*.tfstate.backup
+data/
+!data/.gitkeep
